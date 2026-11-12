@@ -1,4 +1,4 @@
-.story, .concept {
+﻿.story, .concept {
     background: var(--stone-800);
     border-left: 4px solid var(--torch-dark);
     border-radius: 4px;
@@ -46,23 +46,6 @@
 .hints {
     color: var(--parchment-dim);
     margin: 1rem 0;
-}
-
-.result {
-    border-left: 4px solid var(--danger);
-    margin: 1rem 0;
-    padding: 0.25rem 1rem;
-}
-
-.result ul {
-    margin: 0;
-    padding-left: 1.2rem;
-}
-
-.result .original {
-    color: var(--parchment-dim);
-    display: block;
-    font-family: Consolas, monospace;
 }
 
 .victory {

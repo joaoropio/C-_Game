@@ -33,7 +33,7 @@
         {
             <button type="button" class="hint" @onclick="ShowHintAsync">@Ui["level.hint"]</button>
         }
-        @if (progress.CanSeeSolution(level.Id))
+        @if (progress.CanSeeSolution(level.Id) && !progress.IsCompleted(level.Id))
         {
             <button type="button" class="solution" @onclick="ShowSolutionAsync">@Ui["level.solution"]</button>
         }
@@ -56,7 +56,7 @@
 
     @if (earnedStars is { } stars)
     {
-        <section class="victory">
+        <section class="victory" role="status">
             <div class="scene" aria-hidden="true">
                 <div class="door open"><div class="door-leaf"></div></div>
                 <div class="hero"></div>
@@ -81,6 +81,7 @@
     private int hintsShown;
     private RunResult? result;
     private int? earnedStars;
+    private CancellationTokenSource? runCancellation;
 
     [Parameter]
     public string Id { get; set; } = "";
@@ -102,6 +103,7 @@
         if (Id != loadedId)
         {
             loadedId = Id;
+            CancelRun();
             hintsShown = 0;
             result = null;
             earnedStars = null;
@@ -112,6 +114,7 @@
 
     public void Dispose()
     {
+        runCancellation?.Cancel();
         Ui.Changed -= OnChanged;
         Store.Changed -= OnStoreChanged;
     }
@@ -137,41 +140,52 @@
 
     private async Task RunAsync()
     {
-        if (level is null || editor is null || Store.Current is not { } progress)
+        if (running || level is not { } current || editor is not { } activeEditor || Store.Current is not { } progress)
         {
             return;
         }
 
+        using var cancellation = new CancellationTokenSource();
+        runCancellation = cancellation;
         running = true;
         try
         {
-            var code = await editor.GetCodeAsync();
-            result = await Runner.RunAsync(new RunRequest(level.Template, code, level.ValidationSource), Ui.Language, CancellationToken.None);
+            var code = await activeEditor.GetCodeAsync();
+            var outcome = await Runner.RunAsync(new RunRequest(current.Template, code, current.ValidationSource), Ui.Language, cancellation.Token);
+            if (!cancellation.IsCancellationRequested)
+            {
+                result = outcome;
+                await ApplyResultAsync(current, progress, activeEditor, outcome);
+            }
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
         }
         finally
         {
-            running = false;
+            if (ReferenceEquals(runCancellation, cancellation))
+            {
+                runCancellation = null;
+                running = false;
+            }
         }
-
-        await ApplyResultAsync(level, progress, result);
     }
 
-    private async Task ApplyResultAsync(Level current, PlayerProgress progress, RunResult outcome)
+    private void CancelRun()
     {
-        if (outcome is CompilationFailed failed)
-        {
-            await editor!.ShowErrorsAsync(failed.Errors);
-        }
-        else
-        {
-            await editor!.ClearErrorsAsync();
-        }
+        runCancellation?.Cancel();
+        runCancellation = null;
+        running = false;
+    }
 
+    private async Task ApplyResultAsync(Level current, PlayerProgress progress, CodeEditor activeEditor, RunResult outcome)
+    {
         if (outcome is Passed passed)
         {
-            earnedStars = StarCalculator.Calculate(
+            var stars = StarCalculator.Calculate(
                 current.World, passed.StatementCount, current.MaxStatementsForThreeStars, progress.UsedHint(current.Id), progress.SawSolution(current.Id));
-            progress.RecordPass(current.Id, earnedStars.Value);
+            progress.RecordPass(current.Id, stars);
+            earnedStars = progress.StarsFor(current.Id);
         }
         else
         {
@@ -179,9 +193,17 @@
             progress.RecordFailure(current.Id);
         }
 
+        if (outcome is CompilationFailed failed)
+        {
+            await activeEditor.ShowErrorsAsync(failed.Errors);
+        }
+        else
+        {
+            await activeEditor.ClearErrorsAsync();
+        }
+
         await Store.SaveAsync(progress);
     }
-
     private async Task ShowHintAsync()
     {
         if (level is null || Store.Current is not { } progress)

@@ -259,6 +259,87 @@ public sealed class LevelPageTests : BunitContext
     }
 
     [Fact]
+    public async Task Run_FinishingAfterLevelChange_IsDiscarded()
+    {
+        progress.RecordPass(First.Id, 1);
+        var cut = await RenderLevelAsync(First);
+        var gate = new TaskCompletionSource<RunResult>();
+        runner.Pending = gate.Task;
+        var click = cut.Find("button.run").ClickAsync(new());
+        cut.WaitForAssertion(() => Assert.NotNull(runner.Request));
+        var second = content.Levels[1];
+
+        cut.Render(parameters => parameters.Add(page => page.Id, second.Id));
+        gate.SetResult(new Passed(1));
+        await click;
+
+        Assert.DoesNotContain(JSInterop.Invocations, call => call.Identifier == TestContextExtensions.SetItem);
+        var current = Services.GetRequiredService<ProgressStore>().Current!;
+        Assert.False(current.IsCompleted(second.Id));
+        Assert.Equal(1, current.StarsFor(First.Id));
+        Assert.Empty(cut.FindAll(".victory"));
+        Assert.Empty(cut.FindAll(".result"));
+    }
+
+    [Fact]
+    public async Task Run_WhilePending_IgnoresSecondRun()
+    {
+        var cut = await RenderLevelAsync(First);
+        var gate = new TaskCompletionSource<RunResult>();
+        runner.Pending = gate.Task;
+        var button = cut.Find("button.run");
+
+        var first = button.ClickAsync(new());
+        var second = cut.InvokeAsync(() => button.Click());
+        gate.SetResult(new TimedOut());
+        await first;
+        await second;
+
+        Assert.Equal(1, runner.Calls);
+        Assert.Single(JSInterop.Invocations[TestContextExtensions.SetItem]);
+    }
+
+    [Fact]
+    public async Task SolutionButton_HiddenOnceLevelCompleted()
+    {
+        var cut = await RenderLevelAsync(First);
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            await RunAsync(cut, new TimedOut());
+        }
+
+        await RunAsync(cut, new Passed(1));
+
+        Assert.Empty(cut.FindAll("button.solution"));
+    }
+
+    [Fact]
+    public async Task Victory_ShowsBestSavedStars()
+    {
+        var cut = await RenderLevelAsync(First);
+        await RunAsync(cut, new Passed(First.MaxStatementsForThreeStars));
+
+        await RunAsync(cut, new Passed(First.MaxStatementsForThreeStars + 1));
+
+        Assert.Equal(3, cut.FindAll(".result-stars .star.filled").Count);
+        Assert.Equal("status", cut.Find(".victory").GetAttribute("role"));
+    }
+
+    [Fact]
+    public async Task NavigatingToAnotherLevel_ResetsHintsResultAndStars()
+    {
+        progress.RecordPass(First.Id, 1);
+        var cut = await RenderLevelAsync(First);
+        await cut.Find("button.hint").ClickAsync(new());
+        await RunAsync(cut, new Passed(1));
+
+        cut.Render(parameters => parameters.Add(page => page.Id, content.Levels[1].Id));
+
+        Assert.Empty(cut.FindAll(".hints li"));
+        Assert.Empty(cut.FindAll(".result"));
+        Assert.Empty(cut.FindAll(".victory"));
+    }
+    [Fact]
     public async Task LanguageChange_RerendersInEnglish()
     {
         var cut = await RenderLevelAsync(First);
@@ -277,9 +358,12 @@ public sealed class LevelPageTests : BunitContext
 
         public RunRequest? Request { get; private set; }
 
+        public int Calls { get; private set; }
+
         public Task<RunResult> RunAsync(RunRequest request, Language language, CancellationToken cancellationToken)
         {
             Request = request;
+            Calls++;
             return Pending ?? Task.FromResult(Result);
         }
     }
