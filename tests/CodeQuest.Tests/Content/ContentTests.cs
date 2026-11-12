@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using CodeQuest.Core;
 using CodeQuest.Core.Grimoire;
 using CodeQuest.Core.Levels;
@@ -63,9 +64,37 @@ public class ContentTests
 
     private static GrimoirePage Find(string id) => Pages.Single(page => page.Id == id);
 
+    private static HashSet<string> DeclaredNames(string code) =>
+        Regex.Matches(code, @"\b(?:string|int|double|bool|var)\s+(\w+)\s*[=;]")
+            .Select(match => match.Groups[1].Value)
+            .ToHashSet();
+
+    private static HashSet<string> ParameterNames(string template) =>
+        Regex.Matches(template, @"public static \w+ \w+\(([^)]*)\)")
+            .SelectMany(match => match.Groups[1].Value.Split(',', StringSplitOptions.RemoveEmptyEntries))
+            .Select(parameter => parameter.Trim().Split(' ').Last())
+            .ToHashSet();
+
     [Fact]
-    public void EveryLevel_HasGrimoirePage() =>
+    public void EveryLevel_HasGrimoirePage()
+    {
+        Assert.NotEmpty(Levels);
         Assert.All(Levels, level => Assert.Contains(Pages, page => page.Id == level.GrimoirePageId));
+    }
+
+    [Fact]
+    public void EveryExample_DoesNotReuseItsLevelIdentifiers()
+    {
+        Assert.NotEmpty(Levels);
+        Assert.All(Levels, level =>
+        {
+            var example = Pages.Single(page => page.Id == level.GrimoirePageId).Example;
+            var levelNames = DeclaredNames(level.Solution).Union(ParameterNames(level.Template));
+
+            Assert.NotEqual(level.Solution.Trim(), example.Trim());
+            Assert.Empty(DeclaredNames(example).Intersect(levelNames));
+        });
+    }
 
     [Theory]
     [MemberData(nameof(PageIds))]
@@ -76,6 +105,7 @@ public class ContentTests
 
         Assert.InRange(page.CommonMistakes.Count, 2, 3);
         Assert.False(string.IsNullOrWhiteSpace(page.Syntax));
+        Assert.False(string.IsNullOrWhiteSpace(page.Example));
         Assert.All(texts, text =>
         {
             Assert.False(string.IsNullOrWhiteSpace(text.Pt));

@@ -7,7 +7,7 @@
     "en": "A variable is a named box where you keep a value. Each box has a type: string for text, int for whole numbers, double for numbers with a decimal part and bool for true or false."
   },
   "syntax": "tipo nome = valor;",
-  "example": "string name = \"Merlin\";\nint health = 100;\ndouble mana = 50.5;\nbool isAlive = true;",
+  "example": "string title = \"Aprendiz\";\nint gold = 25;\ndouble speed = 1.5;\nbool hasKey = false;",
   "commonMistakes": [
     {
       "pt": "Usar vírgula nos decimais: em C# escreve-se 50.5, não 50,5.",

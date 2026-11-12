@@ -7,7 +7,7 @@
     "en": "Operators do math with values: + adds, - subtracts, * multiplies, / divides and % gives the remainder of a division. Multiplication and division happen before addition and subtraction; use parentheses to change the order."
   },
   "syntax": "resultado = a * b - c;",
-  "example": "int attack = 8;\nint multiplier = 3;\nint defense = 5;\nint damage = attack * multiplier - defense;",
+  "example": "int potions = 4;\nint price = 6;\nint discount = 5;\nint total = potions * price - discount;",
   "commonMistakes": [
     {
       "pt": "Esquecer que a multiplicação vem primeiro: 2 + 3 * 4 dá 14, não 20.",
