@@ -113,7 +113,7 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan, SemanticModel mode
                 .Except(assigned.DefinitelyAssignedOnEntry, SymbolEqualityComparer.Default)
                 .Where(symbol => symbol is ILocalSymbol or IParameterSymbol)
                 .Select(symbol => SyntaxFactory.ParseStatement(
-                    $"global::System.Runtime.CompilerServices.Unsafe.SkipInit(out {symbol.Name}); ").WithLeadingTrivia(SyntaxFactory.Space))
+                    $"global::System.Runtime.CompilerServices.Unsafe.SkipInit(out {Escaped(symbol.Name)}); ").WithLeadingTrivia(SyntaxFactory.Space))
                 .ToList()
             : [];
         var skipped = skipInits.Count == 0
@@ -138,6 +138,9 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan, SemanticModel mode
                 .WithLeadingTrivia(SyntaxFactory.Space)
                 .WithTrailingTrivia(visited.Block.GetTrailingTrivia())));
     }
+
+    private static string Escaped(string identifier) =>
+        SyntaxFacts.GetKeywordKind(identifier) == SyntaxKind.None ? identifier : "@" + identifier;
 
     public override SyntaxNode? VisitLocalFunctionStatement(LocalFunctionStatementSyntax node)
     {

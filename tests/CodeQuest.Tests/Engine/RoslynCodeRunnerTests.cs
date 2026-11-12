@@ -243,6 +243,8 @@ public class RoslynCodeRunnerTests
     [InlineData("StringBuilder s;\ntry { Console.Write(\"\"); }\nfinally { s = new StringBuilder(); s.Append(x * 2); }\nreturn int.Parse(s.ToString());")]
     [InlineData("int r;\ntry { }\nfinally { int.TryParse(\"4\", out r); }\nreturn r == 4 ? x * 2 : 0;")]
     [InlineData("int r; int q;\ntry { }\nfinally { int t = 1; r = x * 2; q = t; }\nreturn q == 1 ? r : 0;")]
+    [InlineData("int @class;\ntry { }\nfinally { @class = x * 2; }\nreturn @class;")]
+    [InlineData("int @var; int await;\ntry { }\nfinally { @var = x; await = x; }\nreturn @var + await;")]
     public async Task Run_VariableAssignedOnlyInFinally_StillPasses(string playerCode) =>
         Assert.IsType<Passed>(await Run(playerCode));
 
