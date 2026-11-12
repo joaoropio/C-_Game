@@ -1,0 +1,26 @@
+{
+  "id": "01-variables",
+  "world": 1,
+  "number": 1,
+  "title": { "pt": "O Nome do Mago", "en": "The Wizard's Name" },
+  "story": {
+    "pt": "Entras na masmorra e uma porta de pedra pergunta quem és. Para a abrir, tens de guardar quatro factos sobre o teu mago: o nome, a vida, a mana e se está vivo.",
+    "en": "You step into the dungeon and a stone door asks who you are. To open it, you must store four facts about your wizard: the name, the health, the mana and whether he is alive."
+  },
+  "concept": {
+    "pt": "Uma variável é uma caixa com nome onde guardas um valor. Cada caixa tem um tipo: string para texto, int para números inteiros, double para números com vírgula e bool para verdadeiro ou falso. Exemplo: int gold = 7;",
+    "en": "A variable is a named box where you keep a value. Each box has a type: string for text, int for whole numbers, double for numbers with a decimal point and bool for true or false. Example: int gold = 7;"
+  },
+  "hints": [
+    {
+      "pt": "Já tens a variável name. Faltam health, mana e isAlive. Cada uma precisa do seu tipo antes do nome.",
+      "en": "You already have the variable name. health, mana and isAlive are still missing. Each one needs its type before the name."
+    },
+    {
+      "pt": "Escreve: int health = 100; depois double mana = 50.5; e por fim bool isAlive = true;",
+      "en": "Write: int health = 100; then double mana = 50.5; and finally bool isAlive = true;"
+    }
+  ],
+  "maxStatementsForThreeStars": 4,
+  "grimoirePageId": "variables"
+}

@@ -1,0 +1,26 @@
+{
+  "id": "02-operators",
+  "world": 1,
+  "number": 2,
+  "title": { "pt": "O Golpe do Mago", "en": "The Wizard's Strike" },
+  "story": {
+    "pt": "Um esqueleto bloqueia o corredor. O teu feitiço de ataque multiplica a força pelo poder do cajado e depois o esqueleto tira a sua defesa. Calcula o dano final.",
+    "en": "A skeleton blocks the corridor. Your attack spell multiplies your strength by the power of your staff, then the skeleton takes off its defense. Work out the final damage."
+  },
+  "concept": {
+    "pt": "Os operadores fazem contas: + soma, - subtrai, * multiplica e / divide. A multiplicação acontece antes da soma e da subtração. Com return devolves o resultado do feitiço. Exemplo: return 2 + 3 * 4; devolve 14.",
+    "en": "Operators do math: + adds, - subtracts, * multiplies and / divides. Multiplication happens before addition and subtraction. With return you hand back the spell's result. Example: return 2 + 3 * 4; gives 14."
+  },
+  "hints": [
+    {
+      "pt": "O dano é o ataque vezes o multiplicador, menos a defesa.",
+      "en": "The damage is the attack times the multiplier, minus the defense."
+    },
+    {
+      "pt": "Escreve: return attack * multiplier - defense;",
+      "en": "Write: return attack * multiplier - defense;"
+    }
+  ],
+  "maxStatementsForThreeStars": 1,
+  "grimoirePageId": "operators"
+}

@@ -1,0 +1,1 @@
+return attack * multiplier - defense;

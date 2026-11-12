@@ -1,0 +1,26 @@
+{
+  "id": "03-conditions",
+  "world": 1,
+  "number": 3,
+  "title": { "pt": "As Três Portas", "en": "The Three Doors" },
+  "story": {
+    "pt": "Três portas brilham à tua frente, cada uma marcada por uma runa. Pronuncia a runa certa e a porta abre-se. Se a runa for desconhecida, o melhor é recuar.",
+    "en": "Three doors glow before you, each marked with a rune. Speak the right rune and the door opens. If the rune is unknown, it is wiser to step back."
+  },
+  "concept": {
+    "pt": "Uma condição deixa o código escolher um caminho. Com if e else escolhes entre duas hipóteses; com switch escolhes entre várias. Exemplo: if (gold > 5) { return \"rich\"; } else { return \"poor\"; }",
+    "en": "A condition lets the code choose a path. With if and else you pick between two options; with switch you pick among many. Example: if (gold > 5) { return \"rich\"; } else { return \"poor\"; }"
+  },
+  "hints": [
+    {
+      "pt": "Compara a runa com cada palavra: \"fire\" leva à porta \"left\", \"ice\" à \"right\" e \"wind\" à \"center\". Para qualquer outra runa, devolve \"back\".",
+      "en": "Compare the rune with each word: \"fire\" leads to the \"left\" door, \"ice\" to \"right\" and \"wind\" to \"center\". For any other rune, return \"back\"."
+    },
+    {
+      "pt": "Usa um switch: case \"fire\": return \"left\"; e assim por diante, com default: return \"back\";",
+      "en": "Use a switch: case \"fire\": return \"left\"; and so on, with default: return \"back\";"
+    }
+  ],
+  "maxStatementsForThreeStars": 5,
+  "grimoirePageId": "conditions"
+}
