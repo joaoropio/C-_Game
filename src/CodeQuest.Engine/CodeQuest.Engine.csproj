@@ -5,5 +5,7 @@
   <ItemGroup>
     <ProjectReference Include="..\CodeQuest.Core\CodeQuest.Core.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="CodeQuest.Tests" />
+  </ItemGroup>
 </Project>
-
