@@ -29,6 +29,7 @@
         <button type="button" class="run" disabled="@running" @onclick="RunAsync">
             @Ui[running ? "level.running" : "level.run"]
         </button>
+        <button type="button" class="grimoire-open" @onclick="OpenGrimoire">@Ui["grimoire.open"]</button>
         @if (hintsShown < level.Hints.Count)
         {
             <button type="button" class="hint" @onclick="ShowHintAsync">@Ui["level.hint"]</button>
@@ -71,6 +72,9 @@
             <a class="next" href="@NextHref">@Ui[NextIsMap ? "level.backToMap" : "level.next"]</a>
         </section>
     }
+
+    <GrimoirePanel IsOpen="grimoireOpen" InitialPageId="@level.GrimoirePageId"
+                   OnClose="CloseGrimoire" OnCopyExample="InsertExampleAsync" />
 }
 
 @code {
@@ -78,6 +82,7 @@
     private Level? level;
     private string? loadedId;
     private bool running;
+    private bool grimoireOpen;
     private int hintsShown;
     private RunResult? result;
     private int? earnedStars;
@@ -105,6 +110,7 @@
             loadedId = Id;
             CancelRun();
             hintsShown = 0;
+            grimoireOpen = false;
             result = null;
             earnedStars = null;
         }
@@ -204,6 +210,19 @@
 
         await Store.SaveAsync(progress);
     }
+
+    private void OpenGrimoire() => grimoireOpen = true;
+
+    private void CloseGrimoire() => grimoireOpen = false;
+
+    private async Task InsertExampleAsync(string example)
+    {
+        if (editor is { } activeEditor)
+        {
+            await activeEditor.InsertAsync(example);
+        }
+    }
+
     private async Task ShowHintAsync()
     {
         if (level is null || Store.Current is not { } progress)

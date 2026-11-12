@@ -27,6 +27,7 @@ public sealed class LevelPageTests : BunitContext
         editor.Setup<int?>("create", _ => true).SetResult(1);
         editor.Setup<string>("getValue", _ => true).SetResult(EditorCode);
         editor.SetupVoid("setValue", _ => true).SetVoidResult();
+        editor.SetupVoid("insert", _ => true).SetVoidResult();
         editor.SetupVoid("setErrors", _ => true).SetVoidResult();
         editor.SetupVoid("dispose", _ => true).SetVoidResult();
     }
@@ -339,6 +340,37 @@ public sealed class LevelPageTests : BunitContext
         Assert.Empty(cut.FindAll(".result"));
         Assert.Empty(cut.FindAll(".victory"));
     }
+    [Fact]
+    public async Task GrimoireCopy_InsertsIntoEditor()
+    {
+        var cut = await RenderLevelAsync(First);
+        await cut.Find("button.grimoire-open").ClickAsync(new());
+
+        await cut.Find("aside button.copy").ClickAsync(new());
+
+        var insert = Assert.Single(editor.Invocations["insert"]);
+        Assert.Equal(content.FindPage(First.GrimoirePageId)!.Example, insert.Arguments[1]);
+    }
+
+    [Fact]
+    public async Task OpeningGrimoire_KeepsEditorCode()
+    {
+        var cut = await RenderLevelAsync(First);
+        Assert.Empty(cut.FindAll("aside"));
+
+        await cut.Find("button.grimoire-open").ClickAsync(new());
+
+        Assert.Single(cut.FindAll("aside"));
+        Assert.Single(cut.FindAll(".editor-frame"));
+        Assert.Single(editor.Invocations["create"]);
+        Assert.DoesNotContain(editor.Invocations, call => call.Identifier == "dispose");
+
+        await cut.Find("aside button.close").ClickAsync(new());
+
+        Assert.Empty(cut.FindAll("aside"));
+        Assert.Single(editor.Invocations["create"]);
+    }
+
     [Fact]
     public async Task LanguageChange_RerendersInEnglish()
     {

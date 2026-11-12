@@ -1,0 +1,125 @@
+@using System.Globalization
+@using CodeQuest.Core.Grimoire
+@inject GameContent Content
+@inject UiText Ui
+@inject ProgressStore Store
+
+@if (IsOpen)
+{
+    <aside class="grimoire-panel" aria-label="@Ui["grimoire.title"]" @onkeydown="OnKeyDown">
+        <header>
+            <h2 class="panel-title">@Ui["grimoire.title"]</h2>
+            <button type="button" class="close" aria-label="@Ui["grimoire.close"]" @onclick="OnClose">✕</button>
+        </header>
+
+        <input type="search" aria-label="@Ui["grimoire.search"]" placeholder="@Ui["grimoire.search"]"
+               value="@query" @oninput="OnSearch" />
+
+        <nav aria-label="@Ui["grimoire.title"]">
+            @foreach (var world in Matches.GroupBy(page => page.World).OrderBy(group => group.Key))
+            {
+                <section>
+                    <h3>@string.Format(Ui["grimoire.world"], world.Key)</h3>
+                    <ul>
+                        @foreach (var entry in world)
+                        {
+                            <li>
+                                <button type="button" class="@(entry.Id == selectedId ? "current" : "")"
+                                        aria-current="@(entry.Id == selectedId ? "page" : null)"
+                                        @onclick="() => SelectAsync(entry.Id)">@entry.Title.Get(Ui.Language)</button>
+                            </li>
+                        }
+                    </ul>
+                </section>
+            }
+            @if (!Matches.Any())
+            {
+                <p class="empty">@Ui["grimoire.noResults"]</p>
+            }
+        </nav>
+
+        @if (Content.FindPage(selectedId ?? "") is { } selected)
+        {
+            <article class="page-detail">
+                <h2>@selected.Title.Get(Ui.Language)</h2>
+                <p>@selected.WhatItIs.Get(Ui.Language)</p>
+                <pre class="syntax"><code>@selected.Syntax</code></pre>
+                <pre class="example"><code>@selected.Example</code></pre>
+                <button type="button" class="copy" @onclick="() => OnCopyExample.InvokeAsync(selected.Example)">@Ui["grimoire.copy"]</button>
+                <h3>@Ui["grimoire.mistakes"]</h3>
+                <ul class="mistakes">
+                    @foreach (var mistake in selected.CommonMistakes)
+                    {
+                        <li>@mistake.Get(Ui.Language)</li>
+                    }
+                </ul>
+                <a class="learn-more" href="@selected.LearnUrl" target="_blank" rel="noopener noreferrer">@Ui["grimoire.learnMore"]</a>
+            </article>
+        }
+    </aside>
+}
+
+@code {
+    private string? selectedId;
+    private string query = "";
+    private bool wasOpen;
+
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public string? InitialPageId { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnCopyExample { get; set; }
+
+    private IEnumerable<GrimoirePage> Available =>
+        Store.Current is { } progress
+            ? Content.Pages.Where(page => progress.IsPageAvailable(page, Content.Levels))
+            : [];
+
+    private IEnumerable<GrimoirePage> Matches => Available.Where(MatchesQuery);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var justOpened = IsOpen && !wasOpen;
+        wasOpen = IsOpen;
+        if (justOpened)
+        {
+            query = "";
+            await SelectAsync(InitialPageId ?? Available.FirstOrDefault()?.Id);
+        }
+    }
+
+    private bool MatchesQuery(GrimoirePage page) =>
+        query.Length == 0
+        || Contains(page.Title.Get(Ui.Language))
+        || Contains(page.WhatItIs.Get(Ui.Language))
+        || page.CommonMistakes.Any(mistake => Contains(mistake.Get(Ui.Language)));
+
+    private bool Contains(string text) =>
+        CultureInfo.InvariantCulture.CompareInfo.IndexOf(text, query, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) >= 0;
+
+    private void OnSearch(ChangeEventArgs args) => query = args.Value?.ToString()?.Trim() ?? "";
+
+    private async Task OnKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape")
+        {
+            await OnClose.InvokeAsync();
+        }
+    }
+
+    private async Task SelectAsync(string? pageId)
+    {
+        selectedId = pageId;
+        if (pageId is not null && Store.Current is { } progress)
+        {
+            progress.MarkPageViewed(pageId);
+            await Store.SaveAsync(progress);
+        }
+    }
+}
