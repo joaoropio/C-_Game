@@ -49,15 +49,11 @@ internal sealed partial class PlayerCompiler
             "\n",
             templateLines[..markerIndex].Append(request.PlayerCode).Concat(templateLines[(markerIndex + 1)..]));
 
-        var playerTree = GuardLoops(source, markerIndex, playerLineCount);
         var validationTree = CSharpSyntaxTree.ParseText(request.ValidationSource, path: "validation.cs", encoding: Encoding.UTF8);
         var guardTree = CSharpSyntaxTree.ParseText(LoopGuardRewriter.GuardSource, path: "loopguard.cs", encoding: Encoding.UTF8);
         var usingsTree = CSharpSyntaxTree.ParseText(ImplicitUsingsSource, path: "usings.cs", encoding: Encoding.UTF8);
-        var compilation = CSharpCompilation.Create(
-            "PlayerAssembly_" + Guid.NewGuid().ToString("N"),
-            [playerTree, validationTree, guardTree, usingsTree],
-            References.Value,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        var playerTree = GuardPlayerCode(source, markerIndex, playerLineCount, [validationTree, guardTree, usingsTree]);
+        var compilation = CreateCompilation([playerTree, validationTree, guardTree, usingsTree]);
 
         var rejected = ForbiddenApiChecker.Check(
             compilation.GetSemanticModel(playerTree),
@@ -87,14 +83,30 @@ internal sealed partial class PlayerCompiler
             : new CompileOutcome(null, null, errors, markerIndex, playerLineCount, null);
     }
 
-    private static SyntaxTree GuardLoops(string source, int firstPlayerLine, int playerLineCount)
+    private static CSharpCompilation CreateCompilation(IEnumerable<SyntaxTree> trees) => CSharpCompilation.Create(
+        "PlayerAssembly_" + Guid.NewGuid().ToString("N"),
+        trees,
+        References.Value,
+        new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+    private static SyntaxTree GuardPlayerCode(
+        string source,
+        int firstPlayerLine,
+        int playerLineCount,
+        IReadOnlyList<SyntaxTree> otherTrees)
     {
         var parsed = CSharpSyntaxTree.ParseText(source, path: "player.cs", encoding: Encoding.UTF8);
         var lines = parsed.GetText().Lines;
         var playerSpan = TextSpan.FromBounds(
             lines[firstPlayerLine].Start,
             lines[firstPlayerLine + playerLineCount - 1].End);
-        var guarded = new LoopGuardRewriter(playerSpan).Visit(parsed.GetRoot());
+
+        // The rewriter only needs the types of lambdas, and asks for them only when one has an
+        // expression body, so the extra compilation is bound lazily.
+        var rewriter = new LoopGuardRewriter(
+            playerSpan,
+            () => CreateCompilation(otherTrees.Prepend(parsed)).GetSemanticModel(parsed));
+        var guarded = rewriter.Visit(parsed.GetRoot());
         return CSharpSyntaxTree.ParseText(guarded.ToFullString(), path: "player.cs", encoding: Encoding.UTF8);
     }
 

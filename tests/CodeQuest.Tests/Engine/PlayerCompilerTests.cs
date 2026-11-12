@@ -202,6 +202,58 @@ public class PlayerCompilerTests
     }
 
     [Fact]
+    public void Compile_ErrorOnFirstPlayerLine_KeepsLineAndColumn()
+    {
+        var error = Assert.Single(_compiler.Compile(Request("int b = ;"), Language.En).Errors);
+
+        Assert.Equal(1, error.Line);
+        Assert.Equal(9, error.Column);
+    }
+
+    [Theory]
+    [InlineData("int F(int n) => F(n);\nreturn F(1);")]
+    [InlineData("int F(int n) { return F(n); }\nreturn F(1);")]
+    [InlineData("Func<int, int> f = null;\nf = n => f(n);\nreturn f(1);")]
+    [InlineData("Func<int, int> f = null;\nf = n => { return f(n); };\nreturn f(1);")]
+    public void Compile_RecursionInPlayerFunctions_ThrowsInsufficientStackWhenRun(string playerCode)
+    {
+        var outcome = _compiler.Compile(Request(playerCode), Language.En);
+
+        Assert.Null(outcome.Rejected);
+        Assert.IsType<InsufficientExecutionStackException>(RunCast(outcome));
+    }
+
+    [Fact]
+    public void Compile_EnclosingMethodRecursion_ThrowsInsufficientStackWhenRun()
+    {
+        var outcome = _compiler.Compile(Request("return Cast();"), Language.En);
+
+        Assert.IsType<InsufficientExecutionStackException>(RunCast(outcome));
+    }
+
+    [Fact]
+    public void Compile_RecursionGuardCalls_AreNotRejectedAsForbiddenApis()
+    {
+        var outcome = _compiler.Compile(
+            Request("Func<int, int> f = n => n + 1;\nint G(int n) => n;\nreturn f(G(1));"),
+            Language.En);
+
+        Assert.Null(outcome.Rejected);
+        Assert.NotNull(outcome.Assembly);
+    }
+
+    [Fact]
+    public void Compile_ForbiddenApiInsideLambdaBody_StillRejectedOnItsLine()
+    {
+        var outcome = _compiler.Compile(
+            Request("int a = 1;\nFunc<int> f = () => Environment.TickCount;\nreturn f();"),
+            Language.En);
+
+        Assert.NotNull(outcome.Rejected);
+        Assert.Equal(2, outcome.Rejected.Line);
+    }
+
+    [Fact]
     public void Compile_OnlyErrorsAreReported()
     {
         var outcome = _compiler.Compile(Request("int unused = 1;"), Language.En);

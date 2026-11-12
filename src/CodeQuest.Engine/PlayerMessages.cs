@@ -60,6 +60,10 @@ internal static class PlayerMessages
         "O texto não tem o formato esperado.",
         "The text isn't in the expected format.");
 
+    public static readonly LocalizedText InfiniteRecursion = new(
+        "O feitiço chama-se a si próprio sem parar (recursão infinita).",
+        "The spell keeps calling itself and never stops (infinite recursion).");
+
     public static readonly LocalizedText SpellFailedWhileRunning = new(
         "O feitiço falhou durante a execução.",
         "The spell failed while running.");

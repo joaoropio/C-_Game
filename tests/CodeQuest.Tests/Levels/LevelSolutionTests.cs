@@ -150,6 +150,19 @@ public class LevelSolutionTests
     }
 
     [Fact]
+    public async Task Level2_InfiniteRecursion_RuntimeErrorAndServerSurvives()
+    {
+        var level = Find("02-operators");
+
+        var result = Assert.IsType<RuntimeError>(await Run(level, "return Damage(attack, defense, multiplier);"));
+
+        Assert.Equal("The spell keeps calling itself and never stops (infinite recursion).", result.Explanation.En);
+        Assert.Equal("O feitiço chama-se a si próprio sem parar (recursão infinita).", result.Explanation.Pt);
+        Assert.Equal(1, result.Line);
+        Assert.IsType<Passed>(await Run(level, level.Solution));
+    }
+
+    [Fact]
     public async Task Level2_MissingReturn_ExplainsReturn()
     {
         var explanation = await ExplanationFor("02-operators", "int x = attack;");

@@ -179,6 +179,74 @@ public class RoslynCodeRunnerTests
         Assert.Equal(2, result.StatementCount);
     }
 
+    private async Task<RuntimeError> RunRecursive(string playerCode)
+    {
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+
+        var result = Assert.IsType<RuntimeError>(await Run(playerCode));
+
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(5), $"took {watch.Elapsed}");
+        Assert.Equal("The spell keeps calling itself and never stops (infinite recursion).", result.Explanation.En);
+        Assert.Equal("O feitiço chama-se a si próprio sem parar (recursão infinita).", result.Explanation.Pt);
+        return result;
+    }
+
+    [Fact]
+    public async Task Run_EnclosingMethodRecursion_RuntimeErrorWithPlayerLine()
+    {
+        var result = await RunRecursive("int unused = 1;\nreturn Twice(x);");
+
+        Assert.Equal(2, result.Line);
+    }
+
+    [Theory]
+    [InlineData("int F(int n) { return F(n); }\nreturn F(x);")]
+    [InlineData("int F(int n)\n{\n    return F(n);\n}\nreturn F(x);")]
+    [InlineData("int F(int n) => F(n);\nreturn F(x);")]
+    [InlineData("int F(int n) => F(n) + 1;\nreturn F(x);")]
+    [InlineData("int F(int n) { return G(n); }\nint G(int n) { return F(n); }\nreturn F(x);")]
+    [InlineData("Func<int, int> f = null;\nf = n => f(n);\nreturn f(x);")]
+    [InlineData("Func<int, int> f = null;\nf = n => { return f(n); };\nreturn f(x);")]
+    [InlineData("Func<int, int> f = null;\nf = delegate (int n) { return f(n); };\nreturn f(x);")]
+    [InlineData("Action a = null;\na = () => a();\na();\nreturn x;")]
+    [InlineData("void Loop(int n) => Loop(n);\nLoop(x);\nreturn x;")]
+    [InlineData("int F(int n) { return new[] { n }.Select(k => F(k)).Sum(); }\nreturn F(x);")]
+    public async Task Run_InfiniteRecursion_RuntimeErrorWithExplanation(string playerCode) =>
+        await RunRecursive(playerCode);
+
+    [Theory]
+    [InlineData("int F(int n)\n{\n    try { return F(n); }\n    catch { return 0; }\n}\nreturn F(x);")]
+    [InlineData("int F(int n)\n{\n    try { return F(n) + F(n); }\n    catch { return 0; }\n}\nreturn F(x);")]
+    [InlineData("int F(int n)\n{\n    try { return F(n); }\n    finally { }\n}\nreturn F(x);")]
+    [InlineData("try { return Twice(x); }\ncatch { return 0; }")]
+    public async Task Run_RecursionInsideTryCatch_DoesNotCrashAndStopsQuickly(string playerCode)
+    {
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+
+        var result = await Run(playerCode);
+
+        Assert.IsNotType<Passed>(result);
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(5), $"took {watch.Elapsed}");
+    }
+
+    [Fact]
+    public async Task Run_BoundedRecursion_StillPasses() =>
+        Assert.IsType<Passed>(await Run(
+            "int Factorial(int k) { return k <= 1 ? 1 : k * Factorial(k - 1); }\nreturn Factorial(10) == 3628800 ? x * 2 : 0;"));
+
+    [Fact]
+    public async Task Run_BoundedRecursionWithLambdaAndExpressionBody_StillPasses() =>
+        Assert.IsType<Passed>(await Run(
+            "Func<int, int> sum = null;\nsum = k => k <= 0 ? 0 : k + sum(k - 1);\nint Count(int k) => k <= 0 ? 0 : 1 + Count(k - 1);\nreturn sum(100) == 5050 && Count(50) == 50 ? x * 2 : 0;"));
+
+    [Fact]
+    public async Task Run_AfterInfiniteRecursion_NextRunStillWorks()
+    {
+        await RunRecursive("return Twice(x);");
+
+        Assert.IsType<Passed>(await Run("return x * 2;"));
+    }
+
     [Fact]
     public async Task Run_TwiceInARow_BothPass()
     {

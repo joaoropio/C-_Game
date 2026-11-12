@@ -17,6 +17,7 @@ internal static class RuntimeErrorExplainer
         NullReferenceException => PlayerMessages.UsedNull,
         IndexOutOfRangeException or ArgumentOutOfRangeException => PlayerMessages.PositionDoesNotExist,
         FormatException => PlayerMessages.UnexpectedFormat,
+        InsufficientExecutionStackException => PlayerMessages.InfiniteRecursion,
         _ => PlayerMessages.SpellFailedWhileRunning,
     };
 
