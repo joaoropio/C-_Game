@@ -1,0 +1,26 @@
+{
+  "id": "variables",
+  "world": 1,
+  "title": { "pt": "Variáveis", "en": "Variables" },
+  "whatItIs": {
+    "pt": "Uma variável é uma caixa com nome onde guardas um valor. Cada caixa tem um tipo: string para texto, int para números inteiros, double para números com parte decimal e bool para verdadeiro ou falso.",
+    "en": "A variable is a named box where you keep a value. Each box has a type: string for text, int for whole numbers, double for numbers with a decimal part and bool for true or false."
+  },
+  "syntax": "tipo nome = valor;",
+  "example": "string name = \"Merlin\";\nint health = 100;\ndouble mana = 50.5;\nbool isAlive = true;",
+  "commonMistakes": [
+    {
+      "pt": "Usar vírgula nos decimais: em C# escreve-se 50.5, não 50,5.",
+      "en": "Using a comma for decimals: in C# you write 50.5, not 50,5."
+    },
+    {
+      "pt": "Esquecer o tipo antes do nome (health = 100;) ou o ponto e vírgula no fim da linha.",
+      "en": "Forgetting the type before the name (health = 100;) or the semicolon at the end of the line."
+    },
+    {
+      "pt": "Escrever o texto sem aspas duplas: Merlin em vez de \"Merlin\".",
+      "en": "Writing text without double quotes: Merlin instead of \"Merlin\"."
+    }
+  ],
+  "learnUrl": "https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/built-in-types"
+}

@@ -1,0 +1,26 @@
+{
+  "id": "conditions",
+  "world": 1,
+  "title": { "pt": "Condições", "en": "Conditions" },
+  "whatItIs": {
+    "pt": "Uma condição deixa o código escolher um caminho. Com switch escolhes entre vários valores, e o default trata todos os outros casos. Para só duas hipóteses, também podes usar if e else.",
+    "en": "A condition lets the code choose a path. With switch you pick among several values, and default handles every other case. For just two options, you can also use if and else."
+  },
+  "syntax": "switch (valor)\n{\n    case x:\n        ...\n        break;\n    default:\n        ...\n        break;\n}",
+  "example": "string rune = \"fire\";\nstring door;\nswitch (rune)\n{\n    case \"fire\":\n        door = \"left\";\n        break;\n    case \"ice\":\n        door = \"right\";\n        break;\n    default:\n        door = \"back\";\n        break;\n}",
+  "commonMistakes": [
+    {
+      "pt": "Esquecer o break (ou o return) no fim de cada case: o C# não deixa passar para o case seguinte.",
+      "en": "Forgetting the break (or return) at the end of each case: C# does not let one case fall through to the next."
+    },
+    {
+      "pt": "Esquecer o default, e o código não faz nada quando nenhum case corresponde.",
+      "en": "Forgetting the default, so the code does nothing when no case matches."
+    },
+    {
+      "pt": "Escrever o texto do case sem aspas: case fire: em vez de case \"fire\":.",
+      "en": "Writing the case text without quotes: case fire: instead of case \"fire\":."
+    }
+  ],
+  "learnUrl": "https://learn.microsoft.com/dotnet/csharp/language-reference/statements/selection-statements"
+}
