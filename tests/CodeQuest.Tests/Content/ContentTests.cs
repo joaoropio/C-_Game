@@ -144,7 +144,7 @@ public class ContentTests
     [Fact]
     public void UiText_UsesTheAgreedTexts()
     {
-        Assert.Equal("O teu ciclo nunca acaba: verifica a condição.", Ui.Get("level.timedOut", Language.Pt));
+        Assert.Equal("O feitiço demora demasiado: verifica ciclos ou chamadas que nunca acabam.", Ui.Get("level.timedOut", Language.Pt));
         Assert.Equal("O progresso guardado não pôde ser lido. Começaste de novo.", Ui.Get("progress.unreadable", Language.Pt));
     }
 }

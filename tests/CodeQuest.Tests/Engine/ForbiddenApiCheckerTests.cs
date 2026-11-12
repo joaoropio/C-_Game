@@ -132,4 +132,18 @@ public class ForbiddenApiCheckerTests
         Assert.Contains("(linha 3)", rejected.Reason.Pt);
         Assert.Contains("(line 3)", rejected.Reason.En);
     }
+
+    [Theory]
+    [InlineData("Span<int> s = stackalloc int[10];")]
+    [InlineData("Span<int> s = stackalloc[] { 1, 2 };")]
+    [InlineData("int a = 1;\nvar s = stackalloc int[a];")]
+    public void Check_Stackalloc_RejectedOnItsLine(string playerCode)
+    {
+        var rejected = Check(playerCode);
+
+        Assert.NotNull(rejected);
+        Assert.Equal(playerCode.Split('\n').Length, rejected.Line);
+        Assert.Equal("stackalloc não é permitido nesta masmorra.", rejected.Reason.Pt);
+        Assert.Equal("stackalloc is not allowed in this dungeon.", rejected.Reason.En);
+    }
 }

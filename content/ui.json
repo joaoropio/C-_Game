@@ -10,7 +10,7 @@
   "level.next": { "pt": "Próximo nível", "en": "Next level" },
   "level.compileErrors": { "pt": "O código tem erros:", "en": "The code has errors:" },
   "level.checksFailed": { "pt": "Ainda não está certo:", "en": "Not quite right yet:" },
-  "level.timedOut": { "pt": "O teu ciclo nunca acaba: verifica a condição.", "en": "Your loop never ends: check the condition." },
+  "level.timedOut": { "pt": "O feitiço demora demasiado: verifica ciclos ou chamadas que nunca acabam.", "en": "The spell takes too long: check for loops or calls that never end." },
   "level.runtimeError": { "pt": "O código falhou ao executar:", "en": "The code failed while running:" },
   "level.rejected": { "pt": "Este código não é permitido:", "en": "This code is not allowed:" },
   "level.line": { "pt": "Linha", "en": "Line" },

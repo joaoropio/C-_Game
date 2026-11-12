@@ -72,7 +72,7 @@ public sealed class RunResultViewTests : BunitContext
     {
         var cut = RenderResult(new TimedOut());
 
-        Assert.Contains("O teu ciclo nunca acaba", cut.Markup);
+        Assert.Contains("O feitiço demora demasiado", cut.Markup);
     }
 
     [Fact]

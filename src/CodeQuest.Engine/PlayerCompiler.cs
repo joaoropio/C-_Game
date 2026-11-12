@@ -52,18 +52,32 @@ internal sealed partial class PlayerCompiler
         var validationTree = CSharpSyntaxTree.ParseText(request.ValidationSource, path: "validation.cs", encoding: Encoding.UTF8);
         var guardTree = CSharpSyntaxTree.ParseText(LoopGuardRewriter.GuardSource, path: "loopguard.cs", encoding: Encoding.UTF8);
         var usingsTree = CSharpSyntaxTree.ParseText(ImplicitUsingsSource, path: "usings.cs", encoding: Encoding.UTF8);
-        var playerTree = GuardPlayerCode(source, markerIndex, playerLineCount, [validationTree, guardTree, usingsTree]);
-        var compilation = CreateCompilation([playerTree, validationTree, guardTree, usingsTree]);
+        SyntaxTree[] otherTrees = [validationTree, guardTree, usingsTree];
 
-        var rejected = ForbiddenApiChecker.Check(
-            compilation.GetSemanticModel(playerTree),
-            playerTree.GetRoot(),
-            markerIndex,
-            playerLineCount);
+        // The player's own code is checked and diagnosed exactly as written, so that error
+        // lines and columns are never shifted by the guards that are injected afterwards.
+        var written = CSharpSyntaxTree.ParseText(source, path: "player.cs", encoding: Encoding.UTF8);
+        var writtenCompilation = CreateCompilation(otherTrees.Prepend(written));
+        var writtenModel = writtenCompilation.GetSemanticModel(written);
+
+        var rejected = ForbiddenApiChecker.Check(writtenModel, written.GetRoot(), markerIndex, playerLineCount);
         if (rejected is not null)
         {
             return new CompileOutcome(null, null, [], markerIndex, playerLineCount, rejected);
         }
+
+        var culture = CultureInfo.GetCultureInfo(language == Language.Pt ? "pt-BR" : "en");
+        var writtenErrors = writtenCompilation.GetDiagnostics()
+            .Where(d => d.Severity == DiagnosticSeverity.Error)
+            .Select(d => ToCompilationError(d, written, markerIndex, playerLineCount, culture))
+            .ToList();
+        if (writtenErrors.Count > 0)
+        {
+            return new CompileOutcome(null, null, writtenErrors, markerIndex, playerLineCount, null);
+        }
+
+        var playerTree = GuardPlayerCode(written, writtenModel, markerIndex, playerLineCount);
+        var compilation = CreateCompilation(otherTrees.Prepend(playerTree));
 
         using var assembly = new MemoryStream();
         using var pdb = new MemoryStream();
@@ -72,7 +86,6 @@ internal sealed partial class PlayerCompiler
             pdb,
             options: new EmitOptions(debugInformationFormat: DebugInformationFormat.PortablePdb));
 
-        var culture = CultureInfo.GetCultureInfo(language == Language.Pt ? "pt-BR" : "en");
         var errors = emitResult.Diagnostics
             .Where(d => d.Severity == DiagnosticSeverity.Error)
             .Select(d => ToCompilationError(d, playerTree, markerIndex, playerLineCount, culture))
@@ -90,23 +103,16 @@ internal sealed partial class PlayerCompiler
         new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
     private static SyntaxTree GuardPlayerCode(
-        string source,
+        SyntaxTree written,
+        SemanticModel writtenModel,
         int firstPlayerLine,
-        int playerLineCount,
-        IReadOnlyList<SyntaxTree> otherTrees)
+        int playerLineCount)
     {
-        var parsed = CSharpSyntaxTree.ParseText(source, path: "player.cs", encoding: Encoding.UTF8);
-        var lines = parsed.GetText().Lines;
+        var lines = written.GetText().Lines;
         var playerSpan = TextSpan.FromBounds(
             lines[firstPlayerLine].Start,
             lines[firstPlayerLine + playerLineCount - 1].End);
-
-        // The rewriter only needs the types of lambdas, and asks for them only when one has an
-        // expression body, so the extra compilation is bound lazily.
-        var rewriter = new LoopGuardRewriter(
-            playerSpan,
-            () => CreateCompilation(otherTrees.Prepend(parsed)).GetSemanticModel(parsed));
-        var guarded = rewriter.Visit(parsed.GetRoot());
+        var guarded = new LoopGuardRewriter(playerSpan, writtenModel).Visit(written.GetRoot());
         return CSharpSyntaxTree.ParseText(guarded.ToFullString(), path: "player.cs", encoding: Encoding.UTF8);
     }
 

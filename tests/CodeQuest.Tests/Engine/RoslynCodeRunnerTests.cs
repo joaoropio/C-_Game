@@ -219,14 +219,57 @@ public class RoslynCodeRunnerTests
     [InlineData("int F(int n)\n{\n    try { return F(n) + F(n); }\n    catch { return 0; }\n}\nreturn F(x);")]
     [InlineData("int F(int n)\n{\n    try { return F(n); }\n    finally { }\n}\nreturn F(x);")]
     [InlineData("try { return Twice(x); }\ncatch { return 0; }")]
-    public async Task Run_RecursionInsideTryCatch_DoesNotCrashAndStopsQuickly(string playerCode)
+    [InlineData("int F(int n) { try { return F(n); } catch { return F(n); } }\nreturn F(x);")]
+    [InlineData("try { return Twice(x); } catch { return Twice(x); }")]
+    [InlineData("int F(int n) { try { return F(n); } finally { F(n); } }\nreturn F(x);")]
+    [InlineData("try { return Twice(x); } catch { return x * 2; }")]
+    [InlineData("try { return Twice(x); } catch (Exception) { return x * 2; }")]
+    [InlineData("try { return Twice(x); } catch (Exception e) when (e.Message.Length > 0) { return x * 2; }")]
+    [InlineData("try { return Twice(x); } catch (InsufficientExecutionStackException) { return x * 2; }")]
+    [InlineData("try { return Twice(x); } finally { Console.WriteLine(x); }")]
+    public async Task Run_RecursionInsideTryCatch_RuntimeErrorAndNothingSwallowsIt(string playerCode) =>
+        await RunRecursive(playerCode);
+
+    [Fact]
+    public async Task Run_RecursionInsideTryCatch_NextRunStillWorks()
     {
-        var watch = System.Diagnostics.Stopwatch.StartNew();
+        await RunRecursive("try { return Twice(x); } catch { return Twice(x); }");
 
-        var result = await Run(playerCode);
+        Assert.IsType<Passed>(await Run("return x * 2;"));
+    }
 
-        Assert.IsNotType<Passed>(result);
-        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(5), $"took {watch.Elapsed}");
+    [Theory]
+    [InlineData("int zero = 0;\ntry { return x / zero; }\ncatch (DivideByZeroException) { return x * 2; }")]
+    [InlineData("int r = 0;\ntry { }\nfinally { r = x * 2; }\nreturn r;")]
+    [InlineData("try { return int.Parse(\"a\"); }\ncatch (FormatException e) when (e.Message.Length > 0) { return x * 2; }")]
+    public async Task Run_NormalTryCatchFinally_StillWorks(string playerCode) =>
+        Assert.IsType<Passed>(await Run(playerCode));
+
+    [Fact]
+    public async Task Run_NaiveFibonacci_Passes() =>
+        Assert.IsType<Passed>(await Run(
+            "int Fib(int k) { return k < 2 ? k : Fib(k - 1) + Fib(k - 2); }\nreturn Fib(25) == 75025 ? x * 2 : 0;"));
+
+    [Fact]
+    public async Task Run_MillionLambdaCalls_Passes() =>
+        Assert.IsType<Passed>(await Run(
+            "return Enumerable.Range(0, 1_000_000).Select(k => k % 2).Sum() == 500_000 ? x * 2 : 0;"));
+
+    [Fact]
+    public async Task Run_StackallocInPlayerCode_CodeRejected()
+    {
+        var result = Assert.IsType<CodeRejected>(await Run("Span<int> s = stackalloc int[10000000];\nreturn x;"));
+
+        Assert.Equal(1, result.Line);
+        Assert.Contains("stackalloc", result.Reason.En);
+    }
+
+    [Fact]
+    public async Task Run_RecursiveBlockBodiedLocalFunction_ReportsTheRecursiveCallLine()
+    {
+        var result = await RunRecursive("int F(int n)\n{\n    return F(n);\n}\nreturn F(x);");
+
+        Assert.Equal(3, result.Line);
     }
 
     [Fact]

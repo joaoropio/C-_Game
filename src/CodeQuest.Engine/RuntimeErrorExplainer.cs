@@ -21,12 +21,20 @@ internal static class RuntimeErrorExplainer
         _ => PlayerMessages.SpellFailedWhileRunning,
     };
 
-    private static int? PlayerLine(Exception exception, int playerLineOffset, int playerLineCount) =>
-        new StackTrace(exception, fNeedFileInfo: true)
-            .GetFrames()
+    // The frame that called __LoopGuard.Enter is the function being entered, positioned at its guard
+    // (often its opening brace); the useful line is the one that called that function.
+    private static int? PlayerLine(Exception exception, int playerLineOffset, int playerLineCount)
+    {
+        var frames = new StackTrace(exception, fNeedFileInfo: true).GetFrames();
+        return frames
+            .Where((_, index) => index == 0 || !IsGuardEntry(frames[index - 1]))
             .Where(frame => Path.GetFileName(frame.GetFileName()) == PlayerFileName)
             .Select(frame => frame.GetFileLineNumber() - playerLineOffset)
             .Where(line => line >= 1 && line <= playerLineCount)
             .Select(line => (int?)line)
             .FirstOrDefault();
+    }
+
+    private static bool IsGuardEntry(StackFrame frame) =>
+        frame.GetMethod() is { Name: "Enter", DeclaringType.Name: "__LoopGuard" };
 }

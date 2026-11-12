@@ -43,6 +43,18 @@ internal static class ForbiddenApiChecker
         var firstPlayerLine = playerLineOffset;
         var lastPlayerLine = playerLineOffset + playerLineCount - 1;
 
+        // stackalloc can exhaust the stack in a single frame, which no recursion guard can catch.
+        foreach (var allocation in root.DescendantNodes().Where(node =>
+            node is StackAllocArrayCreationExpressionSyntax or ImplicitStackAllocArrayCreationExpressionSyntax))
+        {
+            var line = allocation.GetLocation().GetLineSpan().StartLinePosition.Line;
+            if (line >= firstPlayerLine && line <= lastPlayerLine)
+            {
+                var playerLine = line + 1 - playerLineOffset;
+                return new CodeRejected(PlayerMessages.StackallocNotAllowed, playerLine);
+            }
+        }
+
         foreach (var name in root.DescendantNodes().OfType<SimpleNameSyntax>())
         {
             var line = name.GetLocation().GetLineSpan().StartLinePosition.Line;

@@ -44,6 +44,10 @@ internal static class PlayerMessages
         $"Esse feitiço é proibido nesta masmorra: \"{symbol}\" (linha {line}).",
         $"That spell is forbidden in this dungeon: \"{symbol}\" (line {line}).");
 
+    public static readonly LocalizedText StackallocNotAllowed = new(
+        "stackalloc não é permitido nesta masmorra.",
+        "stackalloc is not allowed in this dungeon.");
+
     public static readonly LocalizedText DividedByZero = new(
         "Dividiste por zero.",
         "You divided by zero.");

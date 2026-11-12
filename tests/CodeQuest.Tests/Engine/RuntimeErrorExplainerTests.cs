@@ -24,7 +24,7 @@ public class RuntimeErrorExplainerTests
         { new ArgumentOutOfRangeException(), "Tentaste usar uma posição que não existe.", "You tried to use a position that doesn't exist." },
         { new FormatException(), "O texto não tem o formato esperado.", "The text isn't in the expected format." },
         { new InsufficientExecutionStackException(), "O feitiço chama-se a si próprio sem parar (recursão infinita).", "The spell keeps calling itself and never stops (infinite recursion)." },
-        { new InvalidOperationException(),"O feitiço falhou durante a execução.", "The spell failed while running." },
+        { new InvalidOperationException(), "O feitiço falhou durante a execução.", "The spell failed while running." },
     };
 
     [Fact]

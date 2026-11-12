@@ -5,34 +5,48 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace CodeQuest.Engine;
 
-internal sealed class LoopGuardRewriter(TextSpan guardedSpan, Func<SemanticModel>? semanticModel = null) : CSharpSyntaxRewriter
+internal sealed class LoopGuardRewriter(TextSpan guardedSpan, SemanticModel model) : CSharpSyntaxRewriter
 {
     public const string GuardSource = """
         internal static class __LoopGuard
         {
             public const int Limit = 1_000_000;
+            public const int CallLimit = 10_000_000;
 
             private static int _ticks;
-            private static bool _exceeded;
+            private static int _calls;
+
+            // Once either limit or the stack is exhausted this stays true; the rewriter makes
+            // the player's catch and finally blocks inert from then on, so nothing swallows the failure.
+            public static bool Tripped { get; private set; }
 
             public static void Tick()
             {
-                if (_exceeded || ++_ticks > Limit)
+                if (Tripped || ++_ticks > Limit)
                 {
-                    _exceeded = true;
+                    Trip();
                     throw new System.TimeoutException();
                 }
             }
 
             public static void Enter()
             {
-                Tick();
-                global::System.Runtime.CompilerServices.RuntimeHelpers.EnsureSufficientExecutionStack();
+                if (Tripped || ++_calls > CallLimit)
+                {
+                    Trip();
+                    throw new System.TimeoutException();
+                }
+
+                if (!global::System.Runtime.CompilerServices.RuntimeHelpers.TryEnsureSufficientExecutionStack())
+                {
+                    Trip();
+                    throw new System.InsufficientExecutionStackException();
+                }
             }
+
+            private static void Trip() => Tripped = true;
         }
         """;
-
-    private readonly Lazy<SemanticModel?> _model = new(() => semanticModel?.Invoke());
 
     private static readonly ExpressionStatementSyntax TickStatement = (ExpressionStatementSyntax)SyntaxFactory
         .ParseStatement("global::__LoopGuard.Tick();")
@@ -53,6 +67,56 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan, Func<SemanticModel
 
         var first = node.Statements.IndexOf(statement => guardedSpan.Contains(statement.SpanStart));
         return first < 0 ? visited : WithEnterBefore(visited, first);
+    }
+
+    // Player handlers run on top of the stack that already failed, so once the guard has tripped
+    // they must neither catch the exception nor run: a catch gets a filter, a finally body a condition.
+    public override SyntaxNode? VisitCatchClause(CatchClauseSyntax node)
+    {
+        var visited = (CatchClauseSyntax)base.VisitCatchClause(node)!;
+        if (!guardedSpan.Contains(node.SpanStart))
+        {
+            return visited;
+        }
+
+        var notTripped = SyntaxFactory.ParseExpression("!global::__LoopGuard.Tripped");
+        var previous = visited.Declaration?.CloseParenToken ?? visited.CatchKeyword;
+        var separator = previous.TrailingTrivia.Count == 0 ? SyntaxFactory.TriviaList(SyntaxFactory.Space) : default;
+        var filter = visited.Filter is { } existing
+            ? existing.WithFilterExpression(SyntaxFactory.BinaryExpression(
+                SyntaxKind.LogicalAndExpression,
+                notTripped.WithTrailingTrivia(SyntaxFactory.Space),
+                SyntaxFactory.Token(SyntaxKind.AmpersandAmpersandToken).WithTrailingTrivia(SyntaxFactory.Space),
+                SyntaxFactory.ParenthesizedExpression(existing.FilterExpression)))
+            : SyntaxFactory.CatchFilterClause(
+                SyntaxFactory.Token(SyntaxKind.WhenKeyword).WithLeadingTrivia(separator).WithTrailingTrivia(SyntaxFactory.Space),
+                SyntaxFactory.Token(SyntaxKind.OpenParenToken),
+                notTripped,
+                SyntaxFactory.Token(SyntaxKind.CloseParenToken).WithTrailingTrivia(SyntaxFactory.Space));
+        return visited.WithFilter(filter);
+    }
+
+    public override SyntaxNode? VisitFinallyClause(FinallyClauseSyntax node)
+    {
+        var visited = (FinallyClauseSyntax)base.VisitFinallyClause(node)!;
+        if (!guardedSpan.Contains(node.SpanStart))
+        {
+            return visited;
+        }
+
+        var guarded = SyntaxFactory.IfStatement(
+            SyntaxFactory.Token(SyntaxKind.IfKeyword).WithTrailingTrivia(SyntaxFactory.Space),
+            SyntaxFactory.Token(SyntaxKind.OpenParenToken),
+            SyntaxFactory.ParseExpression("!global::__LoopGuard.Tripped"),
+            SyntaxFactory.Token(SyntaxKind.CloseParenToken).WithTrailingTrivia(SyntaxFactory.Space),
+            visited.Block.WithoutTrailingTrivia(),
+            null);
+        return visited.WithBlock(SyntaxFactory.Block(
+            SyntaxFactory.Token(SyntaxKind.OpenBraceToken).WithTrailingTrivia(SyntaxFactory.Space),
+            SyntaxFactory.SingletonList<StatementSyntax>(guarded),
+            SyntaxFactory.Token(SyntaxKind.CloseBraceToken)
+                .WithLeadingTrivia(SyntaxFactory.Space)
+                .WithTrailingTrivia(visited.Block.GetTrailingTrivia())));
     }
 
     public override SyntaxNode? VisitLocalFunctionStatement(LocalFunctionStatementSyntax node)
@@ -105,12 +169,7 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan, Func<SemanticModel
             return (T)visited.WithBlock(WithEnterBefore(block, 0));
         }
 
-        // Without a semantic model the delegate's return type is unknown, so the lambda stays as written.
-        if (ReturnsValue(original) is not { } returnsValue)
-        {
-            return visited;
-        }
-
+        var returnsValue = model.GetSymbolInfo(original).Symbol is not IMethodSymbol { ReturnsVoid: true };
         var guarded = GuardedBlock(default, visited.ExpressionBody!, default, returnsValue);
         return (T)visited.WithExpressionBody(null).WithBlock(guarded);
     }
@@ -119,27 +178,11 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan, Func<SemanticModel
     private bool IsExpressionTree(LambdaExpressionSyntax lambda) =>
         guardedSpan.Contains(lambda.SpanStart)
         && lambda.ExpressionBody is not null
-        && _model.Value?.GetTypeInfo(lambda).ConvertedType?.OriginalDefinition.ToDisplayString()
+        && model.GetTypeInfo(lambda).ConvertedType?.OriginalDefinition.ToDisplayString()
             == "System.Linq.Expressions.Expression<TDelegate>";
 
     private static bool ReturnsValue(LocalFunctionStatementSyntax function) =>
-        !(function.ReturnType is PredefinedTypeSyntax { Keyword.RawKind: (int)SyntaxKind.VoidKeyword }
-            || (function.Modifiers.Any(SyntaxKind.AsyncKeyword) && IsNonGenericTask(function.ReturnType)));
-
-    private static bool IsNonGenericTask(TypeSyntax type) =>
-        (type is QualifiedNameSyntax qualified ? qualified.Right : type)
-            is IdentifierNameSyntax { Identifier.ValueText: "Task" or "ValueTask" };
-
-    private bool? ReturnsValue(LambdaExpressionSyntax lambda)
-    {
-        if (_model.Value?.GetSymbolInfo(lambda).Symbol is not IMethodSymbol method)
-        {
-            return null;
-        }
-
-        return !(method.ReturnsVoid
-            || (method.IsAsync && method.ReturnType is INamedTypeSymbol { Arity: 0, Name: "Task" or "ValueTask" }));
-    }
+        function.ReturnType is not PredefinedTypeSyntax { Keyword.RawKind: (int)SyntaxKind.VoidKeyword };
 
     private static BlockSyntax GuardedBlock(
         SyntaxToken arrow,

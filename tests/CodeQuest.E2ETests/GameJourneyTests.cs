@@ -66,7 +66,7 @@ public class GameJourneyTests(GameServerFixture server)
         await TypeCodeAsync(page, Level1Solution + "while (true) { }\n");
         await RunAsync(page);
 
-        await Expect(page.Locator(".result")).ToContainTextAsync("O teu ciclo nunca acaba", new() { Timeout = Timeout });
+        await Expect(page.Locator(".result")).ToContainTextAsync("O feitiço demora demasiado", new() { Timeout = Timeout });
     }
 
     [Fact]

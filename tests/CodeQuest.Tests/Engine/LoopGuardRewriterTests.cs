@@ -8,12 +8,36 @@ namespace CodeQuest.Tests.Engine;
 public class LoopGuardRewriterTests
 {
     private const string Tick = "global::__LoopGuard.Tick();";
+    private const string Enter = "global::__LoopGuard.Enter();";
+    private const string NotTripped = "!global::__LoopGuard.Tripped";
+
+    private const int FirstPlayerLine = 6;
+
+    private const string PlayerPrefix = "class C\n{\n    static int M(int n)\n    {\n";
+    private const string PlayerSuffix = "\n    }\n}\n";
+
+    private static readonly Lazy<IReadOnlyList<MetadataReference>> References = new(() =>
+        ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+            .Split(Path.PathSeparator)
+            .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
+            .ToList());
+
+    private static SyntaxNode RewriteSpan(SyntaxTree tree, TextSpan span)
+    {
+        var compilation = CSharpCompilation.Create(
+            "RewriterTests",
+            [tree, CSharpSyntaxTree.ParseText(LoopGuardRewriter.GuardSource)],
+            References.Value);
+        return new LoopGuardRewriter(span, compilation.GetSemanticModel(tree)).Visit(tree.GetRoot())!;
+    }
 
     private static SyntaxNode Rewrite(string code)
     {
-        var root = CSharpSyntaxTree.ParseText(code).GetRoot();
-        return new LoopGuardRewriter(root.FullSpan).Visit(root);
+        var tree = CSharpSyntaxTree.ParseText(code);
+        return RewriteSpan(tree, tree.GetRoot().FullSpan);
     }
+
+    private static string Player(string playerCode) => PlayerPrefix + playerCode + PlayerSuffix;
 
     private static int TickCount(SyntaxNode node) => node.ToFullString().Split(Tick).Length - 1;
 
@@ -114,44 +138,23 @@ public class LoopGuardRewriterTests
     [Fact]
     public void Rewrite_LoopOutsidePlayerSpan_IsUntouched()
     {
-        var root = CSharpSyntaxTree.ParseText("while (a) { }\nwhile (b) { }").GetRoot();
-        var secondLine = root.GetText().Lines[1].Span;
+        var tree = CSharpSyntaxTree.ParseText("while (a) { }\nwhile (b) { }");
 
-        var rewritten = new LoopGuardRewriter(secondLine).Visit(root);
+        var rewritten = RewriteSpan(tree, tree.GetText().Lines[1].Span);
 
         Assert.Equal(1, TickCount(rewritten));
         Assert.StartsWith("while (a) { }", rewritten.ToFullString());
     }
 
-    private const string Enter = "global::__LoopGuard.Enter();";
-
-    private const int FirstPlayerLine = 6;
-
-    private const string PlayerPrefix = "class C\n{\n    static int M(int n)\n    {\n";
-    private const string PlayerSuffix = "\n    }\n}\n";
-
-    private static readonly Lazy<IReadOnlyList<MetadataReference>> References = new(() =>
-        ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
-            .Split(Path.PathSeparator)
-            .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
-            .ToList());
-
-    private static string Player(string playerCode) => PlayerPrefix + playerCode + PlayerSuffix;
-
     // The player code sits on the lines after the template's opening brace, like a real level.
-    private static SyntaxNode RewritePlayer(string playerCode, bool withModel = true)
+    private static SyntaxNode RewritePlayer(string playerCode)
     {
         var tree = CSharpSyntaxTree.ParseText(
             "using System;\nusing System.Linq;\n" + Player(playerCode));
         var lines = tree.GetText().Lines;
         var playerLines = playerCode.Split('\n').Length;
         var span = TextSpan.FromBounds(lines[FirstPlayerLine].Start, lines[FirstPlayerLine + playerLines - 1].End);
-        var compilation = CSharpCompilation.Create(
-            "RewriterTests",
-            [tree, CSharpSyntaxTree.ParseText(LoopGuardRewriter.GuardSource)],
-            References.Value);
-        Func<SemanticModel>? model = withModel ? () => compilation.GetSemanticModel(tree) : null;
-        return new LoopGuardRewriter(span, model).Visit(tree.GetRoot())!;
+        return RewriteSpan(tree, span);
     }
 
     private static string EnterCalls(string playerCode) => RewritePlayer(playerCode).ToFullString();
@@ -186,14 +189,15 @@ public class LoopGuardRewriterTests
         Assert.Equal("    int b = a + ".Length, position.Character);
         Assert.Equal(("using System;\nusing System.Linq;\n" + Player(code)).Split('\n').Length, text.Split('\n').Length);
     }
+
     [Fact]
     public void Rewrite_TemplateMethodsOutsidePlayerSpan_AreUntouched()
     {
         const string code = "class C\n{\n    static int A(int n) { return A(n); }\n    static int B(int n)\n    {\nreturn B(n);\n    }\n    static Func<int, int> L = k => L(k);\n}";
-        var root = CSharpSyntaxTree.ParseText(code).GetRoot();
-        var span = root.GetText().Lines[5].Span;
+        var tree = CSharpSyntaxTree.ParseText(code);
+        var span = tree.GetText().Lines[5].Span;
 
-        var text = new LoopGuardRewriter(span).Visit(root)!.ToFullString();
+        var text = RewriteSpan(tree, span).ToFullString();
 
         Assert.Equal(1, text.Split(Enter).Length - 1);
         Assert.Contains("static int A(int n) { return A(n); }", text);
@@ -307,14 +311,6 @@ public class LoopGuardRewriterTests
     }
 
     [Fact]
-    public void Rewrite_ExpressionBodiedLambdaWithoutSemanticModel_IsLeftAlone()
-    {
-        var text = RewritePlayer("Func<int, int> f = k => k + 1;\nreturn f(n);", withModel: false).ToFullString();
-
-        Assert.Contains("k => k + 1;", text);
-    }
-
-    [Fact]
     public void Rewrite_MultiLineExpressionBody_PreservesLineNumbers()
     {
         const string code = "Func<int, int> f =\n    k =>\n        k +\n        undefined;\nreturn f(n);";
@@ -326,5 +322,64 @@ public class LoopGuardRewriterTests
         var token = tree.GetRoot().DescendantTokens().Single(t => t.ValueText == "undefined");
         Assert.Equal(FirstPlayerLine + 3, token.GetLocation().GetLineSpan().StartLinePosition.Line);
         Assert.Equal(("using System;\nusing System.Linq;\n" + Player(code)).Split('\n').Length, text.Split('\n').Length);
+    }
+
+    [Fact]
+    public void Rewrite_CatchWithoutFilter_GetsTrippedFilter()
+    {
+        var text = EnterCalls("try { return n; } catch { return 0; }");
+
+        Assert.Contains("catch when (" + NotTripped + ") { return 0; }", text);
+    }
+
+    [Fact]
+    public void Rewrite_CatchWithDeclaration_GetsTrippedFilter()
+    {
+        var text = EnterCalls("try { return n; } catch (Exception e) { return 0; }");
+
+        Assert.Contains("catch (Exception e) when (" + NotTripped + ") { return 0; }", text);
+    }
+
+    [Fact]
+    public void Rewrite_CatchWithFilter_CombinesBothConditions()
+    {
+        var text = EnterCalls("try { return n; } catch (Exception e) when (e.Message.Length > 0) { return 0; }");
+
+        Assert.Contains("catch (Exception e) when (" + NotTripped + " && (e.Message.Length > 0)) { return 0; }", text);
+    }
+
+    [Fact]
+    public void Rewrite_FinallyBody_RunsOnlyWhenNotTripped()
+    {
+        var text = EnterCalls("try { return n; } finally { n++; }");
+
+        Assert.Contains("finally { if (" + NotTripped + ") { n++; } }", text);
+    }
+
+    [Fact]
+    public void Rewrite_MultiLineHandlers_PreserveLineNumbers()
+    {
+        const string code = "try\n{\n    n++;\n}\ncatch (Exception e)\n    when (e.Message.Length > 0)\n{\n    int a = undefined;\n}\nfinally\n{\n    int b = undefined;\n}\nreturn n;";
+
+        var text = RewritePlayer(code).ToFullString();
+
+        var tree = CSharpSyntaxTree.ParseText(text);
+        Assert.Empty(tree.GetDiagnostics());
+        var lines = tree.GetRoot().DescendantTokens().Where(t => t.ValueText == "undefined")
+            .Select(t => t.GetLocation().GetLineSpan().StartLinePosition.Line);
+        Assert.Equal([FirstPlayerLine + 7, FirstPlayerLine + 11], lines);
+        Assert.Equal(("using System;\nusing System.Linq;\n" + Player(code)).Split('\n').Length, text.Split('\n').Length);
+    }
+
+    [Fact]
+    public void Rewrite_HandlersOutsidePlayerSpan_AreUntouched()
+    {
+        const string code = "class C\n{\n    static int A(int n)\n    {\n        try { return n; } catch { return 0; } finally { n++; }\n    }\n    static int B(int n)\n    {\nreturn n;\n    }\n}";
+        var tree = CSharpSyntaxTree.ParseText(code);
+        var span = tree.GetText().Lines[8].Span;
+
+        var text = RewriteSpan(tree, span).ToFullString();
+
+        Assert.Contains("try { return n; } catch { return 0; } finally { n++; }", text);
     }
 }

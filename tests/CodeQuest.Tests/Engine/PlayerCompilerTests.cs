@@ -211,6 +211,21 @@ public class PlayerCompilerTests
     }
 
     [Theory]
+    [InlineData("Func<int, int> f = k => k + undefined;\nreturn f(1);", 1, 29)]
+    [InlineData("int F(int k) => k + undefined;\nreturn F(1);", 1, 21)]
+    [InlineData("int F(int k) { return k + undefined; }\nreturn F(1);", 1, 27)]
+    [InlineData("while (true) { int a = undefined; }", 1, 24)]
+    [InlineData("int a = 1;\nfor (int i = 0; i < 3; i++) a += undefined;", 2, 34)]
+    [InlineData("try { return 1; } catch (Exception e) { int a = undefined; }", 1, 49)]
+    public void Compile_ErrorsInsideGuardedConstructs_KeepOriginalLineAndColumn(string playerCode, int line, int column)
+    {
+        var error = Assert.Single(_compiler.Compile(Request(playerCode), Language.En).Errors);
+
+        Assert.Equal(line, error.Line);
+        Assert.Equal(column, error.Column);
+    }
+
+    [Theory]
     [InlineData("int F(int n) => F(n);\nreturn F(1);")]
     [InlineData("int F(int n) { return F(n); }\nreturn F(1);")]
     [InlineData("Func<int, int> f = null;\nf = n => f(n);\nreturn f(1);")]
