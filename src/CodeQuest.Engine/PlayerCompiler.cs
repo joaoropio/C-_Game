@@ -6,6 +6,7 @@ using CodeQuest.Core.Levels;
 using CodeQuest.Core.Running;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Text;
 
@@ -33,6 +34,7 @@ internal sealed partial class PlayerCompiler
     private const string UnassignedVariableErrorId = "CS0165";
     private const string CannotConvertErrorId = "CS0029";
     private const string CannotConvertArgumentErrorId = "CS1503";
+    private const string CannotConvertImplicitlyErrorId = "CS0266";
 
     private static readonly CultureInfo EnglishCulture = CultureInfo.GetCultureInfo("en");
 
@@ -123,7 +125,8 @@ internal sealed partial class PlayerCompiler
         MissingNameErrorId => PlayerMessages.MissingVariable(SpanText(diagnostic)),
         MissingReturnErrorId => PlayerMessages.MissingReturn,
         UnassignedVariableErrorId => PlayerMessages.UnassignedVariable(SpanText(diagnostic)),
-        CannotConvertErrorId or CannotConvertArgumentErrorId => ExplainTypeMismatch(diagnostic),
+        CannotConvertErrorId or CannotConvertArgumentErrorId or CannotConvertImplicitlyErrorId =>
+            ExplainTypeMismatch(diagnostic),
         _ => null,
     };
 
@@ -138,8 +141,23 @@ internal sealed partial class PlayerCompiler
         }
 
         var spanText = SpanText(diagnostic);
-        var name = IsIdentifier(spanText) ? spanText : null;
+        var name = IsIdentifier(spanText) ? spanText : AssignedVariable(diagnostic);
         return PlayerMessages.TypeMismatch(name, types[0].Groups[1].Value, types[1].Groups[1].Value);
+    }
+
+    // For `int health = 50.5;` the error sits on the literal, so the variable
+    // receiving the value is looked up from the surrounding declaration or assignment.
+    private static string? AssignedVariable(Diagnostic diagnostic)
+    {
+        var value = diagnostic.Location.SourceTree!.GetRoot().FindNode(diagnostic.Location.SourceSpan);
+        var name = value.Parent switch
+        {
+            EqualsValueClauseSyntax { Parent: VariableDeclaratorSyntax declarator } => declarator.Identifier.Text,
+            AssignmentExpressionSyntax { Left: IdentifierNameSyntax left } assignment when assignment.Right == value =>
+                left.Identifier.Text,
+            _ => null,
+        };
+        return name is not null && IsIdentifier(name) ? name : null;
     }
 
     private static bool IsIdentifier(string text) =>

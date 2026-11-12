@@ -78,6 +78,29 @@ public class PlayerCompilerTests
     }
 
     [Fact]
+    public void Compile_DoubleAssignedToInt_ExplainsTypeMismatch()
+    {
+        var error = Assert.Single(_compiler.Compile(Request("int health = 50.5;"), Language.En).Errors);
+
+        foreach (var text in new[] { error.Explanation!.Pt, error.Explanation.En })
+        {
+            Assert.Contains("health", text);
+            Assert.Contains("double", text);
+            Assert.Contains("int", text);
+        }
+
+        Assert.Contains("is of type double", error.Explanation.En);
+    }
+
+    [Fact]
+    public void Compile_DoubleAssignedToExistingInt_NamesTheVariable()
+    {
+        var error = Assert.Single(_compiler.Compile(Request("int health = 1;\nhealth = 50.5;"), Language.En).Errors);
+
+        Assert.Contains("\"health\"", error.Explanation!.En);
+    }
+
+    [Fact]
     public void Compile_UnexplainedErrorOutsidePlayerCode_GetsGenericExplanation()
     {
         var template = Template.Replace("return 0;", "return 0; int;");

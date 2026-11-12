@@ -123,6 +123,21 @@ public class LevelSolutionTests
     }
 
     [Fact]
+    public async Task Level1_DecimalHealthLiteral_ExplainsTypeMismatch()
+    {
+        var explanation = await ExplanationFor(
+            "01-variables",
+            "string name = \"Merlin\";\nint health = 50.5;\ndouble mana = 50.5;\nbool isAlive = true;");
+
+        Assert.Contains("\"health\"", explanation.Pt);
+        Assert.Contains("double", explanation.Pt);
+        Assert.Contains("int", explanation.Pt);
+        Assert.Contains("\"health\"", explanation.En);
+        Assert.Contains("double", explanation.En);
+        Assert.Contains("int", explanation.En);
+    }
+
+    [Fact]
     public async Task Level1_UnassignedHealth_ExplainsUnassignedVariable()
     {
         var explanation = await ExplanationFor(
