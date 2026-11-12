@@ -1,7 +1,54 @@
 ﻿@page "/"
+@implements IDisposable
+@inject GameContent Content
+@inject UiText Ui
+@inject ProgressStore Store
 
-<PageTitle>Home</PageTitle>
+<PageTitle>@Ui["map.title"]</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>@Ui["map.title"]</h1>
 
-Welcome to your new app.
+@if (Store.Current is { } progress)
+{
+    <ol class="map">
+        @foreach (var level in Content.Levels)
+        {
+            var unlocked = progress.IsUnlocked(Content.Levels, level.Id);
+            var title = level.Title.Get(Ui.Language);
+            <li class="room @(unlocked ? "" : "locked")">
+                <span class="room-number">@level.World-@level.Number</span>
+                @if (unlocked)
+                {
+                    <a class="room-title" href="/level/@level.Id">@title</a>
+                    <span class="stars" role="img" aria-label="@progress.StarsFor(level.Id)/3">
+                        @for (var star = 1; star <= 3; star++)
+                        {
+                            <span class="star @(star <= progress.StarsFor(level.Id) ? "filled" : "")" aria-hidden="true">★</span>
+                        }
+                    </span>
+                }
+                else
+                {
+                    <span class="room-title">@title</span>
+                    <span class="lock" role="img" aria-label="@Ui["map.locked"]" title="@Ui["map.locked"]">🔒</span>
+                }
+            </li>
+        }
+    </ol>
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        Ui.Changed += OnChanged;
+        Store.Changed += OnChanged;
+    }
+
+    public void Dispose()
+    {
+        Ui.Changed -= OnChanged;
+        Store.Changed -= OnChanged;
+    }
+
+    private void OnChanged() => _ = InvokeAsync(StateHasChanged);
+}

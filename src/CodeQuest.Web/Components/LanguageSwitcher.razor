@@ -1,0 +1,17 @@
+﻿@implements IDisposable
+@inject UiText Ui
+
+<div class="language-switcher" role="group" aria-label="@Ui["language.label"]">
+    <button type="button" aria-pressed="@IsPressed(Language.Pt)" @onclick="() => Ui.SetLanguageAsync(Language.Pt)">PT</button>
+    <button type="button" aria-pressed="@IsPressed(Language.En)" @onclick="() => Ui.SetLanguageAsync(Language.En)">EN</button>
+</div>
+
+@code {
+    protected override void OnInitialized() => Ui.Changed += OnChanged;
+
+    public void Dispose() => Ui.Changed -= OnChanged;
+
+    private string IsPressed(Language language) => (Ui.Language == language).ToString().ToLowerInvariant();
+
+    private void OnChanged() => _ = InvokeAsync(StateHasChanged);
+}
