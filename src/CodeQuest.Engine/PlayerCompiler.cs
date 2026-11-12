@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Text;
 using CodeQuest.Core;
 using CodeQuest.Core.Levels;

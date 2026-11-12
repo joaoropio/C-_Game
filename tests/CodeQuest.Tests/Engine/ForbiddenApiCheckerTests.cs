@@ -72,6 +72,22 @@ public class ForbiddenApiCheckerTests
         AssertRejected("System.Diagnostics.Process.Start(\"x\");", "System.Diagnostics");
 
     [Fact]
+    public void Check_ArrayList_Rejected() => AssertRejected("new System.Collections.ArrayList();", "System.Collections.ArrayList");
+
+    [Fact]
+    public void Check_NonGenericIEnumerable_Rejected() =>
+        AssertRejected("System.Collections.IEnumerable e = new int[0];", "System.Collections.IEnumerable");
+
+    [Fact]
+    public void Check_TimeProvider_Rejected() => AssertRejected("var t = TimeProvider.System;", "System.TimeProvider");
+
+    [Fact]
+    public void Check_AsParallel_Rejected() => AssertRejected("new[] { 1 }.AsParallel();", "AsParallel");
+
+    [Fact]
+    public void Check_ConsoleSetOut_Rejected() => AssertRejected("Console.SetOut(null!);", "System.Console.SetOut");
+
+    [Fact]
     public void Check_Dynamic_Rejected() => AssertRejected("dynamic d = 1;", "dynamic");
 
     [Fact]

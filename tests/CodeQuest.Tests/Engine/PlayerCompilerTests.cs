@@ -1,4 +1,4 @@
-﻿using CodeQuest.Core;
+using CodeQuest.Core;
 using CodeQuest.Core.Running;
 using CodeQuest.Engine;
 
@@ -123,6 +123,23 @@ public class PlayerCompilerTests
         var outcome = _compiler.Compile(Request("a: goto a;"), Language.En);
 
         Assert.IsType<TimeoutException>(RunCast(outcome));
+    }
+
+    [Fact]
+    public void Compile_GotoCaseLoop_ThrowsTimeoutWhenRun()
+    {
+        var outcome = _compiler.Compile(Request("switch (1) { case 1: goto case 1; }"), Language.En);
+
+        Assert.IsType<TimeoutException>(RunCast(outcome));
+    }
+
+    [Fact]
+    public void Compile_LabeledDeclaration_StillCompiles()
+    {
+        var outcome = _compiler.Compile(Request("a: int x = 1;\nreturn x;"), Language.En);
+
+        Assert.Empty(outcome.Errors);
+        Assert.NotNull(outcome.Assembly);
     }
 
     [Fact]

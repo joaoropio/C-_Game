@@ -1,4 +1,4 @@
-﻿using CodeQuest.Engine;
+using CodeQuest.Engine;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
@@ -65,13 +65,31 @@ public class LoopGuardRewriterTests
     }
 
     [Fact]
-    public void Rewrite_LabeledStatement_InsertsTickAndKeepsLabel()
+    public void Rewrite_Goto_InsertsTickBeforeJump()
     {
         var rewritten = Rewrite("a: goto a;");
 
         Assert.Equal(1, TickCount(rewritten));
-        Assert.Contains("a: { " + Tick, rewritten.ToFullString());
+        Assert.Contains("a: { " + Tick + " goto a; }", rewritten.ToFullString());
         Assert.Empty(rewritten.GetDiagnostics());
+    }
+
+    [Fact]
+    public void Rewrite_GotoCaseAndDefault_InsertTick()
+    {
+        var rewritten = Rewrite("switch (1) { case 1: goto case 2; case 2: goto default; default: break; }");
+
+        Assert.Equal(2, TickCount(rewritten));
+        Assert.Empty(rewritten.GetDiagnostics());
+    }
+
+    [Fact]
+    public void Rewrite_LabeledDeclaration_StaysInScope()
+    {
+        var rewritten = Rewrite("{ a: int x = 1; x++; }");
+
+        Assert.Equal(0, TickCount(rewritten));
+        Assert.Equal("{ a: int x = 1; x++; }", rewritten.ToFullString());
     }
 
     [Fact]

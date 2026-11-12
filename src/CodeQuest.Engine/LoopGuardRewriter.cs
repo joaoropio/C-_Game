@@ -1,4 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
@@ -45,20 +45,23 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan) : CSharpSyntaxRewr
     public override SyntaxNode? VisitForEachVariableStatement(ForEachVariableStatementSyntax node) =>
         node.WithStatement(Guard(node, (StatementSyntax)Visit(node.Statement)));
 
-    public override SyntaxNode? VisitLabeledStatement(LabeledStatementSyntax node) =>
-        node.WithStatement(Guard(node, (StatementSyntax)Visit(node.Statement)));
+    public override SyntaxNode? VisitGotoStatement(GotoStatementSyntax node) =>
+        guardedSpan.Contains(node.SpanStart) ? WithTick(node) : node;
 
-    private StatementSyntax Guard(StatementSyntax guarded, StatementSyntax rewrittenBody)
+    private StatementSyntax Guard(StatementSyntax loop, StatementSyntax rewrittenBody)
     {
-        if (!guardedSpan.Contains(guarded.SpanStart))
+        if (!guardedSpan.Contains(loop.SpanStart))
         {
             return rewrittenBody;
         }
 
-        return rewrittenBody is BlockSyntax block && guarded is not LabeledStatementSyntax
+        return rewrittenBody is BlockSyntax block
             ? block.WithStatements(block.Statements.Insert(0, TickStatement))
-            : SyntaxFactory.Block(TickStatement, rewrittenBody)
-                .WithOpenBraceToken(SyntaxFactory.Token(SyntaxKind.OpenBraceToken).WithTrailingTrivia(SyntaxFactory.Space))
-                .WithCloseBraceToken(SyntaxFactory.Token(SyntaxKind.CloseBraceToken).WithLeadingTrivia(SyntaxFactory.Space));
+            : WithTick(rewrittenBody);
     }
+
+    private static BlockSyntax WithTick(StatementSyntax statement) =>
+        SyntaxFactory.Block(TickStatement, statement)
+            .WithOpenBraceToken(SyntaxFactory.Token(SyntaxKind.OpenBraceToken).WithTrailingTrivia(SyntaxFactory.Space))
+            .WithCloseBraceToken(SyntaxFactory.Token(SyntaxKind.CloseBraceToken).WithLeadingTrivia(SyntaxFactory.Space));
 }

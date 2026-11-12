@@ -22,6 +22,8 @@ internal static class ForbiddenApiChecker
         "System.Activator",
         "System.Type",
         "System.Delegate",
+        "System.TimeProvider",
+        "System.Linq.ParallelEnumerable",
     ];
 
     private static readonly string[] ForbiddenConsoleMembers =
@@ -31,6 +33,9 @@ internal static class ForbiddenApiChecker
         "Read",
         "In",
         "OpenStandardInput",
+        "SetIn",
+        "SetOut",
+        "SetError",
     ];
 
     public static CodeRejected? Check(SemanticModel model, SyntaxNode root, int playerLineOffset, int playerLineCount)
@@ -38,7 +43,7 @@ internal static class ForbiddenApiChecker
         var firstPlayerLine = playerLineOffset;
         var lastPlayerLine = playerLineOffset + playerLineCount - 1;
 
-        foreach (var name in root.DescendantNodes().OfType<IdentifierNameSyntax>())
+        foreach (var name in root.DescendantNodes().OfType<SimpleNameSyntax>())
         {
             var line = name.GetLocation().GetLineSpan().StartLinePosition.Line;
             if (line < firstPlayerLine || line > lastPlayerLine)
@@ -71,13 +76,13 @@ internal static class ForbiddenApiChecker
 
         if (symbol is INamespaceSymbol ns)
         {
-            return IsAllowedNamespace(ns);
+            return IsAllowedNamespace(ns, allowPrefixes: true);
         }
 
-        return IsAllowedNamespace(symbol.ContainingNamespace) && !IsForbiddenMember(symbol);
+        return IsAllowedNamespace(symbol.ContainingNamespace, allowPrefixes: false) && !IsForbiddenMember(symbol);
     }
 
-    private static bool IsAllowedNamespace(INamespaceSymbol? ns)
+    private static bool IsAllowedNamespace(INamespaceSymbol? ns, bool allowPrefixes)
     {
         if (ns is null || ns.IsGlobalNamespace)
         {
@@ -85,7 +90,8 @@ internal static class ForbiddenApiChecker
         }
 
         var name = ns.ToDisplayString();
-        return AllowedNamespaces.Any(allowed => allowed == name || allowed.StartsWith(name + ".", StringComparison.Ordinal));
+        return AllowedNamespaces.Any(allowed => allowed == name
+            || (allowPrefixes && allowed.StartsWith(name + ".", StringComparison.Ordinal)));
     }
 
     private static bool IsForbiddenMember(ISymbol symbol)
