@@ -19,4 +19,8 @@ internal static class PlayerMessages
     public static LocalizedText MissingVariable(string name) => new(
         $"Falta declarar a variável `{name}`.",
         $"You still need to declare the variable `{name}`.");
+
+    public static LocalizedText ForbiddenSpell(string symbol, int line) => new(
+        $"Esse feitiço é proibido nesta masmorra: `{symbol}` (linha {line}).",
+        $"That spell is forbidden in this dungeon: `{symbol}` (line {line}).");
 }

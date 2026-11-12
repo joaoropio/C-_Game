@@ -89,6 +89,27 @@ public class PlayerCompilerTests
     }
 
     [Fact]
+    public void Compile_ForbiddenApi_ReturnsRejectionAndNoAssembly()
+    {
+        var outcome = _compiler.Compile(Request("int a = 1;\nSystem.Environment.Exit(a);"), Language.En);
+
+        Assert.Null(outcome.Assembly);
+        Assert.Empty(outcome.Errors);
+        Assert.NotNull(outcome.Rejected);
+        Assert.Equal(2, outcome.Rejected.Line);
+    }
+
+    [Fact]
+    public void Compile_InfiniteLoop_ThrowsTimeoutWhenRun()
+    {
+        var outcome = _compiler.Compile(Request("while (true) { }"), Language.En);
+
+        var cast = System.Reflection.Assembly.Load(outcome.Assembly!).GetType("Spell")!.GetMethod("Cast")!;
+        var thrown = Assert.Throws<System.Reflection.TargetInvocationException>(() => cast.Invoke(null, null));
+        Assert.IsType<TimeoutException>(thrown.InnerException);
+    }
+
+    [Fact]
     public void Compile_OnlyErrorsAreReported()
     {
         var outcome = _compiler.Compile(Request("int unused = 1;"), Language.En);

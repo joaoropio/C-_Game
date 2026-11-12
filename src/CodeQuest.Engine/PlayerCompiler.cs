@@ -6,6 +6,7 @@ using CodeQuest.Core.Running;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
+using Microsoft.CodeAnalysis.Text;
 
 namespace CodeQuest.Engine;
 
@@ -13,7 +14,8 @@ internal sealed record CompileOutcome(
     byte[]? Assembly,
     byte[]? Pdb,
     IReadOnlyList<CompilationError> Errors,
-    int PlayerLineOffset);
+    int PlayerLineOffset,
+    CodeRejected? Rejected);
 
 internal sealed class PlayerCompiler
 {
@@ -30,13 +32,24 @@ internal sealed class PlayerCompiler
             "\n",
             templateLines[..markerIndex].Append(request.PlayerCode).Concat(templateLines[(markerIndex + 1)..]));
 
-        var playerTree = CSharpSyntaxTree.ParseText(source, path: "player.cs", encoding: Encoding.UTF8);
+        var playerTree = GuardLoops(source, markerIndex, playerLineCount);
         var validationTree = CSharpSyntaxTree.ParseText(request.ValidationSource, path: "validation.cs", encoding: Encoding.UTF8);
+        var guardTree = CSharpSyntaxTree.ParseText(LoopGuardRewriter.GuardSource, path: "loopguard.cs", encoding: Encoding.UTF8);
         var compilation = CSharpCompilation.Create(
             "PlayerAssembly_" + Guid.NewGuid().ToString("N"),
-            [playerTree, validationTree],
+            [playerTree, validationTree, guardTree],
             References.Value,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+        var rejected = ForbiddenApiChecker.Check(
+            compilation.GetSemanticModel(playerTree),
+            playerTree.GetRoot(),
+            markerIndex,
+            playerLineCount);
+        if (rejected is not null)
+        {
+            return new CompileOutcome(null, null, [], markerIndex, rejected);
+        }
 
         using var assembly = new MemoryStream();
         using var pdb = new MemoryStream();
@@ -52,8 +65,19 @@ internal sealed class PlayerCompiler
             .ToList();
 
         return emitResult.Success
-            ? new CompileOutcome(assembly.ToArray(), pdb.ToArray(), errors, markerIndex)
-            : new CompileOutcome(null, null, errors, markerIndex);
+            ? new CompileOutcome(assembly.ToArray(), pdb.ToArray(), errors, markerIndex, null)
+            : new CompileOutcome(null, null, errors, markerIndex, null);
+    }
+
+    private static SyntaxTree GuardLoops(string source, int firstPlayerLine, int playerLineCount)
+    {
+        var parsed = CSharpSyntaxTree.ParseText(source, path: "player.cs", encoding: Encoding.UTF8);
+        var lines = parsed.GetText().Lines;
+        var playerSpan = TextSpan.FromBounds(
+            lines[firstPlayerLine].Start,
+            lines[firstPlayerLine + playerLineCount - 1].End);
+        var guarded = new LoopGuardRewriter(playerSpan).Visit(parsed.GetRoot());
+        return CSharpSyntaxTree.ParseText(guarded.ToFullString(), path: "player.cs", encoding: Encoding.UTF8);
     }
 
     private static CompilationError ToCompilationError(
