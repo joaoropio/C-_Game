@@ -197,4 +197,15 @@ public sealed class CodeEditorTests : BunitContext
 
         Assert.Single(module.Invocations["dispose"]);
     }
+
+    [Fact]
+    public async Task Create_WhenItTimesOut_ShowsMessageAndMethodsReturnSafely()
+    {
+        SetupCreate().SetCanceled();
+        var cut = Render<CodeEditor>(parameters => parameters.Add(editor => editor.InitialCode, "start"));
+
+        cut.WaitForAssertion(() => Assert.NotNull(cut.Find(".code-editor-error")));
+        Assert.Equal("start", await cut.InvokeAsync(() => cut.Instance.GetCodeAsync()));
+        await cut.InvokeAsync(() => cut.Instance.SetCodeAsync("x"));
+    }
 }

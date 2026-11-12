@@ -76,11 +76,14 @@
             editorId = id;
             ready.TrySetResult(true);
         }
-        catch (JSException)
+        catch (Exception exception) when (exception is JSException or OperationCanceledException)
         {
-            loadFailed = true;
             ready.TrySetResult(false);
-            StateHasChanged();
+            if (!disposed)
+            {
+                loadFailed = true;
+                StateHasChanged();
+            }
         }
         catch (JSDisconnectedException)
         {
