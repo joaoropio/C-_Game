@@ -1,4 +1,4 @@
-﻿:root {
+:root {
     --stone-900: #17161a;
     --stone-800: #221f26;
     --stone-700: #34303a;
@@ -45,7 +45,3 @@ a:focus-visible, button:focus-visible {
     padding: 1rem 1rem 1rem 3.7rem;
     color: white;
 }
-
-    .blazor-error-boundary::after {
-        content: "An error has occurred."
-    }

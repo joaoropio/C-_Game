@@ -1,4 +1,4 @@
-﻿using CodeQuest.Core.Grimoire;
+using CodeQuest.Core.Grimoire;
 using CodeQuest.Core.Levels;
 using CodeQuest.Core.Localization;
 

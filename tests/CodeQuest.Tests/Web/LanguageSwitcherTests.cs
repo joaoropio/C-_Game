@@ -1,4 +1,4 @@
-﻿using Bunit;
+using Bunit;
 using CodeQuest.Core;
 using CodeQuest.Web.Components;
 using CodeQuest.Web.Services;

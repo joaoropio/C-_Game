@@ -1,4 +1,4 @@
-﻿using CodeQuest.Core.Progress;
+using CodeQuest.Core.Progress;
 using Microsoft.JSInterop;
 
 namespace CodeQuest.Web.Services;
@@ -15,14 +15,47 @@ public sealed class ProgressStore(IJSRuntime js)
 
     public async Task<ProgressLoadResult> LoadAsync()
     {
-        var json = await js.InvokeAsync<string?>("localStorage.getItem", StorageKey);
-        var result = PlayerProgress.FromJson(json);
+        var result = await ReadStoredProgressAsync();
         Current = result.Progress;
         WasUnreadable = result.WasUnreadable;
         Changed?.Invoke();
+
+        if (result.WasUnreadable)
+        {
+            await WriteAsync(result.Progress);
+        }
+
         return result;
     }
 
-    public async Task SaveAsync(PlayerProgress progress) =>
-        await js.InvokeVoidAsync("localStorage.setItem", StorageKey, progress.ToJson());
+    public async Task SaveAsync(PlayerProgress progress)
+    {
+        Current = progress;
+        Changed?.Invoke();
+        await WriteAsync(progress);
+    }
+
+    private async Task<ProgressLoadResult> ReadStoredProgressAsync()
+    {
+        try
+        {
+            var json = await js.InvokeAsync<string?>("localStorage.getItem", StorageKey);
+            return PlayerProgress.FromJson(json);
+        }
+        catch (JSDisconnectedException)
+        {
+            return new ProgressLoadResult(new PlayerProgress(), false);
+        }
+    }
+
+    private async Task WriteAsync(PlayerProgress progress)
+    {
+        try
+        {
+            await js.InvokeVoidAsync("localStorage.setItem", StorageKey, progress.ToJson());
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+    }
 }

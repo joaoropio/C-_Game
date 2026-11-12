@@ -1,4 +1,4 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 @implements IDisposable
 @inject UiText Ui
 @inject ProgressStore Progress
@@ -9,21 +9,26 @@
         <LanguageSwitcher />
     </header>
 
-    @if (Progress.WasUnreadable)
+    @if (Progress.WasUnreadable && !_warningDismissed)
     {
-        <p class="notice" role="alert">@Ui["progress.unreadable"]</p>
+        <div class="notice" role="alert">
+            <p>@Ui["progress.unreadable"]</p>
+            <button type="button" @onclick="() => _warningDismissed = true">@Ui["progress.dismiss"]</button>
+        </div>
     }
 
     <main>@Body</main>
 </div>
 
 <div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
+    @Ui["error.unhandled"]
+    <a href="." class="reload">@Ui["error.reload"]</a>
     <span class="dismiss">🗙</span>
 </div>
 
 @code {
+    private bool _warningDismissed;
+
     protected override void OnInitialized()
     {
         Ui.Changed += OnChanged;

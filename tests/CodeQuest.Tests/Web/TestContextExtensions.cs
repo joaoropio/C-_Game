@@ -1,4 +1,4 @@
-﻿using Bunit;
+using Bunit;
 using CodeQuest.Core.Running;
 using CodeQuest.Engine;
 using CodeQuest.Web.Services;
@@ -14,12 +14,16 @@ internal static class TestContextExtensions
 
     public static void AddGameServices(this BunitContext context, string? savedLanguage = null, string? savedProgress = null)
     {
+        context.AddGameServicesWithoutStorage();
+        context.SetupStorage(savedLanguage, savedProgress);
+    }
+
+    public static void AddGameServicesWithoutStorage(this BunitContext context)
+    {
         context.Services.AddSingleton(LoadContent());
         context.Services.AddSingleton<ICodeRunner, RoslynCodeRunner>();
         context.Services.AddScoped<UiText>();
         context.Services.AddScoped<ProgressStore>();
-
-        context.SetupStorage(savedLanguage, savedProgress);
     }
 
     public static GameContent LoadContent() => new(Path.Combine(AppContext.BaseDirectory, "content"));

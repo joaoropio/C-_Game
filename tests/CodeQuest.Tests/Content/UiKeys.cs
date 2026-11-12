@@ -28,5 +28,12 @@ public static class UiKeys
         "grimoire.mistakes",
         "language.label",
         "progress.unreadable",
+        "progress.dismiss",
+        "notFound.title",
+        "notFound.message",
+        "error.title",
+        "error.message",
+        "error.unhandled",
+        "error.reload",
     ];
 }

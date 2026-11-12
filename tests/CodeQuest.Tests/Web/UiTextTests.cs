@@ -1,7 +1,8 @@
-﻿using Bunit;
+using Bunit;
 using CodeQuest.Core;
 using CodeQuest.Web.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.JSInterop;
 
 namespace CodeQuest.Tests.Web;
 
@@ -58,5 +59,22 @@ public sealed class UiTextTests : BunitContext
         Assert.Equal(Language.En, ui.Language);
         Assert.Equal(1, changes);
         Assert.Equal("en", this.LastSavedValue(TestContextExtensions.LanguageKey));
+    }
+
+    [Fact]
+    public async Task UiText_CircuitDisconnected_StillChangesLanguageAndRaisesChanged()
+    {
+        this.AddGameServicesWithoutStorage();
+        JSInterop.Setup<string?>("localStorage.getItem", _ => true).SetException(new JSDisconnectedException("gone"));
+        JSInterop.SetupVoid(TestContextExtensions.SetItem, _ => true).SetException(new JSDisconnectedException("gone"));
+        var ui = Services.GetRequiredService<UiText>();
+        var changes = 0;
+        ui.Changed += () => changes++;
+
+        await ui.LoadAsync();
+        await ui.SetLanguageAsync(Language.En);
+
+        Assert.Equal(Language.En, ui.Language);
+        Assert.Equal(1, changes);
     }
 }

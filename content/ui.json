@@ -22,5 +22,12 @@
   "grimoire.learnMore": { "pt": "Saber mais", "en": "Learn more" },
   "grimoire.mistakes": { "pt": "Erros comuns", "en": "Common mistakes" },
   "language.label": { "pt": "Idioma", "en": "Language" },
-  "progress.unreadable": { "pt": "O progresso guardado não pôde ser lido. Começaste de novo.", "en": "The saved progress could not be read. You started over." }
+  "progress.unreadable": { "pt": "O progresso guardado não pôde ser lido. Começaste de novo.", "en": "The saved progress could not be read. You started over." },
+  "progress.dismiss": { "pt": "Fechar", "en": "Close" },
+  "notFound.title": { "pt": "Página não encontrada", "en": "Page not found" },
+  "notFound.message": { "pt": "O conteúdo que procuras não existe.", "en": "The content you are looking for does not exist." },
+  "error.title": { "pt": "Algo correu mal", "en": "Something went wrong" },
+  "error.message": { "pt": "Ocorreu um erro ao processar o pedido. Tenta novamente.", "en": "An error occurred while processing your request. Please try again." },
+  "error.unhandled": { "pt": "Ocorreu um erro inesperado.", "en": "An unexpected error occurred." },
+  "error.reload": { "pt": "Recarregar", "en": "Reload" }
 }

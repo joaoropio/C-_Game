@@ -1,4 +1,4 @@
-﻿using Bunit;
+using Bunit;
 using CodeQuest.Core.Progress;
 using CodeQuest.Web.Components.Pages;
 using CodeQuest.Web.Services;

@@ -1,4 +1,4 @@
-﻿using CodeQuest.Core.Running;
+using CodeQuest.Core.Running;
 using CodeQuest.Engine;
 using CodeQuest.Web.Components;
 using CodeQuest.Web.Services;
