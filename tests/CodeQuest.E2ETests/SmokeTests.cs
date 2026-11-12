@@ -2,12 +2,14 @@
 
 namespace CodeQuest.E2ETests;
 
-public class SmokeTests(GameServerFixture server) : IClassFixture<GameServerFixture>
+[Collection(GameServerCollection.Name)]
+public class SmokeTests(GameServerFixture server)
 {
     [Fact]
     public async Task HomePage_Loads()
     {
-        var page = await server.Browser.NewPageAsync();
+        await using var context = await server.Browser.NewContextAsync();
+        var page = await context.NewPageAsync();
 
         var response = await page.GotoAsync(server.BaseUrl);
 

@@ -7,6 +7,12 @@ using Microsoft.Playwright;
 
 namespace CodeQuest.E2ETests;
 
+[CollectionDefinition(Name)]
+public sealed class GameServerCollection : ICollectionFixture<GameServerFixture>
+{
+    public const string Name = "Game server";
+}
+
 public sealed class GameServerFixture : IAsyncLifetime
 {
     private WebApplicationFactory<Program>? _factory;
@@ -19,7 +25,15 @@ public sealed class GameServerFixture : IAsyncLifetime
     public async Task InitializeAsync()
     {
         StartServer();
-        await StartBrowserAsync();
+        try
+        {
+            await StartBrowserAsync();
+        }
+        catch
+        {
+            await DisposeAsync();
+            throw;
+        }
     }
 
     public async Task DisposeAsync()
@@ -60,5 +74,6 @@ public sealed class GameServerFixture : IAsyncLifetime
         Browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions { Headless = true });
     }
 }
+
 
 
