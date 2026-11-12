@@ -372,6 +372,19 @@ public sealed class LevelPageTests : BunitContext
     }
 
     [Fact]
+    public async Task NavigatingToAnotherLevel_ClosesGrimoire()
+    {
+        progress.RecordPass(First.Id, 1);
+        var cut = await RenderLevelAsync(First);
+        await cut.Find("button.grimoire-open").ClickAsync(new());
+        Assert.Single(cut.FindAll("aside"));
+
+        cut.Render(parameters => parameters.Add(page => page.Id, content.Levels[1].Id));
+
+        Assert.Empty(cut.FindAll("aside"));
+    }
+
+    [Fact]
     public async Task LanguageChange_RerendersInEnglish()
     {
         var cut = await RenderLevelAsync(First);

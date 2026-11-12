@@ -76,6 +76,15 @@ public class PlayerProgressTests
     }
 
     [Fact]
+    public void MarkPageViewed_ReportsWhetherPageWasNew()
+    {
+        var progress = new PlayerProgress();
+
+        Assert.True(progress.MarkPageViewed("loops"));
+        Assert.False(progress.MarkPageViewed("loops"));
+    }
+
+    [Fact]
     public void ToJson_FromJson_RoundTrips()
     {
         var progress = new PlayerProgress();

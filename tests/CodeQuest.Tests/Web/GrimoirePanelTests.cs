@@ -52,6 +52,8 @@ public sealed class GrimoirePanelTests : BunitContext
         var cut = await RenderAsync();
 
         Assert.Equal("Grimório", cut.Find("aside").GetAttribute("aria-label"));
+        Assert.Single(cut.FindAll("h2"));
+        Assert.Empty(cut.FindAll("nav[aria-label]"));
     }
 
     [Fact]
@@ -67,14 +69,47 @@ public sealed class GrimoirePanelTests : BunitContext
     public async Task Open_GroupsByWorld()
     {
         var directory = CopyContentWithWorldTwoPage();
-        Services.AddSingleton(new GameContent(directory));
-        progress.MarkPageViewed("sample");
-        var cut = await RenderAsync();
+        try
+        {
+            Services.AddSingleton(new GameContent(directory));
+            progress.MarkPageViewed("sample");
+            var cut = await RenderAsync();
 
-        var groups = cut.FindAll("nav section");
-        Assert.Equal(["Mundo 1", "Mundo 2"], groups.Select(group => group.QuerySelector("h3")!.TextContent.Trim()));
-        Assert.Equal(["Sample"], groups[1].QuerySelectorAll("button").Select(button => button.TextContent.Trim()));
-        Assert.Equal(2, groups[0].QuerySelectorAll("button").Length);
+            var groups = cut.FindAll("nav section");
+            Assert.Equal(["Mundo 1", "Mundo 2"], groups.Select(group => group.QuerySelector("h3")!.TextContent.Trim()));
+            Assert.Equal(["Sample"], groups[1].QuerySelectorAll("button").Select(button => button.TextContent.Trim()));
+            Assert.Equal(2, groups[0].QuerySelectorAll("button").Length);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task Open_MovesFocusIntoPanel()
+    {
+        await RenderAsync();
+
+        JSInterop.VerifyFocusAsyncInvoke();
+    }
+
+    [Fact]
+    public async Task Closed_DoesNotMoveFocus()
+    {
+        await RenderAsync(isOpen: false);
+
+        Assert.DoesNotContain(JSInterop.Invocations, call => call.Identifier == "Blazor._internal.domWrapper.focus");
+    }
+
+    [Fact]
+    public async Task AlreadyViewedPage_IsNotSavedAgain()
+    {
+        progress.MarkPageViewed("variables");
+
+        await RenderAsync(initialPageId: "variables");
+
+        Assert.DoesNotContain(JSInterop.Invocations, call => call.Identifier == TestContextExtensions.SetItem);
     }
 
     [Fact]
@@ -84,7 +119,7 @@ public sealed class GrimoirePanelTests : BunitContext
 
         var cut = await RenderAsync(initialPageId: "variables");
 
-        Assert.Equal(page.Title.Pt, cut.Find(".page-detail h2").TextContent);
+        Assert.Equal(page.Title.Pt, cut.Find(".page-detail h3").TextContent);
         Assert.Contains(page.WhatItIs.Pt, cut.Find(".page-detail").TextContent);
         Assert.Equal(page.Syntax, cut.Find(".page-detail pre.syntax code").TextContent);
         Assert.Equal(page.Example, cut.Find(".page-detail pre.example code").TextContent);
@@ -100,7 +135,7 @@ public sealed class GrimoirePanelTests : BunitContext
 
         await cut.FindAll("nav button").Single(button => button.TextContent.Contains(Title("operators"))).ClickAsync(new());
 
-        Assert.Equal(Title("operators"), cut.Find(".page-detail h2").TextContent);
+        Assert.Equal(Title("operators"), cut.Find(".page-detail h3").TextContent);
         Assert.Contains("\"operators\"", this.LastSavedValue(TestContextExtensions.ProgressKey));
     }
 
@@ -175,7 +210,7 @@ public sealed class GrimoirePanelTests : BunitContext
         var cut = await RenderAsync(onClose: () => closed++);
 
         await cut.Find("button.close").ClickAsync(new());
-        await cut.Find("aside").KeyDownAsync(Key.Escape);
+        await cut.Find("input[type=search]").KeyDownAsync(Key.Escape);
 
         Assert.Equal(2, closed);
     }

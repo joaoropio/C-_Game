@@ -69,12 +69,12 @@ nav button.current {
     color: var(--parchment-dim);
 }
 
-.page-detail h2 {
+.page-detail h3 {
     color: var(--torch);
     margin: 0.5rem 0;
 }
 
-.page-detail h3 {
+.page-detail h4 {
     font-size: 1rem;
 }
 

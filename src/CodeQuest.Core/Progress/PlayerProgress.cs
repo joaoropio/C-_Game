@@ -28,7 +28,7 @@ public sealed class PlayerProgress
         record.Stars = Math.Max(record.Stars, stars);
     }
 
-    public void MarkPageViewed(string pageId) => _viewedPages.Add(pageId);
+    public bool MarkPageViewed(string pageId) => _viewedPages.Add(pageId);
 
     public int StarsFor(string levelId) => Find(levelId)?.Stars ?? 0;
 
