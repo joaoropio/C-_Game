@@ -1,0 +1,76 @@
+﻿@implements IAsyncDisposable
+@inject IJSRuntime Js
+@inject UiText Ui
+
+<div class="code-editor" @ref="host"></div>
+
+@code {
+    private ElementReference host;
+    private IJSObjectReference? module;
+    private int? editorId;
+
+    [Parameter]
+    public string InitialCode { get; set; } = "";
+
+    public Task<string> GetCodeAsync() => Module().InvokeAsync<string>("getValue", EditorId()).AsTask();
+
+    public Task SetCodeAsync(string code) => Module().InvokeVoidAsync("setValue", EditorId(), code).AsTask();
+
+    public Task InsertAsync(string text) => Module().InvokeVoidAsync("insert", EditorId(), text).AsTask();
+
+    public Task ShowErrorsAsync(IReadOnlyList<CompilationError> errors)
+    {
+        var markers = errors
+            .Where(error => error.Line is not null)
+            .Select(error => new
+            {
+                Line = error.Line!.Value,
+                Column = error.Column ?? 1,
+                Message = error.Explanation?.Get(Ui.Language) ?? error.Message,
+            })
+            .ToList();
+        return Module().InvokeVoidAsync("setErrors", EditorId(), markers).AsTask();
+    }
+
+    public Task ClearErrorsAsync() => Module().InvokeVoidAsync("setErrors", EditorId(), Array.Empty<object>()).AsTask();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        module = await Js.InvokeAsync<IJSObjectReference>("import", "./Components/CodeEditor.razor.js");
+        editorId = await module.InvokeAsync<int>("create", host, InitialCode);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (module is null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (editorId is not null)
+            {
+                await module.InvokeVoidAsync("dispose", editorId);
+            }
+
+            await module.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+    }
+
+    private IJSObjectReference Module() =>
+        module ?? throw new InvalidOperationException("The editor has not been created yet.");
+
+    private int EditorId() =>
+        editorId ?? throw new InvalidOperationException("The editor has not been created yet.");
+}
+
+
