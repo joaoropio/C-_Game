@@ -71,7 +71,12 @@ public sealed class PlayerProgress
         try
         {
             var data = JsonSerializer.Deserialize<ProgressData>(json, JsonOptions);
-            if (data is null || data.Version != CurrentVersion)
+            if (data is null
+                || data.Version != CurrentVersion
+                || data.Levels is null
+                || data.ViewedPages is null
+                || data.Levels.Values.Any(record => record is null)
+                || data.ViewedPages.Any(pageId => pageId is null))
             {
                 return Unreadable();
             }
@@ -131,7 +136,7 @@ public sealed class PlayerProgress
     private sealed class ProgressData
     {
         public int Version { get; set; }
-        public Dictionary<string, LevelRecord> Levels { get; set; } = [];
-        public List<string> ViewedPages { get; set; } = [];
+        public Dictionary<string, LevelRecord>? Levels { get; set; } = [];
+        public List<string>? ViewedPages { get; set; } = [];
     }
 }
