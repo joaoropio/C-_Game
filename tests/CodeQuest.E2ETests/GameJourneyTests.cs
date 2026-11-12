@@ -15,7 +15,7 @@ public class GameJourneyTests(GameServerFixture server)
     {
         await using var context = await server.Browser.NewContextAsync();
         var page = await context.NewPageAsync();
-        var problems = CollectBrowserProblems(page);
+        var browser = CollectBrowserProblems(context, page);
 
         await OpenLevelAsync(page, "01-variables");
         await TypeCodeAsync(page, Level1Solution);
@@ -24,7 +24,10 @@ public class GameJourneyTests(GameServerFixture server)
         await Expect(page.Locator(".victory .door.open")).ToBeAttachedAsync(new() { Timeout = Timeout });
         await Expect(page.Locator(".victory .result-stars")).ToHaveAttributeAsync("aria-label", "3 de 3 estrelas", new() { Timeout = Timeout });
         await Expect(page.Locator(".victory .star.filled")).ToHaveCountAsync(3, new() { Timeout = Timeout });
-        Assert.True(problems.Count == 0, string.Join(Environment.NewLine, problems));
+
+        // Monaco starts its worker lazily: require positive proof that workerMain.js was served before trusting the problem list.
+        await browser.WorkerLoaded.WaitAsync(TimeSpan.FromMilliseconds(Timeout));
+        Assert.True(browser.Problems.Count == 0, string.Join(Environment.NewLine, browser.Problems));
     }
 
     [Fact]
@@ -50,7 +53,8 @@ public class GameJourneyTests(GameServerFixture server)
             "[...document.querySelectorAll('.view-overlays > div')].find(row => row.querySelector('.squiggly-error')).style.top");
         var statementTop = await page.EvaluateAsync<string>(
             "[...document.querySelectorAll('.view-lines .view-line')].find(line => line.textContent.replace(/\\u00a0/g, ' ').includes('int health')).style.top");
-        Assert.Equal(statementTop, squiggleTop);    }
+        Assert.Equal(statementTop, squiggleTop);
+    }
 
     [Fact]
     public async Task InfiniteLoop_ShowsTimedOutMessage()
@@ -75,7 +79,10 @@ public class GameJourneyTests(GameServerFixture server)
         await TypeCodeAsync(page, Level1Solution);
         await RunAsync(page);
         await Expect(page.Locator(".victory")).ToBeVisibleAsync(new() { Timeout = Timeout });
-        await page.WaitForFunctionAsync("localStorage.getItem('cq.progress')?.includes('01-variables')");
+        await page.WaitForFunctionAsync(
+            "localStorage.getItem('cq.progress')?.includes('01-variables')",
+            null,
+            new PageWaitForFunctionOptions { Timeout = Timeout });
 
         await page.GotoAsync(server.BaseUrl);
         await page.ReloadAsync();
@@ -138,14 +145,19 @@ public class GameJourneyTests(GameServerFixture server)
         await using var context = await server.Browser.NewContextAsync();
         var page = await context.NewPageAsync();
 
+        var suggestWidget = page.Locator(".suggest-widget.visible");
+
         await OpenLevelAsync(page, "01-variables");
-        await TypeCodeAsync(page, "Con");
+        await TypeCodeAsync(page, "Console\nCon");
         await page.Keyboard.PressAsync("Control+Space");
 
-        // A negative assertion cannot auto-wait for something to appear, so give the widget a short window to show up.
-        await page.WaitForTimeoutAsync(750);
-        Assert.Equal(0, await page.Locator(".suggest-widget.visible").CountAsync());
-        Assert.Equal(0, await page.Locator(".suggest-widget .monaco-list-row").CountAsync());
+        // Negative check: the widget gets a 500 ms window to show up and must not.
+        await Assert.ThrowsAsync<PlaywrightException>(
+            () => Expect(suggestWidget).ToBeVisibleAsync(new() { Timeout = 500 }));
+
+        // Positive control: the same selector does catch a suggest widget when one is opened programmatically.
+        await page.EvaluateAsync("monaco.editor.getEditors()[0].trigger('test', 'editor.action.triggerSuggest', {})");
+        await Expect(suggestWidget).ToBeVisibleAsync(new() { Timeout = Timeout });
     }
 
     private async Task OpenLevelAsync(IPage page, string levelId)
@@ -172,27 +184,41 @@ public class GameJourneyTests(GameServerFixture server)
     // The Development host probes a hot-reload settings file that does not exist; unrelated to the game.
     private static bool IsHotReloadProbe(string? location) => location?.Contains(HotReloadProbePath) == true;
 
-    private static List<string> CollectBrowserProblems(IPage page)
+    private static BrowserWatch CollectBrowserProblems(IBrowserContext context, IPage page)
     {
-        var problems = new List<string>();
+        var watch = new BrowserWatch();
         page.Console += (_, message) =>
         {
-            if (message.Type == "error" && !IsHotReloadProbe(message.Location))
+            var failure = message.Type == "error"
+                || (message.Type == "warning" && message.Text.Contains("worker", StringComparison.OrdinalIgnoreCase));
+            if (failure && !IsHotReloadProbe(message.Location))
             {
-                problems.Add($"console error: {message.Text}");
+                watch.Problems.Add($"console {message.Type}: {message.Text}");
             }
         };
-        page.PageError += (_, error) => problems.Add($"page error: {error}");
-        page.RequestFailed += (_, request) => problems.Add($"request failed: {request.Url}");
-        page.Response += (_, response) =>
+        page.PageError += (_, error) => watch.Problems.Add($"page error: {error}");
+        page.RequestFailed += (_, request) => watch.Problems.Add($"request failed: {request.Url}");
+        context.Response += (_, response) =>
         {
             if (response.Status >= 400 && !response.Url.Contains(HotReloadProbePath))
             {
-                problems.Add($"HTTP {response.Status}: {response.Url}");
+                watch.Problems.Add($"HTTP {response.Status}: {response.Url}");
+            }
+
+            if (response.Status == 200 && response.Url.Contains("workerMain.js"))
+            {
+                watch.WorkerLoadedSource.TrySetResult();
             }
         };
-        return problems;
+        return watch;
+    }
+
+    private sealed class BrowserWatch
+    {
+        public List<string> Problems { get; } = [];
+
+        public TaskCompletionSource WorkerLoadedSource { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task WorkerLoaded => WorkerLoadedSource.Task;
     }
 }
-
-
