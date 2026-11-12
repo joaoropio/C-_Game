@@ -109,6 +109,47 @@ public class PlayerCompilerTests
         Assert.IsType<TimeoutException>(thrown.InnerException);
     }
 
+    private static Exception? RunCast(CompileOutcome outcome)
+    {
+        var cast = System.Reflection.Assembly.Load(outcome.Assembly!).GetType("Spell")!.GetMethod("Cast")!;
+        var run = Task.Run(() => cast.Invoke(null, null));
+        Assert.True(((IAsyncResult)run).AsyncWaitHandle.WaitOne(TimeSpan.FromSeconds(5)), "player code did not stop");
+        return Assert.IsType<AggregateException>(Record.Exception(run.Wait)).InnerException?.InnerException;
+    }
+
+    [Fact]
+    public void Compile_GotoLoop_ThrowsTimeoutWhenRun()
+    {
+        var outcome = _compiler.Compile(Request("a: goto a;"), Language.En);
+
+        Assert.IsType<TimeoutException>(RunCast(outcome));
+    }
+
+    [Fact]
+    public void Compile_CatchAllInsideGotoLoop_StillTimesOut()
+    {
+        var outcome = _compiler.Compile(Request("a: try { while (true) { } } catch { } goto a;"), Language.En);
+
+        Assert.IsType<TimeoutException>(RunCast(outcome));
+    }
+
+    [Fact]
+    public void Compile_PlayerDeclaredLoopGuardClass_DoesNotShadowTheGuard()
+    {
+        const string code = """
+            while (true) { }
+            return 0;
+            }
+            class __LoopGuard { public static void Tick() { throw new System.InvalidOperationException(); } }
+            static int Other()
+            {
+            """;
+
+        var outcome = _compiler.Compile(Request(code), Language.En);
+
+        Assert.IsType<TimeoutException>(RunCast(outcome));
+    }
+
     [Fact]
     public void Compile_OnlyErrorsAreReported()
     {

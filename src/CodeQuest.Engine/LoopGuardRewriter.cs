@@ -1,4 +1,4 @@
-using Microsoft.CodeAnalysis;
+﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
@@ -13,11 +13,13 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan) : CSharpSyntaxRewr
             public const int Limit = 1_000_000;
 
             private static int _ticks;
+            private static bool _exceeded;
 
             public static void Tick()
             {
-                if (++_ticks > Limit)
+                if (_exceeded || ++_ticks > Limit)
                 {
+                    _exceeded = true;
                     throw new System.TimeoutException();
                 }
             }
@@ -25,7 +27,7 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan) : CSharpSyntaxRewr
         """;
 
     private static readonly ExpressionStatementSyntax TickStatement = (ExpressionStatementSyntax)SyntaxFactory
-        .ParseStatement("__LoopGuard.Tick();")
+        .ParseStatement("global::__LoopGuard.Tick();")
         .WithTrailingTrivia(SyntaxFactory.Space);
 
     public override SyntaxNode? VisitWhileStatement(WhileStatementSyntax node) =>
@@ -40,14 +42,20 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan) : CSharpSyntaxRewr
     public override SyntaxNode? VisitForEachStatement(ForEachStatementSyntax node) =>
         node.WithStatement(Guard(node, (StatementSyntax)Visit(node.Statement)));
 
-    private StatementSyntax Guard(StatementSyntax loop, StatementSyntax rewrittenBody)
+    public override SyntaxNode? VisitForEachVariableStatement(ForEachVariableStatementSyntax node) =>
+        node.WithStatement(Guard(node, (StatementSyntax)Visit(node.Statement)));
+
+    public override SyntaxNode? VisitLabeledStatement(LabeledStatementSyntax node) =>
+        node.WithStatement(Guard(node, (StatementSyntax)Visit(node.Statement)));
+
+    private StatementSyntax Guard(StatementSyntax guarded, StatementSyntax rewrittenBody)
     {
-        if (!guardedSpan.Contains(loop.SpanStart))
+        if (!guardedSpan.Contains(guarded.SpanStart))
         {
             return rewrittenBody;
         }
 
-        return rewrittenBody is BlockSyntax block
+        return rewrittenBody is BlockSyntax block && guarded is not LabeledStatementSyntax
             ? block.WithStatements(block.Statements.Insert(0, TickStatement))
             : SyntaxFactory.Block(TickStatement, rewrittenBody)
                 .WithOpenBraceToken(SyntaxFactory.Token(SyntaxKind.OpenBraceToken).WithTrailingTrivia(SyntaxFactory.Space))

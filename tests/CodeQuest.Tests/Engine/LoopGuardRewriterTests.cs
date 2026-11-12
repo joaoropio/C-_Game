@@ -1,4 +1,4 @@
-using CodeQuest.Engine;
+﻿using CodeQuest.Engine;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
@@ -6,7 +6,7 @@ namespace CodeQuest.Tests.Engine;
 
 public class LoopGuardRewriterTests
 {
-    private const string Tick = "__LoopGuard.Tick();";
+    private const string Tick = "global::__LoopGuard.Tick();";
 
     private static SyntaxNode Rewrite(string code)
     {
@@ -56,6 +56,25 @@ public class LoopGuardRewriterTests
     }
 
     [Fact]
+    public void Rewrite_ForeachDeconstruction_InsertsTick()
+    {
+        var rewritten = Rewrite("foreach (var (a, b) in pairs) x += a;");
+
+        Assert.Equal(1, TickCount(rewritten));
+        Assert.Empty(rewritten.GetDiagnostics());
+    }
+
+    [Fact]
+    public void Rewrite_LabeledStatement_InsertsTickAndKeepsLabel()
+    {
+        var rewritten = Rewrite("a: goto a;");
+
+        Assert.Equal(1, TickCount(rewritten));
+        Assert.Contains("a: { " + Tick, rewritten.ToFullString());
+        Assert.Empty(rewritten.GetDiagnostics());
+    }
+
+    [Fact]
     public void Rewrite_NestedLoops_InsertsTickInEach()
     {
         var rewritten = Rewrite("while (a) { for (var i = 0; i < 3; i++) { x++; } }");
@@ -85,3 +104,4 @@ public class LoopGuardRewriterTests
         Assert.StartsWith("while (a) { }", rewritten.ToFullString());
     }
 }
+

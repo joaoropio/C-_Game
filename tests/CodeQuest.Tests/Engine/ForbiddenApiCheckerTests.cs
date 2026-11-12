@@ -12,6 +12,10 @@ public class ForbiddenApiCheckerTests
         using System.IO;
         using System.Threading;
         using System.Threading.Tasks;
+        using System.Collections.Generic;
+        using System.Linq;
+        using System.Text;
+        public class Hero { public int Health; }
         public static class Spell
         {
             public static void Cast()
@@ -66,6 +70,36 @@ public class ForbiddenApiCheckerTests
     [Fact]
     public void Check_FullyQualifiedProcessStart_Rejected() =>
         AssertRejected("System.Diagnostics.Process.Start(\"x\");", "System.Diagnostics");
+
+    [Fact]
+    public void Check_Dynamic_Rejected() => AssertRejected("dynamic d = 1;", "dynamic");
+
+    [Fact]
+    public void Check_DelegateCreateDelegate_Rejected() =>
+        AssertRejected("Delegate.CreateDelegate(null, null, \"x\");", "System.Delegate");
+
+    [Fact]
+    public void Check_XmlDocument_Rejected() => AssertRejected("new System.Xml.XmlDocument();", "System.Xml");
+
+    [Fact]
+    public void Check_Registry_Rejected() => AssertRejected("Microsoft.Win32.Registry.CurrentUser.GetType();", "Microsoft");
+
+    [Fact]
+    public void Check_ConsoleReadLine_Rejected() => AssertRejected("Console.ReadLine();", "System.Console.ReadLine");
+
+    [Fact]
+    public void Check_TypeGetType_Rejected() => AssertRejected("Type.GetType(\"x\");", "System.Type");
+
+    [Theory]
+    [InlineData("var m = Math.Max(1, 2);")]
+    [InlineData("var s = string.Join(\",\", \"a\", \"b\");")]
+    [InlineData("Console.WriteLine(\"hi\");")]
+    [InlineData("var l = new List<int>(); l.Add(1);")]
+    [InlineData("var b = new StringBuilder(); b.Append(1);")]
+    [InlineData("var q = new[] { 1, 2 }.Where(x => x > 1).ToList();")]
+    [InlineData("var h = new Hero(); h.Health++;")]
+    [InlineData("var l = new System.Collections.Generic.List<int>();")]
+    public void Check_AllowedApis_Accepted(string playerCode) => Assert.Null(Check(playerCode));
 
     [Fact]
     public void Check_MathAndStrings_Accepted()
