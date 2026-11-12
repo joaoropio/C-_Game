@@ -101,10 +101,9 @@ public class ContentTests
     public void EveryPage_HasPtAndEnTexts(string id)
     {
         var page = Find(id);
-        var texts = new[] { page.Title, page.WhatItIs }.Concat(page.CommonMistakes);
+        var texts = new[] { page.Title, page.WhatItIs, page.Syntax }.Concat(page.CommonMistakes);
 
         Assert.InRange(page.CommonMistakes.Count, 2, 3);
-        Assert.False(string.IsNullOrWhiteSpace(page.Syntax));
         Assert.False(string.IsNullOrWhiteSpace(page.Example));
         Assert.All(texts, text =>
         {

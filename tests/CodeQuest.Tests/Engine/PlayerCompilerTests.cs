@@ -78,6 +78,17 @@ public class PlayerCompilerTests
     }
 
     [Fact]
+    public void Compile_UnexplainedErrorOutsidePlayerCode_GetsGenericExplanation()
+    {
+        var template = Template.Replace("return 0;", "return 0; int;");
+
+        var errors = _compiler.Compile(Request("int a = 1;", template), Language.En).Errors;
+
+        Assert.All(errors.Where(error => error.Line is null), error => Assert.NotNull(error.Explanation));
+        Assert.Contains(errors, error => error.Explanation!.En.StartsWith("There is an error in the spell"));
+    }
+
+    [Fact]
     public void Compile_Portuguese_UsesLocalizedMessage()
     {
         var request = Request("int a = ;");

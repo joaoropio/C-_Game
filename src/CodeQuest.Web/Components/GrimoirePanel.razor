@@ -43,7 +43,7 @@
             <article class="page-detail">
                 <h3>@selected.Title.Get(Ui.Language)</h3>
                 <p>@selected.WhatItIs.Get(Ui.Language)</p>
-                <pre class="syntax"><code>@selected.Syntax</code></pre>
+                <pre class="syntax"><code>@selected.Syntax.Get(Ui.Language)</code></pre>
                 <pre class="example"><code>@selected.Example</code></pre>
                 <button type="button" class="copy" @onclick="() => OnCopyExample.InvokeAsync(selected.Example)">@Ui["grimoire.copy"]</button>
                 <h4>@Ui["grimoire.mistakes"]</h4>

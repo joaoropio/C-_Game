@@ -6,7 +6,10 @@
     "pt": "Uma condição deixa o código escolher um caminho. Com switch escolhes entre vários valores, e o default trata todos os outros casos. Para só duas hipóteses, também podes usar if e else.",
     "en": "A condition lets the code choose a path. With switch you pick among several values, and default handles every other case. For just two options, you can also use if and else."
   },
-  "syntax": "switch (valor)\n{\n    case x:\n        ...\n        break;\n    default:\n        ...\n        break;\n}\n\nif (condição) { ... } else { ... }",
+  "syntax": {
+    "pt": "switch (valor)\n{\n    case x:\n        ...\n        break;\n    default:\n        ...\n        break;\n}\n\nif (condição) { ... } else { ... }",
+    "en": "switch (value)\n{\n    case x:\n        ...\n        break;\n    default:\n        ...\n        break;\n}\n\nif (condition) { ... } else { ... }"
+  },
   "example": "string weather = \"rain\";\nstring gear;\nswitch (weather)\n{\n    case \"rain\":\n        gear = \"cloak\";\n        break;\n    case \"snow\":\n        gear = \"boots\";\n        break;\n    default:\n        gear = \"hat\";\n        break;\n}",
   "commonMistakes": [
     {

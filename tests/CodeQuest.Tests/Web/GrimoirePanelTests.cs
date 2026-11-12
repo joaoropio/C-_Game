@@ -1,4 +1,5 @@
 using Bunit;
+using CodeQuest.Core;
 using CodeQuest.Core.Progress;
 using CodeQuest.Web.Components;
 using CodeQuest.Web.Services;
@@ -121,11 +122,24 @@ public sealed class GrimoirePanelTests : BunitContext
 
         Assert.Equal(page.Title.Pt, cut.Find(".page-detail h3").TextContent);
         Assert.Contains(page.WhatItIs.Pt, cut.Find(".page-detail").TextContent);
-        Assert.Equal(page.Syntax, cut.Find(".page-detail pre.syntax code").TextContent);
+        Assert.Equal(page.Syntax.Pt, cut.Find(".page-detail pre.syntax code").TextContent);
         Assert.Equal(page.Example, cut.Find(".page-detail pre.example code").TextContent);
         Assert.Equal(page.CommonMistakes.Count, cut.FindAll(".page-detail .mistakes li").Count);
         Assert.Contains("\"viewedPages\":[\"variables\"]", Services.GetRequiredService<ProgressStore>().Current!.ToJson());
         Assert.Contains("\"viewedPages\":[\"variables\"]", this.LastSavedValue(TestContextExtensions.ProgressKey));
+    }
+
+    [Fact]
+    public async Task Syntax_IsShownInTheCurrentLanguage()
+    {
+        var page = content.FindPage("variables")!;
+        var cut = await RenderAsync(initialPageId: "variables");
+
+        await cut.InvokeAsync(() => Services.GetRequiredService<UiText>().SetLanguageAsync(Language.En));
+        cut.Render();
+
+        Assert.Equal(page.Syntax.En, cut.Find(".page-detail pre.syntax code").TextContent);
+        Assert.NotEqual(page.Syntax.Pt, page.Syntax.En);
     }
 
     [Fact]
@@ -231,7 +245,7 @@ public sealed class GrimoirePanelTests : BunitContext
               "id": "sample", "world": 2,
               "title": { "pt": "Sample", "en": "Sample" },
               "whatItIs": { "pt": "x", "en": "x" },
-              "syntax": "s", "example": "e",
+              "syntax": { "pt": "s", "en": "s" }, "example": "e",
               "commonMistakes": [],
               "learnUrl": "https://learn.microsoft.com/"
             }

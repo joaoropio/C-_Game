@@ -32,8 +32,8 @@ public class PlayerCodePrecheckTests
 
         Assert.NotNull(result);
         Assert.Equal(2, result.Line);
-        Assert.Equal("Tens uma `}` a mais na linha 2.", result.Reason.Pt);
-        Assert.Equal("There's an extra `}` on line 2.", result.Reason.En);
+        Assert.Equal("Tens uma \"}\" a mais na linha 2.", result.Reason.Pt);
+        Assert.Equal("There's an extra \"}\" on line 2.", result.Reason.En);
     }
 
     [Fact]
@@ -43,8 +43,8 @@ public class PlayerCodePrecheckTests
 
         Assert.NotNull(result);
         Assert.Equal(2, result.Line);
-        Assert.Equal("Falta fechar uma `{` aberta na linha 2.", result.Reason.Pt);
-        Assert.Equal("A `{` opened on line 2 is never closed.", result.Reason.En);
+        Assert.Equal("Falta fechar uma \"{\" aberta na linha 2.", result.Reason.Pt);
+        Assert.Equal("A \"{\" opened on line 2 is never closed.", result.Reason.En);
     }
 
     [Fact]

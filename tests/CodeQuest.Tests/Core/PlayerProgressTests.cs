@@ -13,7 +13,7 @@ public class PlayerProgressTests
         new(id, 1, number, Text, Text, Text, "", "", "", "", [], 4, pageId);
 
     private static GrimoirePage MakePage(string id) =>
-        new(id, 1, Text, Text, "", "", [], "");
+        new(id, 1, Text, Text, Text, "", [], "");
 
     private static readonly IReadOnlyList<Level> Levels =
     [

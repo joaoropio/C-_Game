@@ -90,6 +90,71 @@ public class LevelSolutionTests
         Assert.Equal(2, Find(id).Hints.Count);
 
     [Fact]
+    public async Task Level2_UnqualifiedMathMax_Passed()
+    {
+        var level = Find("02-operators");
+
+        var result = await Run(level, "return Math.Max(0, attack * multiplier - defense);");
+
+        Assert.IsType<Passed>(result);
+    }
+
+    private async Task<LocalizedText> ExplanationFor(string levelId, string playerCode)
+    {
+        var level = Find(levelId);
+
+        var result = Assert.IsType<CompilationFailed>(await Run(level, playerCode));
+
+        return Assert.Single(result.Errors).Explanation!;
+    }
+
+    [Fact]
+    public async Task Level1_DoubleHealth_ExplainsTypeMismatch()
+    {
+        var explanation = await ExplanationFor(
+            "01-variables",
+            "string name = \"Merlin\";\ndouble health = 100;\ndouble mana = 50.5;\nbool isAlive = true;");
+
+        Assert.Contains("health", explanation.Pt);
+        Assert.Contains("double", explanation.Pt);
+        Assert.Contains("int", explanation.Pt);
+        Assert.Contains("health", explanation.En);
+        Assert.Contains("int", explanation.En);
+    }
+
+    [Fact]
+    public async Task Level1_UnassignedHealth_ExplainsUnassignedVariable()
+    {
+        var explanation = await ExplanationFor(
+            "01-variables",
+            "string name = \"Merlin\";\nint health;\ndouble mana = 50.5;\nbool isAlive = true;");
+
+        Assert.Contains("health", explanation.Pt);
+        Assert.Contains("valor", explanation.Pt);
+        Assert.Contains("a value", explanation.En);
+    }
+
+    [Fact]
+    public async Task Level2_MissingReturn_ExplainsReturn()
+    {
+        var explanation = await ExplanationFor("02-operators", "int x = attack;");
+
+        Assert.Contains("return", explanation.Pt);
+        Assert.Contains("return", explanation.En);
+    }
+
+    [Fact]
+    public async Task Level3_SwitchWithoutDefault_ExplainsReturn()
+    {
+        var explanation = await ExplanationFor(
+            "03-conditions",
+            "switch (rune)\n{\n    case \"fire\":\n        return \"left\";\n}");
+
+        Assert.Contains("return", explanation.Pt);
+        Assert.Contains("return", explanation.En);
+    }
+
+    [Fact]
     public async Task Level1_MissingVariable_ExplainsWhichOne()
     {
         var level = Find("01-variables");

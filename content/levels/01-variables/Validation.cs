@@ -1,6 +1,6 @@
 public static class Validation
 {
-    public static System.Collections.Generic.IEnumerable<(string Pt, string En)> Run()
+    public static IEnumerable<(string Pt, string En)> Run()
     {
         var hero = Spell.Cast();
 

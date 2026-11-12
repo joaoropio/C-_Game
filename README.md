@@ -7,6 +7,7 @@ Estado atual: Mundo 1, níveis 1 a 3 (variáveis e tipos, operadores, if/else e 
 ## Requisitos
 
 - Visual Studio 2026 ou um SDK de .NET que compile projetos `net10.0`. Foi desenvolvido com o SDK 11 que vem com o Visual Studio (não há `global.json`).
+- Runtime .NET 10 (`Microsoft.NETCore.App` e `Microsoft.AspNetCore.App` 10.x) para correr a aplicação e os testes. Vem com a instalação do Visual Studio 2026. Só com o SDK 11 o projeto compila, mas não arranca nem os testes correm.
 - Internet: o editor Monaco é carregado da CDN jsDelivr (versão fixa), por isso o jogo não funciona offline. Os testes E2E também precisam de internet na primeira execução, para descarregar o Chromium.
 
 ## Como correr
@@ -60,7 +61,7 @@ Não é preciso mexer no motor, na interface nem nos `.csproj`: os níveis são 
 
 1. Cria a pasta `content/levels/<NN-nome>/` (por exemplo `04-loops`).
 2. `level.json`, com estes campos:
-   - `id` (igual ao nome da pasta), `world`, `number`;
+   - `id` (igual ao nome da pasta, por convenção: nada o verifica), `world`, `number`;
    - `title`, `story` e `concept`, cada um com `pt` e `en`;
    - `hints`: lista de textos `{ pt, en }`. Cada nível tem exatamente 2 dicas;
    - `maxStatementsForThreeStars`: nº máximo de instruções (contadas pelo Roslyn) da solução para ter 3 estrelas;
@@ -73,7 +74,7 @@ Não é preciso mexer no motor, na interface nem nos `.csproj`: os níveis são 
    ```csharp
    public static class Validation
    {
-       public static System.Collections.Generic.IEnumerable<(string Pt, string En)> Run()
+       public static IEnumerable<(string Pt, string En)> Run()
        {
            if (Spell.Damage(10, 3, 2) != 17)
            {
@@ -85,10 +86,10 @@ Não é preciso mexer no motor, na interface nem nos `.csproj`: os níveis são 
    }
    ```
 
-7. `content/grimoire/<id>.json`: a página do Grimório (`id`, `world`, `title`, `whatItIs`, `syntax`, `example`, `commonMistakes` com 2 ou 3 entradas, `learnUrl` para o Microsoft Learn). O `example` tem de compilar e não pode reutilizar os identificadores do nível. Se o nível usar uma página que já existe, não é preciso criar outra.
+7. `content/grimoire/<id>.json`: a página do Grimório (`id`, `world`, `title`, `whatItIs`, `syntax` (os três com `pt` e `en`), `example`, `commonMistakes` com 2 ou 3 entradas, `learnUrl` para o Microsoft Learn). O `example` tem de compilar e não pode reutilizar os identificadores do nível. Se o nível usar uma página que já existe, não é preciso criar outra.
 8. Corre `dotnet test`. Os testes descobrem o novo nível sozinhos e verificam que a solução passa, que o inicial não passa, que a solução cabe no limite de estrelas, que há PT e EN em todos os textos, 2 dicas, um único marcador e uma página do Grimório válida.
 
-Regras do código do jogador: só são permitidos os namespaces `System`, `System.Collections.Generic`, `System.Linq` e `System.Text` (mais os tipos do próprio nível). Dentro de `System` ficam proibidos, entre outros, `Environment`, `AppDomain`, `GC`, `Activator`, `Type`, `Delegate`, a leitura da consola e `dynamic`. Um nível que precise de mais namespaces tem de alargar essa lista em `ForbiddenApiChecker`.
+Regras do código do jogador: só são permitidos os namespaces `System`, `System.Collections.Generic`, `System.Linq` e `System.Text` (mais os tipos do próprio nível), já importados: o jogador nunca escreve `using`. Dentro de `System` ficam proibidos, entre outros, `Environment`, `AppDomain`, `GC`, `Activator`, `Type`, `Delegate`, a leitura da consola e `dynamic`. Um nível que precise de mais namespaces tem de alargar essa lista em `ForbiddenApiChecker`.
 
 ## Segurança
 

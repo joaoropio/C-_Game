@@ -65,7 +65,9 @@ export function setValue(id, code) {
 export function insert(id, text) {
     const editor = editors.get(id);
     editor.pushUndoStop();
-    editor.executeEdits("code-quest", [{ range: editor.getSelection(), text, forceMoveMarkers: true }]);
+    const { lineNumber } = editor.getPosition();
+    const lineStart = new window.monaco.Range(lineNumber, 1, lineNumber, 1);
+    editor.executeEdits("code-quest", [{ range: lineStart, text: text + "\n", forceMoveMarkers: true }]);
     editor.pushUndoStop();
     editor.focus();
 }

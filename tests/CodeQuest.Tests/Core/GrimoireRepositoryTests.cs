@@ -13,7 +13,7 @@ public class GrimoireRepositoryTests
               "id": "variables", "world": 1,
               "title": { "pt": "Variáveis", "en": "Variables" },
               "whatItIs": { "pt": "Caixas", "en": "Boxes" },
-              "syntax": "int x = 1;",
+              "syntax": { "pt": "tipo nome = valor;", "en": "type name = value;" },
               "example": "var y = 2;",
               "commonMistakes": [ { "pt": "Erro", "en": "Mistake" } ],
               "learnUrl": "https://example.com/variables"
@@ -24,7 +24,7 @@ public class GrimoireRepositoryTests
               "id": "loops", "world": 2,
               "title": { "pt": "Ciclos", "en": "Loops" },
               "whatItIs": { "pt": "Repetir", "en": "Repeat" },
-              "syntax": "for (;;) { }",
+              "syntax": { "pt": "para (;;) { }", "en": "for (;;) { }" },
               "example": "while (true) { }",
               "commonMistakes": [],
               "learnUrl": "https://example.com/loops"
@@ -38,7 +38,8 @@ public class GrimoireRepositoryTests
         Assert.Equal(1, variables.World);
         Assert.Equal("Variables", variables.Title.En);
         Assert.Equal("Caixas", variables.WhatItIs.Pt);
-        Assert.Equal("int x = 1;", variables.Syntax);
+        Assert.Equal("tipo nome = valor;", variables.Syntax.Pt);
+        Assert.Equal("type name = value;", variables.Syntax.En);
         Assert.Equal("var y = 2;", variables.Example);
         Assert.Equal("Mistake", Assert.Single(variables.CommonMistakes).En);
         Assert.Equal("https://example.com/variables", variables.LearnUrl);

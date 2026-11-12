@@ -8,13 +8,9 @@ namespace CodeQuest.Tests.Engine;
 public class ForbiddenApiCheckerTests
 {
     private const string Header = """
-        using System;
         using System.IO;
         using System.Threading;
         using System.Threading.Tasks;
-        using System.Collections.Generic;
-        using System.Linq;
-        using System.Text;
         public class Hero { public int Health; }
         public static class Spell
         {
@@ -34,9 +30,10 @@ public class ForbiddenApiCheckerTests
     private static CodeRejected? Check(string playerCode)
     {
         var tree = CSharpSyntaxTree.ParseText(Header + playerCode + "\n}\n}");
+        var usings = CSharpSyntaxTree.ParseText(PlayerCompiler.ImplicitUsingsSource);
         var compilation = CSharpCompilation.Create(
             "CheckerTests",
-            [tree],
+            [tree, usings],
             References,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
         return ForbiddenApiChecker.Check(

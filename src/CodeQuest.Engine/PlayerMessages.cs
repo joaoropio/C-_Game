@@ -9,20 +9,40 @@ internal static class PlayerMessages
         "You haven't written any spell yet.");
 
     public static LocalizedText ExtraClosingBrace(int line) => new(
-        $"Tens uma `}}` a mais na linha {line}.",
-        $"There's an extra `}}` on line {line}.");
+        $"Tens uma \"}}\" a mais na linha {line}.",
+        $"There's an extra \"}}\" on line {line}.");
 
     public static LocalizedText UnclosedBrace(int line) => new(
-        $"Falta fechar uma `{{` aberta na linha {line}.",
-        $"A `{{` opened on line {line} is never closed.");
+        $"Falta fechar uma \"{{\" aberta na linha {line}.",
+        $"A \"{{\" opened on line {line} is never closed.");
 
     public static LocalizedText MissingVariable(string name) => new(
-        $"Falta declarar a variável `{name}`.",
-        $"You still need to declare the variable `{name}`.");
+        $"Falta declarar a variável \"{name}\".",
+        $"You still need to declare the variable \"{name}\".");
+
+    public static readonly LocalizedText MissingReturn = new(
+        "O feitiço tem de devolver um valor com return.",
+        "The spell must return a value with return.");
+
+    public static LocalizedText UnassignedVariable(string name) => new(
+        $"Dá um valor à variável \"{name}\" antes de a usares.",
+        $"Give the variable \"{name}\" a value before you use it.");
+
+    public static LocalizedText TypeMismatch(string? name, string actualType, string expectedType) => name is null
+        ? new LocalizedText(
+            $"O valor é do tipo {actualType}, mas aqui é preciso {expectedType}.",
+            $"The value is of type {actualType}, but {expectedType} is needed here.")
+        : new LocalizedText(
+            $"O valor de \"{name}\" é do tipo {actualType}, mas aqui é preciso {expectedType}.",
+            $"The value of \"{name}\" is of type {actualType}, but {expectedType} is needed here.");
+
+    public static readonly LocalizedText UnreadableSpell = new(
+        "Há um erro no feitiço que a porta não consegue ler. Verifica tipos e nomes.",
+        "There is an error in the spell that the door can't read. Check types and names.");
 
     public static LocalizedText ForbiddenSpell(string symbol, int line) => new(
-        $"Esse feitiço é proibido nesta masmorra: `{symbol}` (linha {line}).",
-        $"That spell is forbidden in this dungeon: `{symbol}` (line {line}).");
+        $"Esse feitiço é proibido nesta masmorra: \"{symbol}\" (linha {line}).",
+        $"That spell is forbidden in this dungeon: \"{symbol}\" (line {line}).");
 
     public static readonly LocalizedText DividedByZero = new(
         "Dividiste por zero.",

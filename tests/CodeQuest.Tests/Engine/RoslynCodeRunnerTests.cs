@@ -38,6 +38,15 @@ public class RoslynCodeRunnerTests
     public async Task Run_CorrectCode_Passed() =>
         Assert.IsType<Passed>(await Run("return x * 2;"));
 
+    [Theory]
+    [InlineData("return Math.Max(x * 2, 1);")]
+    [InlineData("Console.WriteLine(\"x\");\nreturn x * 2;")]
+    [InlineData("var list = new List<int>();\nlist.Add(x);\nreturn list[0] * 2;")]
+    [InlineData("var text = new StringBuilder();\ntext.Append(x);\nreturn int.Parse(text.ToString()) * 2;")]
+    [InlineData("return new[] { x, x }.Where(n => n > 0).Sum();")]
+    public async Task Run_AllowedNamespacesWithoutUsings_Passed(string playerCode) =>
+        Assert.IsType<Passed>(await Run(playerCode));
+
     [Fact]
     public async Task Run_WrongResult_ChecksFailedWithMessages()
     {

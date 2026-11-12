@@ -5,7 +5,7 @@ public sealed record GrimoirePage(
     int World,
     LocalizedText Title,
     LocalizedText WhatItIs,
-    string Syntax,
+    LocalizedText Syntax,
     string Example,
     IReadOnlyList<LocalizedText> CommonMistakes,
     string LearnUrl);

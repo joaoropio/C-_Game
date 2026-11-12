@@ -6,7 +6,7 @@
     "pt": "Uma variável é uma caixa com nome onde guardas um valor. Cada caixa tem um tipo: string para texto, int para números inteiros, double para números com parte decimal e bool para verdadeiro ou falso.",
     "en": "A variable is a named box where you keep a value. Each box has a type: string for text, int for whole numbers, double for numbers with a decimal part and bool for true or false."
   },
-  "syntax": "tipo nome = valor;",
+  "syntax": { "pt": "tipo nome = valor;", "en": "type name = value;" },
   "example": "string title = \"Aprendiz\";\nint gold = 25;\ndouble speed = 1.5;\nbool hasKey = false;",
   "commonMistakes": [
     {

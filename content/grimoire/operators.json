@@ -6,7 +6,7 @@
     "pt": "Os operadores fazem contas com valores: + soma, - subtrai, * multiplica, / divide e % dá o resto da divisão. A multiplicação e a divisão acontecem antes da soma e da subtração; usa parênteses para mudar a ordem.",
     "en": "Operators do math with values: + adds, - subtracts, * multiplies, / divides and % gives the remainder of a division. Multiplication and division happen before addition and subtraction; use parentheses to change the order."
   },
-  "syntax": "resultado = a * b - c;",
+  "syntax": { "pt": "resultado = a * b - c;", "en": "result = a * b - c;" },
   "example": "int potions = 4;\nint price = 6;\nint discount = 5;\nint total = potions * price - discount;",
   "commonMistakes": [
     {

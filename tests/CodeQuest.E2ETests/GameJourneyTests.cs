@@ -129,6 +129,7 @@ public class GameJourneyTests(GameServerFixture server)
         var page = await context.NewPageAsync();
 
         await OpenLevelAsync(page, "01-variables");
+        await page.EvaluateAsync("monaco.editor.getEditors()[0].setPosition({ lineNumber: 1, column: 8 })");
         await page.Locator(".grimoire-open").ClickAsync();
         await Expect(page.Locator(".grimoire-panel")).ToBeVisibleAsync(new() { Timeout = Timeout });
         await page.Locator(".grimoire-panel .copy").ClickAsync();
@@ -137,6 +138,11 @@ public class GameJourneyTests(GameServerFixture server)
             "monaco.editor.getEditors()[0].getValue().includes('bool hasKey = false;')",
             null,
             new PageWaitForFunctionOptions { Timeout = Timeout });
+        var lines = await page.EvaluateAsync<string[]>(
+            "monaco.editor.getEditors()[0].getModel().getLinesContent()");
+        Assert.Equal("string title = \"Aprendiz\";", lines[0]);
+        Assert.Equal("bool hasKey = false;", lines[3]);
+        Assert.Equal("string name = \"Merlin\";", lines[4]);
     }
 
     [Fact]
