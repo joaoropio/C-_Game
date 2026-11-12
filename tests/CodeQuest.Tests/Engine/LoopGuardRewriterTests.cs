@@ -382,4 +382,14 @@ public class LoopGuardRewriterTests
 
         Assert.Contains("try { return n; } catch { return 0; } finally { n++; }", text);
     }
+
+    [Fact]
+    public void Rewrite_FinallyAssigningAVariable_KeepsItAssignedWhenSkipped()
+    {
+        var text = EnterCalls("int r;\ntry { }\nfinally\n{\n    int t = 1;\n    r = t;\n}\nreturn r;");
+
+        Assert.Contains("else { global::System.Runtime.CompilerServices.Unsafe.SkipInit(out r); }", text);
+        Assert.DoesNotContain("out t", text);
+        Assert.Equal(("using System;\nusing System.Linq;\n" + Player("int r;\ntry { }\nfinally\n{\n    int t = 1;\n    r = t;\n}\nreturn r;")).Split('\n').Length, text.Split('\n').Length);
+    }
 }

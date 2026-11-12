@@ -104,13 +104,33 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan, SemanticModel mode
             return visited;
         }
 
+        // The skipped body must not hide assignments from the compiler's definite-assignment analysis,
+        // so the else branch declares every variable the body always assigns as assigned.
+        var assigned = model.AnalyzeDataFlow(node.Block);
+        var skipInits = assigned is { Succeeded: true }
+            ? assigned.AlwaysAssigned
+                .Except(assigned.VariablesDeclared, SymbolEqualityComparer.Default)
+                .Except(assigned.DefinitelyAssignedOnEntry, SymbolEqualityComparer.Default)
+                .Where(symbol => symbol is ILocalSymbol or IParameterSymbol)
+                .Select(symbol => SyntaxFactory.ParseStatement(
+                    $"global::System.Runtime.CompilerServices.Unsafe.SkipInit(out {symbol.Name}); ").WithLeadingTrivia(SyntaxFactory.Space))
+                .ToList()
+            : [];
+        var skipped = skipInits.Count == 0
+            ? null
+            : SyntaxFactory.ElseClause(
+                SyntaxFactory.Token(SyntaxKind.ElseKeyword).WithLeadingTrivia(SyntaxFactory.Space).WithTrailingTrivia(SyntaxFactory.Space),
+                SyntaxFactory.Block(
+                    SyntaxFactory.Token(SyntaxKind.OpenBraceToken),
+                    SyntaxFactory.List(skipInits),
+                    SyntaxFactory.Token(SyntaxKind.CloseBraceToken)));
         var guarded = SyntaxFactory.IfStatement(
             SyntaxFactory.Token(SyntaxKind.IfKeyword).WithTrailingTrivia(SyntaxFactory.Space),
             SyntaxFactory.Token(SyntaxKind.OpenParenToken),
             SyntaxFactory.ParseExpression("!global::__LoopGuard.Tripped"),
             SyntaxFactory.Token(SyntaxKind.CloseParenToken).WithTrailingTrivia(SyntaxFactory.Space),
             visited.Block.WithoutTrailingTrivia(),
-            null);
+            skipped);
         return visited.WithBlock(SyntaxFactory.Block(
             SyntaxFactory.Token(SyntaxKind.OpenBraceToken).WithTrailingTrivia(SyntaxFactory.Space),
             SyntaxFactory.SingletonList<StatementSyntax>(guarded),

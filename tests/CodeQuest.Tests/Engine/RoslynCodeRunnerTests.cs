@@ -239,6 +239,25 @@ public class RoslynCodeRunnerTests
     }
 
     [Theory]
+    [InlineData("int r;\ntry { Console.Write(\"\"); }\nfinally { r = x * 2; }\nreturn r;")]
+    [InlineData("StringBuilder s;\ntry { Console.Write(\"\"); }\nfinally { s = new StringBuilder(); s.Append(x * 2); }\nreturn int.Parse(s.ToString());")]
+    [InlineData("int r;\ntry { }\nfinally { int.TryParse(\"4\", out r); }\nreturn r == 4 ? x * 2 : 0;")]
+    [InlineData("int r; int q;\ntry { }\nfinally { int t = 1; r = x * 2; q = t; }\nreturn q == 1 ? r : 0;")]
+    public async Task Run_VariableAssignedOnlyInFinally_StillPasses(string playerCode) =>
+        Assert.IsType<Passed>(await Run(playerCode));
+
+    // Known limit: the finally rewrite makes its last statement conditional, so a finally that
+    // always throws no longer ends the method for the compiler.
+    [Fact]
+    public async Task KnownLimit_FinallyThatAlwaysThrows_FailsToCompileInTheRewrittenTree()
+    {
+        var result = Assert.IsType<CompilationFailed>(
+            await Run("try { Console.Write(\"\"); }\nfinally { throw new Exception(\"boom\"); }"));
+
+        Assert.Contains(result.Errors, error => error.Message.Contains("not all code paths return a value"));
+    }
+
+    [Theory]
     [InlineData("int zero = 0;\ntry { return x / zero; }\ncatch (DivideByZeroException) { return x * 2; }")]
     [InlineData("int r = 0;\ntry { }\nfinally { r = x * 2; }\nreturn r;")]
     [InlineData("try { return int.Parse(\"a\"); }\ncatch (FormatException e) when (e.Message.Length > 0) { return x * 2; }")]

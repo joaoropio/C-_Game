@@ -143,7 +143,7 @@ public class ForbiddenApiCheckerTests
 
         Assert.NotNull(rejected);
         Assert.Equal(playerCode.Split('\n').Length, rejected.Line);
-        Assert.Equal("stackalloc não é permitido nesta masmorra.", rejected.Reason.Pt);
-        Assert.Equal("stackalloc is not allowed in this dungeon.", rejected.Reason.En);
+        Assert.Equal($"stackalloc não é permitido nesta masmorra (linha {rejected.Line}).", rejected.Reason.Pt);
+        Assert.Equal($"stackalloc is not allowed in this dungeon (line {rejected.Line}).", rejected.Reason.En);
     }
 }

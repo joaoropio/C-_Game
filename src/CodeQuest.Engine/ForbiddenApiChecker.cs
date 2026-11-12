@@ -51,7 +51,7 @@ internal static class ForbiddenApiChecker
             if (line >= firstPlayerLine && line <= lastPlayerLine)
             {
                 var playerLine = line + 1 - playerLineOffset;
-                return new CodeRejected(PlayerMessages.StackallocNotAllowed, playerLine);
+                return new CodeRejected(PlayerMessages.StackallocNotAllowed(playerLine), playerLine);
             }
         }
 
