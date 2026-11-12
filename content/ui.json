@@ -22,6 +22,7 @@
   "grimoire.learnMore": { "pt": "Saber mais", "en": "Learn more" },
   "grimoire.mistakes": { "pt": "Erros comuns", "en": "Common mistakes" },
   "language.label": { "pt": "Idioma", "en": "Language" },
+  "editor.loadFailed": { "pt": "Não foi possível carregar o editor de código. Verifica a ligação à internet e recarrega a página.", "en": "The code editor could not be loaded. Check your internet connection and reload the page." },
   "progress.unreadable": { "pt": "O progresso guardado não pôde ser lido. Começaste de novo.", "en": "The saved progress could not be read. You started over." },
   "progress.dismiss": { "pt": "Fechar", "en": "Close" },
   "notFound.title": { "pt": "Página não encontrada", "en": "Page not found" },

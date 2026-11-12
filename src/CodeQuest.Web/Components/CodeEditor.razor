@@ -1,24 +1,44 @@
-﻿@implements IAsyncDisposable
+@implements IAsyncDisposable
 @inject IJSRuntime Js
 @inject UiText Ui
 
 <div class="code-editor" @ref="host"></div>
+@if (loadFailed)
+{
+    <p class="code-editor-error" role="alert">@Ui["editor.loadFailed"]</p>
+}
 
 @code {
+    private readonly TaskCompletionSource<bool> ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private ElementReference host;
     private IJSObjectReference? module;
     private int? editorId;
+    private bool loadFailed;
+    private bool disposed;
 
     [Parameter]
     public string InitialCode { get; set; } = "";
 
-    public Task<string> GetCodeAsync() => Module().InvokeAsync<string>("getValue", EditorId()).AsTask();
+    public async Task<string> GetCodeAsync() =>
+        await ready.Task && module is { } current ? await current.InvokeAsync<string>("getValue", editorId) : InitialCode;
 
-    public Task SetCodeAsync(string code) => Module().InvokeVoidAsync("setValue", EditorId(), code).AsTask();
+    public async Task SetCodeAsync(string code)
+    {
+        if (await ready.Task && module is { } current)
+        {
+            await current.InvokeVoidAsync("setValue", editorId, code);
+        }
+    }
 
-    public Task InsertAsync(string text) => Module().InvokeVoidAsync("insert", EditorId(), text).AsTask();
+    public async Task InsertAsync(string text)
+    {
+        if (await ready.Task && module is { } current)
+        {
+            await current.InvokeVoidAsync("insert", editorId, text);
+        }
+    }
 
-    public Task ShowErrorsAsync(IReadOnlyList<CompilationError> errors)
+    public async Task ShowErrorsAsync(IReadOnlyList<CompilationError> errors)
     {
         var markers = errors
             .Where(error => error.Line is not null)
@@ -29,10 +49,10 @@
                 Message = error.Explanation?.Get(Ui.Language) ?? error.Message,
             })
             .ToList();
-        return Module().InvokeVoidAsync("setErrors", EditorId(), markers).AsTask();
+        await SetMarkersAsync(markers);
     }
 
-    public Task ClearErrorsAsync() => Module().InvokeVoidAsync("setErrors", EditorId(), Array.Empty<object>()).AsTask();
+    public Task ClearErrorsAsync() => SetMarkersAsync([]);
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -41,36 +61,68 @@
             return;
         }
 
-        module = await Js.InvokeAsync<IJSObjectReference>("import", "./Components/CodeEditor.razor.js");
-        editorId = await module.InvokeAsync<int>("create", host, InitialCode);
+        try
+        {
+            var loaded = await Js.InvokeAsync<IJSObjectReference>("import", "./Components/CodeEditor.razor.js");
+            var id = await loaded.InvokeAsync<int?>("create", host, InitialCode);
+            if (id is null || disposed)
+            {
+                await ReleaseAsync(loaded, id);
+                ready.TrySetResult(false);
+                return;
+            }
+
+            module = loaded;
+            editorId = id;
+            ready.TrySetResult(true);
+        }
+        catch (JSException)
+        {
+            loadFailed = true;
+            ready.TrySetResult(false);
+            StateHasChanged();
+        }
+        catch (JSDisconnectedException)
+        {
+            ready.TrySetResult(false);
+        }
     }
 
     public async ValueTask DisposeAsync()
     {
-        if (module is null)
+        disposed = true;
+        ready.TrySetResult(false);
+        var released = module;
+        var id = editorId;
+        module = null;
+        editorId = null;
+        if (released is not null)
         {
-            return;
+            await ReleaseAsync(released, id);
         }
+    }
 
+    private async Task SetMarkersAsync(IReadOnlyList<object> markers)
+    {
+        if (await ready.Task && module is { } current)
+        {
+            await current.InvokeVoidAsync("setErrors", editorId, markers);
+        }
+    }
+
+    private static async Task ReleaseAsync(IJSObjectReference target, int? id)
+    {
         try
         {
-            if (editorId is not null)
+            if (id is not null)
             {
-                await module.InvokeVoidAsync("dispose", editorId);
+                await target.InvokeVoidAsync("dispose", id);
             }
 
-            await module.DisposeAsync();
+            await target.DisposeAsync();
         }
         catch (JSDisconnectedException)
         {
         }
     }
-
-    private IJSObjectReference Module() =>
-        module ?? throw new InvalidOperationException("The editor has not been created yet.");
-
-    private int EditorId() =>
-        editorId ?? throw new InvalidOperationException("The editor has not been created yet.");
 }
-
-

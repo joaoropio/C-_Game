@@ -1,4 +1,4 @@
-﻿using Bunit;
+using Bunit;
 using CodeQuest.Core;
 using CodeQuest.Core.Running;
 using CodeQuest.Web.Components;
@@ -18,7 +18,6 @@ public sealed class CodeEditorTests : BunitContext
     {
         this.AddGameServices();
         module = JSInterop.SetupModule(ModulePath);
-        module.Setup<int>("create", _ => true).SetResult(7);
         module.Setup<string>("getValue", _ => true).SetResult("int x = 1;");
         module.SetupVoid("setValue", _ => true).SetVoidResult();
         module.SetupVoid("insert", _ => true).SetVoidResult();
@@ -26,10 +25,24 @@ public sealed class CodeEditorTests : BunitContext
         module.SetupVoid("dispose", _ => true).SetVoidResult();
     }
 
+    private JSRuntimeInvocationHandler<int?> SetupCreate() => module.Setup<int?>("create", _ => true);
+
+    private IRenderedComponent<CodeEditor> RenderEditor()
+    {
+        SetupCreate().SetResult(7);
+        return Render<CodeEditor>();
+    }
+
+    private void RenderEditorWith(Action<ComponentParameterCollectionBuilder<CodeEditor>> parameters)
+    {
+        SetupCreate().SetResult(7);
+        Render(parameters);
+    }
+
     [Fact]
     public void FirstRender_CreatesEditorWithInitialCode()
     {
-        Render<CodeEditor>(parameters => parameters.Add(editor => editor.InitialCode, "Console.WriteLine(1);"));
+        RenderEditorWith(parameters => parameters.Add(editor => editor.InitialCode, "Console.WriteLine(1);"));
 
         var create = Assert.Single(module.Invocations["create"]);
         Assert.Equal("Console.WriteLine(1);", create.Arguments[1]);
@@ -38,7 +51,7 @@ public sealed class CodeEditorTests : BunitContext
     [Fact]
     public async Task GetCode_ReturnsValueFromJs()
     {
-        var cut = Render<CodeEditor>();
+        var cut = RenderEditor();
 
         var code = await cut.InvokeAsync(() => cut.Instance.GetCodeAsync());
 
@@ -49,7 +62,7 @@ public sealed class CodeEditorTests : BunitContext
     [Fact]
     public async Task SetCode_CallsJsSetValue()
     {
-        var cut = Render<CodeEditor>();
+        var cut = RenderEditor();
 
         await cut.InvokeAsync(() => cut.Instance.SetCodeAsync("new code"));
 
@@ -60,7 +73,7 @@ public sealed class CodeEditorTests : BunitContext
     [Fact]
     public async Task ShowErrors_SendsOnlyErrorsWithLine()
     {
-        var cut = Render<CodeEditor>();
+        var cut = RenderEditor();
         var errors = new[]
         {
             new CompilationError(3, 5, "technical", new LocalizedText("explicação", "explanation")),
@@ -81,7 +94,7 @@ public sealed class CodeEditorTests : BunitContext
     [Fact]
     public async Task ShowErrors_UsesExplanationInCurrentLanguage()
     {
-        var cut = Render<CodeEditor>();
+        var cut = RenderEditor();
         await Services.GetRequiredService<UiText>().SetLanguageAsync(Language.En);
 
         await cut.InvokeAsync(() => cut.Instance.ShowErrorsAsync(
@@ -95,7 +108,7 @@ public sealed class CodeEditorTests : BunitContext
     [Fact]
     public async Task ClearErrors_SendsEmptyList()
     {
-        var cut = Render<CodeEditor>();
+        var cut = RenderEditor();
 
         await cut.InvokeAsync(() => cut.Instance.ClearErrorsAsync());
 
@@ -106,7 +119,7 @@ public sealed class CodeEditorTests : BunitContext
     [Fact]
     public async Task Insert_CallsJsInsert()
     {
-        var cut = Render<CodeEditor>();
+        var cut = RenderEditor();
 
         await cut.InvokeAsync(() => cut.Instance.InsertAsync("if (x)"));
 
@@ -116,7 +129,7 @@ public sealed class CodeEditorTests : BunitContext
     [Fact]
     public async Task Dispose_DisposesModule()
     {
-        var cut = Render<CodeEditor>();
+        var cut = RenderEditor();
 
         await cut.Instance.DisposeAsync();
 
@@ -126,11 +139,62 @@ public sealed class CodeEditorTests : BunitContext
     [Fact]
     public async Task Dispose_WhenDisconnected_DoesNotThrow()
     {
-        var cut = Render<CodeEditor>();
+        var cut = RenderEditor();
         module.SetupVoid("dispose", _ => true).SetException(new JSDisconnectedException("gone"));
 
         await cut.Instance.DisposeAsync();
     }
+
+    [Fact]
+    public async Task Methods_BeforeCreateCompletes_WaitAndThenWork()
+    {
+        var create = SetupCreate();
+        var cut = Render<CodeEditor>();
+
+        var pending = cut.InvokeAsync(() => cut.Instance.GetCodeAsync());
+        await Task.Delay(50);
+        Assert.False(pending.IsCompleted);
+        create.SetResult(7);
+
+        Assert.Equal("int x = 1;", await pending);
+    }
+
+    [Fact]
+    public void Create_WhenItFails_ShowsLocalizedMessage()
+    {
+        SetupCreate().SetException(new JSException("boom"));
+
+        var cut = Render<CodeEditor>();
+
+        cut.WaitForAssertion(() =>
+            Assert.Contains("Não foi possível carregar o editor", cut.Find(".code-editor-error").TextContent));
+    }
+
+    [Fact]
+    public async Task Methods_AfterCreateFailed_DoNotThrowAndReturnInitialCode()
+    {
+        SetupCreate().SetException(new JSException("boom"));
+        var cut = Render<CodeEditor>(parameters => parameters.Add(editor => editor.InitialCode, "start"));
+
+        Assert.Equal("start", await cut.InvokeAsync(() => cut.Instance.GetCodeAsync()));
+        await cut.InvokeAsync(() => cut.Instance.SetCodeAsync("x"));
+        await cut.InvokeAsync(() => cut.Instance.InsertAsync("x"));
+        await cut.InvokeAsync(() => cut.Instance.ShowErrorsAsync([new CompilationError(1, 1, "m", null)]));
+        await cut.InvokeAsync(() => cut.Instance.ClearErrorsAsync());
+        await cut.Instance.DisposeAsync();
+
+        Assert.Empty(module.Invocations["setValue"]);
+        Assert.Empty(module.Invocations["setErrors"]);
+    }
+
+    [Fact]
+    public async Task Dispose_CalledTwice_DisposesOnce()
+    {
+        var cut = RenderEditor();
+
+        await cut.Instance.DisposeAsync();
+        await cut.Instance.DisposeAsync();
+
+        Assert.Single(module.Invocations["dispose"]);
+    }
 }
-
-

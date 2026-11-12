@@ -27,6 +27,7 @@ public static class UiKeys
         "grimoire.learnMore",
         "grimoire.mistakes",
         "language.label",
+        "editor.loadFailed",
         "progress.unreadable",
         "progress.dismiss",
         "notFound.title",
