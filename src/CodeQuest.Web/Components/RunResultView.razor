@@ -1,0 +1,58 @@
+@inject UiText Ui
+
+@switch (Result)
+{
+    case CodeRejected rejected:
+        <div class="result" role="alert">
+            <p>@Ui["level.rejected"]</p>
+            <p>@LinePrefix(rejected.Line)@rejected.Reason.Get(Ui.Language)</p>
+        </div>
+        break;
+    case CompilationFailed failed:
+        <div class="result" role="alert">
+            <p>@Ui["level.compileErrors"]</p>
+            <ul>
+                @foreach (var error in failed.Errors)
+                {
+                    <li>
+                        @LinePrefix(error.Line)@(error.Explanation?.Get(Ui.Language) ?? error.Message)
+                        @if (error.Explanation is not null)
+                        {
+                            <small class="original">@Ui["level.originalMessage"]: @error.Message</small>
+                        }
+                    </li>
+                }
+            </ul>
+        </div>
+        break;
+    case ChecksFailed checks:
+        <div class="result" role="alert">
+            <p>@Ui["level.checksFailed"]</p>
+            <ul>
+                @foreach (var failure in checks.Failures)
+                {
+                    <li>@failure.Get(Ui.Language)</li>
+                }
+            </ul>
+        </div>
+        break;
+    case TimedOut:
+        <div class="result" role="alert">
+            <p>@Ui["level.timedOut"]</p>
+        </div>
+        break;
+    case RuntimeError error:
+        <div class="result" role="alert">
+            <p>@Ui["level.runtimeError"]</p>
+            <p>@LinePrefix(error.Line)@error.Explanation.Get(Ui.Language)</p>
+            <small class="original">@Ui["level.originalMessage"]: @error.Message</small>
+        </div>
+        break;
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public RunResult Result { get; set; } = default!;
+
+    private string LinePrefix(int? line) => line is { } number ? $"{Ui["level.line"]} {number}: " : "";
+}

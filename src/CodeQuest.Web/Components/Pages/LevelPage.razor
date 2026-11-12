@@ -1,0 +1,208 @@
+﻿@page "/level/{Id}"
+@using CodeQuest.Core.Levels
+@using CodeQuest.Core.Progress
+@implements IDisposable
+@inject GameContent Content
+@inject UiText Ui
+@inject ProgressStore Store
+@inject ICodeRunner Runner
+@inject NavigationManager Navigation
+
+@if (level is not null && Store.Current is { } progress)
+{
+    <PageTitle>@level.Title.Get(Ui.Language)</PageTitle>
+
+    <h1>@level.Title.Get(Ui.Language)</h1>
+
+    <section class="story" aria-label="@Ui["level.story"]">
+        <p>@level.Story.Get(Ui.Language)</p>
+    </section>
+    <section class="concept" aria-label="@Ui["level.concept"]">
+        <p>@level.Concept.Get(Ui.Language)</p>
+    </section>
+
+    <div class="editor-frame">
+        <CodeEditor @key="level.Id" @ref="editor" InitialCode="@level.StarterCode" />
+    </div>
+
+    <div class="actions">
+        <button type="button" class="run" disabled="@running" @onclick="RunAsync">
+            @Ui[running ? "level.running" : "level.run"]
+        </button>
+        @if (hintsShown < level.Hints.Count)
+        {
+            <button type="button" class="hint" @onclick="ShowHintAsync">@Ui["level.hint"]</button>
+        }
+        @if (progress.CanSeeSolution(level.Id))
+        {
+            <button type="button" class="solution" @onclick="ShowSolutionAsync">@Ui["level.solution"]</button>
+        }
+    </div>
+
+    @if (hintsShown > 0)
+    {
+        <ol class="hints">
+            @foreach (var hint in level.Hints.Take(hintsShown))
+            {
+                <li>@hint.Get(Ui.Language)</li>
+            }
+        </ol>
+    }
+
+    @if (result is { } shown && shown is not Passed)
+    {
+        <RunResultView Result="shown" />
+    }
+
+    @if (earnedStars is { } stars)
+    {
+        <section class="victory">
+            <div class="scene" aria-hidden="true">
+                <div class="door open"><div class="door-leaf"></div></div>
+                <div class="hero"></div>
+            </div>
+            <p class="passed">@Ui["level.passed"]</p>
+            <p class="result-stars" role="img" aria-label="@string.Format(Ui["level.stars"], stars)">
+                @for (var star = 1; star <= 3; star++)
+                {
+                    <span class="star @(star <= stars ? "filled" : "")" aria-hidden="true">★</span>
+                }
+            </p>
+            <a class="next" href="@NextHref">@Ui[NextIsMap ? "level.backToMap" : "level.next"]</a>
+        </section>
+    }
+}
+
+@code {
+    private CodeEditor? editor;
+    private Level? level;
+    private string? loadedId;
+    private bool running;
+    private int hintsShown;
+    private RunResult? result;
+    private int? earnedStars;
+
+    [Parameter]
+    public string Id { get; set; } = "";
+
+    private int NextIndex => Content.Levels.ToList().FindIndex(candidate => candidate.Id == Id) + 1;
+
+    private bool NextIsMap => NextIndex >= Content.Levels.Count;
+
+    private string NextHref => NextIsMap ? "/" : $"/level/{Content.Levels[NextIndex].Id}";
+
+    protected override void OnInitialized()
+    {
+        Ui.Changed += OnChanged;
+        Store.Changed += OnStoreChanged;
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (Id != loadedId)
+        {
+            loadedId = Id;
+            hintsShown = 0;
+            result = null;
+            earnedStars = null;
+        }
+
+        RedirectIfUnavailable();
+    }
+
+    public void Dispose()
+    {
+        Ui.Changed -= OnChanged;
+        Store.Changed -= OnStoreChanged;
+    }
+
+    private void RedirectIfUnavailable()
+    {
+        level = Content.FindLevel(Id);
+        var locked = Store.Current is { } progress && !progress.IsUnlocked(Content.Levels, Id);
+        if (level is null || locked)
+        {
+            level = null;
+            Navigation.NavigateTo("/");
+        }
+    }
+
+    private void OnChanged() => _ = InvokeAsync(StateHasChanged);
+
+    private void OnStoreChanged() => _ = InvokeAsync(() =>
+    {
+        RedirectIfUnavailable();
+        StateHasChanged();
+    });
+
+    private async Task RunAsync()
+    {
+        if (level is null || editor is null || Store.Current is not { } progress)
+        {
+            return;
+        }
+
+        running = true;
+        try
+        {
+            var code = await editor.GetCodeAsync();
+            result = await Runner.RunAsync(new RunRequest(level.Template, code, level.ValidationSource), Ui.Language, CancellationToken.None);
+        }
+        finally
+        {
+            running = false;
+        }
+
+        await ApplyResultAsync(level, progress, result);
+    }
+
+    private async Task ApplyResultAsync(Level current, PlayerProgress progress, RunResult outcome)
+    {
+        if (outcome is CompilationFailed failed)
+        {
+            await editor!.ShowErrorsAsync(failed.Errors);
+        }
+        else
+        {
+            await editor!.ClearErrorsAsync();
+        }
+
+        if (outcome is Passed passed)
+        {
+            earnedStars = StarCalculator.Calculate(
+                current.World, passed.StatementCount, current.MaxStatementsForThreeStars, progress.UsedHint(current.Id), progress.SawSolution(current.Id));
+            progress.RecordPass(current.Id, earnedStars.Value);
+        }
+        else
+        {
+            earnedStars = null;
+            progress.RecordFailure(current.Id);
+        }
+
+        await Store.SaveAsync(progress);
+    }
+
+    private async Task ShowHintAsync()
+    {
+        if (level is null || Store.Current is not { } progress)
+        {
+            return;
+        }
+
+        hintsShown++;
+        progress.RecordHintUsed(level.Id);
+        await Store.SaveAsync(progress);
+    }
+
+    private async Task ShowSolutionAsync()
+    {
+        if (level is null || editor is null || Store.Current is not { } progress)
+        {
+            return;
+        }
+
+        progress.RecordSolutionSeen(level.Id);
+        await editor.SetCodeAsync(level.Solution);
+        await Store.SaveAsync(progress);
+    }
+}
