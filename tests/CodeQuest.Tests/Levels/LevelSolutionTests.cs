@@ -33,7 +33,7 @@ public class LevelSolutionTests
 
     [Fact]
     public void RealContent_HasTheFirstThreeLevelsInOrder() =>
-        Assert.Equal(["01-variables", "02-operators", "03-conditions"], Levels.Select(level => level.Id));
+        Assert.Equal(["01-variables", "02-operators", "03-conditions"], Levels.Take(3).Select(level => level.Id));
 
     [Theory]
     [MemberData(nameof(LevelIds))]

@@ -21,7 +21,7 @@ public static class Validation
 
         if (!hero.IsAlive)
         {
-            yield return ("isAlive devia ser true.", "isAlive should be true.");
+            yield return ("O mago devia estar vivo (isAlive = true).", "The wizard should be alive (isAlive = true).");
         }
     }
 }

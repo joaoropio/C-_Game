@@ -4,21 +4,21 @@
   "number": 3,
   "title": { "pt": "As Três Portas", "en": "The Three Doors" },
   "story": {
-    "pt": "Três portas brilham à tua frente, cada uma marcada por uma runa. Pronuncia a runa certa e a porta abre-se. Se a runa for desconhecida, o melhor é recuar.",
-    "en": "Three doors glow before you, each marked with a rune. Speak the right rune and the door opens. If the rune is unknown, it is wiser to step back."
+    "pt": "Três portas brilham à tua frente. A runa que pronunciaste chega ao feitiço na variável rune. Se rune for \"fire\", devolve \"left\"; se for \"ice\", devolve \"right\"; se for \"wind\", devolve \"center\". Para qualquer outra runa, recua: devolve \"back\".",
+    "en": "Three doors glow before you. The rune you spoke reaches the spell in the variable rune. If rune is \"fire\", return \"left\"; if it is \"ice\", return \"right\"; if it is \"wind\", return \"center\". For any other rune, step back: return \"back\"."
   },
   "concept": {
-    "pt": "Uma condição deixa o código escolher um caminho. Com if e else escolhes entre duas hipóteses; com switch escolhes entre várias. Exemplo: if (gold > 5) { return \"rich\"; } else { return \"poor\"; }",
-    "en": "A condition lets the code choose a path. With if and else you pick between two options; with switch you pick among many. Example: if (gold > 5) { return \"rich\"; } else { return \"poor\"; }"
+    "pt": "Uma condição deixa o código escolher um caminho. Com switch escolhes entre vários valores; o default trata todos os outros casos. Exemplo: switch (color) { case \"red\": return \"stop\"; default: return \"go\"; } Para só duas hipóteses, também podes usar if e else.",
+    "en": "A condition lets the code choose a path. With switch you pick among several values; default handles every other case. Example: switch (color) { case \"red\": return \"stop\"; default: return \"go\"; } For just two options, you can also use if and else."
   },
   "hints": [
     {
-      "pt": "Compara a runa com cada palavra: \"fire\" leva à porta \"left\", \"ice\" à \"right\" e \"wind\" à \"center\". Para qualquer outra runa, devolve \"back\".",
-      "en": "Compare the rune with each word: \"fire\" leads to the \"left\" door, \"ice\" to \"right\" and \"wind\" to \"center\". For any other rune, return \"back\"."
+      "pt": "Faz um switch sobre rune, com um case para cada runa conhecida e um default para o resto.",
+      "en": "Write a switch on rune, with a case for each known rune and a default for everything else."
     },
     {
-      "pt": "Usa um switch: case \"fire\": return \"left\"; e assim por diante, com default: return \"back\";",
-      "en": "Use a switch: case \"fire\": return \"left\"; and so on, with default: return \"back\";"
+      "pt": "Começa assim: switch (rune) { case \"fire\": return \"left\"; case \"ice\": return \"right\"; ... e termina com default: return \"back\"; }",
+      "en": "Start like this: switch (rune) { case \"fire\": return \"left\"; case \"ice\": return \"right\"; ... and end with default: return \"back\"; }"
     }
   ],
   "maxStatementsForThreeStars": 5,

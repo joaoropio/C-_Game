@@ -4,12 +4,12 @@
   "number": 1,
   "title": { "pt": "O Nome do Mago", "en": "The Wizard's Name" },
   "story": {
-    "pt": "Entras na masmorra e uma porta de pedra pergunta quem és. Para a abrir, tens de guardar quatro factos sobre o teu mago: o nome, a vida, a mana e se está vivo.",
-    "en": "You step into the dungeon and a stone door asks who you are. To open it, you must store four facts about your wizard: the name, the health, the mana and whether he is alive."
+    "pt": "Entras na masmorra e uma porta de pedra pergunta quem és. Para a abrir, tens de guardar quatro factos sobre o teu mago, nas variáveis name (\"Merlin\"), health (100), mana (50.5) e isAlive (true).",
+    "en": "You step into the dungeon and a stone door asks who you are. To open it, you must store four facts about your wizard in the variables name (\"Merlin\"), health (100), mana (50.5) and isAlive (true)."
   },
   "concept": {
-    "pt": "Uma variável é uma caixa com nome onde guardas um valor. Cada caixa tem um tipo: string para texto, int para números inteiros, double para números com vírgula e bool para verdadeiro ou falso. Exemplo: int gold = 7;",
-    "en": "A variable is a named box where you keep a value. Each box has a type: string for text, int for whole numbers, double for numbers with a decimal point and bool for true or false. Example: int gold = 7;"
+    "pt": "Uma variável é uma caixa com nome onde guardas um valor. Cada caixa tem um tipo: string para texto, int para números inteiros, double para números com parte decimal e bool para verdadeiro ou falso. Em C# a parte decimal usa ponto (50.5, não 50,5). Exemplo: int gold = 7;",
+    "en": "A variable is a named box where you keep a value. Each box has a type: string for text, int for whole numbers, double for numbers with a decimal part and bool for true or false. In C# the decimal part uses a point (50.5, not 50,5). Example: int gold = 7;"
   },
   "hints": [
     {
