@@ -1,4 +1,4 @@
-﻿using CodeQuest.Core;
+using CodeQuest.Core;
 using CodeQuest.Core.Running;
 using CodeQuest.Engine;
 
@@ -31,8 +31,8 @@ public class RoslynCodeRunnerTests
 
     private readonly RoslynCodeRunner _runner = new();
 
-    private Task<RunResult> Run(string playerCode) =>
-        _runner.RunAsync(new RunRequest(Template, playerCode, Validation), Language.En, CancellationToken.None);
+    private Task<RunResult> Run(string playerCode, string validation = Validation) =>
+        _runner.RunAsync(new RunRequest(Template, playerCode, validation), Language.En, CancellationToken.None);
 
     [Fact]
     public async Task Run_CorrectCode_Passed() =>
@@ -82,8 +82,75 @@ public class RoslynCodeRunnerTests
     [Theory]
     [InlineData("for (;;) { }")]
     [InlineData("for (int i = 0; i < 2000; i++) { for (int j = 0; j < 2000; j++) { } }\nreturn x;")]
-    public async Task Run_ForEverAndNestedLoops_TimedOut(string playerCode) =>
-        Assert.IsType<TimedOut>(await Run(playerCode));
+    public async Task Run_ForEverAndNestedLoops_TimedOut(string playerCode)
+    {
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+
+        var result = await Run(playerCode);
+
+        Assert.IsType<TimedOut>(result);
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(5), $"took {watch.Elapsed}");
+    }
+
+    [Fact]
+    public async Task Run_BlockedOutsidePlayerCode_TimedOutByWallClock()
+    {
+        const string blockingValidation = """
+            public static class Validation
+            {
+                public static System.Collections.Generic.IEnumerable<(string Pt, string En)> Run()
+                {
+                    System.Threading.Thread.Sleep(4000);
+                    yield break;
+                }
+            }
+            """;
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+
+        var result = await Run("return x;", blockingValidation);
+
+        Assert.IsType<TimedOut>(result);
+        Assert.InRange(watch.Elapsed, TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public async Task Run_ValidationSourceWithoutValidationType_ThrowsInvalidOperation()
+    {
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => Run("return x;", "public static class Other { }"));
+
+        Assert.Contains("Validation", exception.Message);
+    }
+
+    [Fact]
+    public async Task Run_ValidationWithoutRunMethod_ThrowsInvalidOperation() =>
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => Run("return x;", "public static class Validation { }"));
+
+    [Fact]
+    public async Task Run_ValidationRunWithWrongReturnType_ThrowsInvalidOperation() =>
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => Run("return x;", "public static class Validation { public static int Run() => 0; }"));
+
+    [Fact]
+    public async Task Run_ExceptionInsideValidationRun_RuntimeError()
+    {
+        const string throwingValidation = """
+            public static class Validation
+            {
+                public static System.Collections.Generic.IEnumerable<(string Pt, string En)> Run()
+                {
+                    throw new System.FormatException("bad");
+                    yield break;
+                }
+            }
+            """;
+
+        var result = Assert.IsType<RuntimeError>(await Run("return x;", throwingValidation));
+
+        Assert.Equal("bad", result.Message);
+        Assert.Null(result.Line);
+    }
 
     [Fact]
     public async Task Run_DivideByZero_RuntimeErrorWithPlayerLine()

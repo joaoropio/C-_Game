@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using CodeQuest.Core;
 using CodeQuest.Core.Running;
 
@@ -32,7 +32,11 @@ public sealed class RoslynCodeRunner : ICodeRunner
             return new CompilationFailed(outcome.Errors);
         }
 
-        var execution = Task.Run(() => Execute(outcome, request.PlayerCode), CancellationToken.None);
+        var execution = Task.Factory.StartNew(
+            () => Execute(outcome, request.PlayerCode),
+            CancellationToken.None,
+            TaskCreationOptions.LongRunning,
+            TaskScheduler.Default);
         try
         {
             return await execution.WaitAsync(WallClockLimit, cancellationToken);
@@ -50,8 +54,21 @@ public sealed class RoslynCodeRunner : ICodeRunner
         {
             using var assemblyStream = new MemoryStream(outcome.Assembly!);
             using var pdbStream = new MemoryStream(outcome.Pdb!);
-            var assembly = context.LoadFromStream(assemblyStream, pdbStream);
-            var failures = Validate(assembly);
+            var run = FindValidationMethod(context.LoadFromStream(assemblyStream, pdbStream));
+            return RunValidation(run, outcome, playerCode);
+        }
+        finally
+        {
+            context.Unload();
+        }
+    }
+
+    private static RunResult RunValidation(MethodInfo run, CompileOutcome outcome, string playerCode)
+    {
+        try
+        {
+            var results = (IEnumerable<(string Pt, string En)>)run.Invoke(null, null)!;
+            var failures = results.Select(result => new LocalizedText(result.Pt, result.En)).ToList();
             return failures.Count > 0
                 ? new ChecksFailed(failures)
                 : new Passed(StatementCounter.Count(playerCode));
@@ -63,21 +80,19 @@ public sealed class RoslynCodeRunner : ICodeRunner
                 : exception;
             return cause is TimeoutException
                 ? new TimedOut()
-                : RuntimeErrorExplainer.Explain(cause, outcome.PlayerLineOffset, LineCount(playerCode));
-        }
-        finally
-        {
-            context.Unload();
+                : RuntimeErrorExplainer.Explain(cause, outcome.PlayerLineOffset, outcome.PlayerLineCount);
         }
     }
-
-    private static List<LocalizedText> Validate(Assembly assembly)
+    private static MethodInfo FindValidationMethod(Assembly assembly)
     {
-        var run = assembly.GetType(ValidationTypeName)!.GetMethod(ValidationMethodName)!;
-        var results = (IEnumerable<(string Pt, string En)>)run.Invoke(null, null)!;
-        return results.Select(result => new LocalizedText(result.Pt, result.En)).ToList();
+        var validation = assembly.GetType(ValidationTypeName)
+            ?? throw new InvalidOperationException($"The validation source declares no type named '{ValidationTypeName}'.");
+        var run = validation.GetMethod(ValidationMethodName, BindingFlags.Public | BindingFlags.Static, Type.EmptyTypes)
+            ?? throw new InvalidOperationException(
+                $"'{ValidationTypeName}' has no public static parameterless method named '{ValidationMethodName}'.");
+        return typeof(IEnumerable<(string, string)>).IsAssignableFrom(run.ReturnType)
+            ? run
+            : throw new InvalidOperationException(
+                $"'{ValidationTypeName}.{ValidationMethodName}' must return IEnumerable<(string Pt, string En)>.");
     }
-
-    private static int LineCount(string playerCode) => playerCode.ReplaceLineEndings("\n").Split('\n').Length;
 }
-

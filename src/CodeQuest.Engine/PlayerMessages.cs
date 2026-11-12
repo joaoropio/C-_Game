@@ -23,4 +23,24 @@ internal static class PlayerMessages
     public static LocalizedText ForbiddenSpell(string symbol, int line) => new(
         $"Esse feitiço é proibido nesta masmorra: `{symbol}` (linha {line}).",
         $"That spell is forbidden in this dungeon: `{symbol}` (line {line}).");
+
+    public static readonly LocalizedText DividedByZero = new(
+        "Dividiste por zero.",
+        "You divided by zero.");
+
+    public static readonly LocalizedText UsedNull = new(
+        "Usaste algo que está vazio (null).",
+        "You used something that is empty (null).");
+
+    public static readonly LocalizedText PositionDoesNotExist = new(
+        "Tentaste usar uma posição que não existe.",
+        "You tried to use a position that doesn't exist.");
+
+    public static readonly LocalizedText UnexpectedFormat = new(
+        "O texto não tem o formato esperado.",
+        "The text isn't in the expected format.");
+
+    public static readonly LocalizedText SpellFailedWhileRunning = new(
+        "O feitiço falhou durante a execução.",
+        "The spell failed while running.");
 }

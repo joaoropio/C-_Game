@@ -15,6 +15,7 @@ internal sealed record CompileOutcome(
     byte[]? Pdb,
     IReadOnlyList<CompilationError> Errors,
     int PlayerLineOffset,
+    int PlayerLineCount,
     CodeRejected? Rejected);
 
 internal sealed class PlayerCompiler
@@ -48,7 +49,7 @@ internal sealed class PlayerCompiler
             playerLineCount);
         if (rejected is not null)
         {
-            return new CompileOutcome(null, null, [], markerIndex, rejected);
+            return new CompileOutcome(null, null, [], markerIndex, playerLineCount, rejected);
         }
 
         using var assembly = new MemoryStream();
@@ -65,8 +66,8 @@ internal sealed class PlayerCompiler
             .ToList();
 
         return emitResult.Success
-            ? new CompileOutcome(assembly.ToArray(), pdb.ToArray(), errors, markerIndex, null)
-            : new CompileOutcome(null, null, errors, markerIndex, null);
+            ? new CompileOutcome(assembly.ToArray(), pdb.ToArray(), errors, markerIndex, playerLineCount, null)
+            : new CompileOutcome(null, null, errors, markerIndex, playerLineCount, null);
     }
 
     private static SyntaxTree GuardLoops(string source, int firstPlayerLine, int playerLineCount)

@@ -1,4 +1,4 @@
-﻿using CodeQuest.Core;
+using CodeQuest.Core;
 using CodeQuest.Core.Running;
 using CodeQuest.Engine;
 

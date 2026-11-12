@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using CodeQuest.Core;
 using CodeQuest.Core.Running;
 
@@ -13,15 +13,11 @@ internal static class RuntimeErrorExplainer
 
     private static LocalizedText ExplanationFor(Exception exception) => exception switch
     {
-        DivideByZeroException => new("Dividiste por zero.", "You divided by zero."),
-        NullReferenceException => new(
-            "Usaste algo que está vazio (null).",
-            "You used something that is empty (null)."),
-        IndexOutOfRangeException or ArgumentOutOfRangeException => new(
-            "Tentaste usar uma posição que não existe.",
-            "You tried to use a position that doesn't exist."),
-        FormatException => new("O texto não tem o formato esperado.", "The text isn't in the expected format."),
-        _ => new("O feitiço falhou durante a execução.", "The spell failed while running."),
+        DivideByZeroException => PlayerMessages.DividedByZero,
+        NullReferenceException => PlayerMessages.UsedNull,
+        IndexOutOfRangeException or ArgumentOutOfRangeException => PlayerMessages.PositionDoesNotExist,
+        FormatException => PlayerMessages.UnexpectedFormat,
+        _ => PlayerMessages.SpellFailedWhileRunning,
     };
 
     private static int? PlayerLine(Exception exception, int playerLineOffset, int playerLineCount) =>
