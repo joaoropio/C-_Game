@@ -2,8 +2,6 @@
 
 public static class LevelRepository
 {
-    private const string PlayerCodeMarker = "//{{PLAYER_CODE}}";
-
     public static IReadOnlyList<Level> Load(string levelsDirectory) =>
         Directory.GetDirectories(levelsDirectory)
             .Select(LoadLevel)
@@ -46,7 +44,7 @@ public static class LevelRepository
     {
         var markers = template
             .Split('\n')
-            .Count(line => string.Concat(line.Where(c => !char.IsWhiteSpace(c))) == PlayerCodeMarker);
+            .Count(PlayerCodeMarker.IsMarkerLine);
 
         if (markers != 1)
         {
@@ -66,3 +64,4 @@ public static class LevelRepository
         int MaxStatementsForThreeStars,
         string GrimoirePageId);
 }
+

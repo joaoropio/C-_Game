@@ -29,13 +29,13 @@ public class LevelRepositoryTests
     public void Load_ReturnsLevelsOrderedByWorldThenNumber()
     {
         using var dir = new TempDirectory();
-        WriteLevel(dir, "02-b", world: 1, number: 2);
-        WriteLevel(dir, "03-c", world: 2, number: 1);
-        WriteLevel(dir, "01-a", world: 1, number: 1);
+        WriteLevel(dir, "b-middle", world: 1, number: 2);
+        WriteLevel(dir, "a-last", world: 2, number: 1);
+        WriteLevel(dir, "c-first", world: 1, number: 1);
 
         var levels = LevelRepository.Load(dir.Path);
 
-        Assert.Equal(["01-a", "02-b", "03-c"], levels.Select(l => l.Id));
+        Assert.Equal(["c-first", "b-middle", "a-last"], levels.Select(l => l.Id));
     }
 
     [Fact]
@@ -90,3 +90,5 @@ public class LevelRepositoryTests
         Assert.Contains("01-a", ex.Message);
     }
 }
+
+
