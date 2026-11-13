@@ -27,7 +27,7 @@
         </div>
 
         <div class="actions">
-            <button type="button" class="run" disabled="@running" @onclick="RunAsync">
+            <button type="button" class="run" @ref="runButton" disabled="@running" @onclick="RunAsync">
                 @Ui[running ? "level.running" : "level.run"]
             </button>
             <button type="button" class="grimoire-open" @onclick="OpenGrimoire">@Ui["grimoire.open"]</button>
@@ -57,6 +57,7 @@
                 <RunResultView Result="shown" />
             </div>
         }
+
         <GrimoirePanel IsOpen="grimoireOpen" InitialPageId="@level.GrimoirePageId"
                        OnClose="CloseGrimoire" OnCopyExample="InsertExampleAsync" />
     </div>
@@ -97,7 +98,9 @@
     private int? earnedStars;
     private bool focusVictoryPending;
     private bool focusResultPending;
+    private bool focusRunPending;
     private ElementReference nextButton;
+    private ElementReference runButton;
     private ElementReference resultBlock;
     private CancellationTokenSource? runCancellation;
 
@@ -128,6 +131,7 @@
             earnedStars = null;
             focusVictoryPending = false;
             focusResultPending = false;
+            focusRunPending = false;
         }
 
         RedirectIfUnavailable();
@@ -233,12 +237,20 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        var target = focusVictoryPending ? nextButton : resultBlock;
-        if (focusVictoryPending || focusResultPending)
+        if (focusVictoryPending)
         {
             focusVictoryPending = false;
+            await TryFocusAsync(nextButton);
+        }
+        else if (focusResultPending)
+        {
             focusResultPending = false;
-            await TryFocusAsync(target);
+            await TryFocusAsync(resultBlock);
+        }
+        else if (focusRunPending)
+        {
+            focusRunPending = false;
+            await TryFocusAsync(runButton);
         }
     }
 
@@ -256,7 +268,11 @@
 
     private void GoNext() => Navigation.NavigateTo(NextHref);
 
-    private void CloseVictory() => earnedStars = null;
+    private void CloseVictory()
+    {
+        earnedStars = null;
+        focusRunPending = true;
+    }
 
     private void OnVictoryKeyDown(KeyboardEventArgs args)
     {

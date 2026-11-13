@@ -62,10 +62,13 @@ public sealed class LevelPageTests : BunitContext
     private void AssertRedirectedHome() =>
         Assert.Equal("/", Assert.Single(Services.GetRequiredService<BunitNavigationManager>().History).Uri);
 
-    private void AssertFocused(IRenderedComponent<LevelPage> cut, string selector)
+    private static string ReferenceOf(IRenderedComponent<LevelPage> cut, string selector) =>
+        cut.Find(selector).GetAttribute("blazor:elementReference")!;
+
+    private void AssertLastFocused(string reference)
     {
-        var focused = (ElementReference)JSInterop.VerifyFocusAsyncInvoke().Arguments[0]!;
-        Assert.Equal(cut.Find(selector).GetAttribute("blazor:elementReference"), focused.Id);
+        var focus = JSInterop.Invocations.Last(call => call.Identifier == FocusCall);
+        Assert.Equal(reference, ((ElementReference)focus.Arguments[0]!).Id);
     }
 
     private void AssertNothingFocused() =>
@@ -187,7 +190,7 @@ public sealed class LevelPageTests : BunitContext
 
         await RunAsync(cut, new Passed(1));
 
-        AssertFocused(cut, ".victory button.next");
+        AssertLastFocused(ReferenceOf(cut, ".victory button.next"));
     }
 
     [Fact]
@@ -261,6 +264,30 @@ public sealed class LevelPageTests : BunitContext
     }
 
     [Fact]
+    public async Task Victory_Stay_ReturnsFocusToRunButton()
+    {
+        var cut = await RenderLevelAsync(First);
+        var runReference = ReferenceOf(cut, "button.run");
+        await RunAsync(cut, new Passed(1));
+
+        await cut.Find(".victory button.stay").ClickAsync(new());
+
+        AssertLastFocused(runReference);
+    }
+
+    [Fact]
+    public async Task Victory_Escape_ReturnsFocusToRunButton()
+    {
+        var cut = await RenderLevelAsync(First);
+        var runReference = ReferenceOf(cut, "button.run");
+        await RunAsync(cut, new Passed(1));
+
+        await cut.Find(".victory button.next").KeyDownAsync(Key.Escape);
+
+        AssertLastFocused(runReference);
+    }
+
+    [Fact]
     public async Task Victory_OtherKey_KeepsDialogOpen()
     {
         var cut = await RenderLevelAsync(First);
@@ -292,7 +319,7 @@ public sealed class LevelPageTests : BunitContext
 
         Assert.Equal("-1", cut.Find(".result-block").GetAttribute("tabindex"));
         Assert.Contains("Falhou.", cut.Find(".result-block").TextContent);
-        AssertFocused(cut, ".result-block");
+        AssertLastFocused(ReferenceOf(cut, ".result-block"));
     }
 
     [Fact]
@@ -530,6 +557,7 @@ public sealed class LevelPageTests : BunitContext
         Assert.Empty(cut.FindAll(".result"));
         Assert.Empty(cut.FindAll(".victory"));
     }
+
     [Fact]
     public async Task GrimoireCopy_InsertsIntoEditor()
     {
