@@ -13,8 +13,8 @@
   },
   "hints": [
     {
-      "pt": "Cria int total = 0; e usa um foreach para passar por cada prateleira de potions, somando o seu valor a total.",
-      "en": "Create int total = 0; and use a foreach to go through each shelf in potions, adding its value to total."
+      "pt": "Cria int total = 0; e usa um foreach para passar por cada prateleira de potions, somando o seu valor a total. Também funciona um for como no nível 4, com potions[i] e potions.Length.",
+      "en": "Create int total = 0; and use a foreach to go through each shelf in potions, adding its value to total. A for like in level 4, with potions[i] and potions.Length, also works."
     },
     {
       "pt": "Escreve: foreach (int count in potions) { total += count; } e depois return total; no fim. Com um array vazio o foreach não dá nenhuma volta e o total fica 0.",

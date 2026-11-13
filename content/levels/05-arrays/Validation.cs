@@ -15,8 +15,8 @@ public static class Validation
             {
                 var list = shelves.Length == 0 ? "{ }" : "{ " + string.Join(", ", shelves) + " }";
                 yield return (
-                    $"Com as prateleiras {list} o total devia ser {expected}, mas deu {actual}.",
-                    $"With the shelves {list} the total should be {expected}, but it was {actual}.");
+                    $"Com potions = {list} o total devia ser {expected}, mas deu {actual}.",
+                    $"With potions = {list} the total should be {expected}, but it was {actual}.");
             }
         }
     }

@@ -210,11 +210,12 @@ public class LevelSolutionTests
     {
         var level = Find("05-arrays");
 
-        var result = Assert.IsType<RuntimeError>(await Run(
+        var result = Assert.IsType<ChecksFailed>(await Run(
             level,
-            "int total = potions[0];\nfor (int i = 1; i < potions.Length; i++)\n{\n    total += potions[i];\n}\nreturn total;"));
+            "if (potions.Length == 0)\n{\n    return 1;\n}\n\nint total = 0;\nforeach (int count in potions)\n{\n    total += count;\n}\n\nreturn total;"));
 
-        Assert.Contains("position that doesn't exist", result.Explanation.En);
+        Assert.Contains(result.Failures, failure => failure.En.Contains("potions = { }") && failure.En.Contains("should be 0"));
+        Assert.Contains(result.Failures, failure => failure.Pt.Contains("potions = { }") && failure.Pt.Contains("devia ser 0"));
     }
 
     [Fact]
