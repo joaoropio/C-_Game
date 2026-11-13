@@ -12,50 +12,54 @@
 {
     <PageTitle>@level.Title.Get(Ui.Language)</PageTitle>
 
-    <h1>@level.Title.Get(Ui.Language)</h1>
+    <div class="page-content" inert="@(earnedStars is not null)">
+        <h1>@level.Title.Get(Ui.Language)</h1>
 
-    <section class="story" aria-label="@Ui["level.story"]">
-        <p>@level.Story.Get(Ui.Language)</p>
-    </section>
-    <section class="concept" aria-label="@Ui["level.concept"]">
-        <p>@level.Concept.Get(Ui.Language)</p>
-    </section>
+        <section class="story" aria-label="@Ui["level.story"]">
+            <p>@level.Story.Get(Ui.Language)</p>
+        </section>
+        <section class="concept" aria-label="@Ui["level.concept"]">
+            <p>@level.Concept.Get(Ui.Language)</p>
+        </section>
 
-    <div class="editor-frame">
-        <CodeEditor @key="level.Id" @ref="editor" InitialCode="@level.StarterCode" />
-    </div>
-
-    <div class="actions">
-        <button type="button" class="run" disabled="@running" @onclick="RunAsync">
-            @Ui[running ? "level.running" : "level.run"]
-        </button>
-        <button type="button" class="grimoire-open" @onclick="OpenGrimoire">@Ui["grimoire.open"]</button>
-        @if (hintsShown < level.Hints.Count)
-        {
-            <button type="button" class="hint" @onclick="ShowHintAsync">@Ui["level.hint"]</button>
-        }
-        @if (progress.CanSeeSolution(level.Id) && !progress.IsCompleted(level.Id))
-        {
-            <button type="button" class="solution" @onclick="ShowSolutionAsync">@Ui["level.solution"]</button>
-        }
-    </div>
-
-    @if (hintsShown > 0)
-    {
-        <ol class="hints">
-            @foreach (var hint in level.Hints.Take(hintsShown))
-            {
-                <li>@hint.Get(Ui.Language)</li>
-            }
-        </ol>
-    }
-
-    @if (result is { } shown && shown is not Passed)
-    {
-        <div class="result-block" tabindex="-1" @ref="resultBlock">
-            <RunResultView Result="shown" />
+        <div class="editor-frame">
+            <CodeEditor @key="level.Id" @ref="editor" InitialCode="@level.StarterCode" />
         </div>
-    }
+
+        <div class="actions">
+            <button type="button" class="run" disabled="@running" @onclick="RunAsync">
+                @Ui[running ? "level.running" : "level.run"]
+            </button>
+            <button type="button" class="grimoire-open" @onclick="OpenGrimoire">@Ui["grimoire.open"]</button>
+            @if (hintsShown < level.Hints.Count)
+            {
+                <button type="button" class="hint" @onclick="ShowHintAsync">@Ui["level.hint"]</button>
+            }
+            @if (progress.CanSeeSolution(level.Id) && !progress.IsCompleted(level.Id))
+            {
+                <button type="button" class="solution" @onclick="ShowSolutionAsync">@Ui["level.solution"]</button>
+            }
+        </div>
+
+        @if (hintsShown > 0)
+        {
+            <ol class="hints">
+                @foreach (var hint in level.Hints.Take(hintsShown))
+                {
+                    <li>@hint.Get(Ui.Language)</li>
+                }
+            </ol>
+        }
+
+        @if (result is { } shown && shown is not Passed)
+        {
+            <div class="result-block" tabindex="-1" @ref="resultBlock">
+                <RunResultView Result="shown" />
+            </div>
+        }
+        <GrimoirePanel IsOpen="grimoireOpen" InitialPageId="@level.GrimoirePageId"
+                       OnClose="CloseGrimoire" OnCopyExample="InsertExampleAsync" />
+    </div>
 
     @if (earnedStars is { } stars)
     {
@@ -80,9 +84,6 @@
             </section>
         </div>
     }
-
-    <GrimoirePanel IsOpen="grimoireOpen" InitialPageId="@level.GrimoirePageId"
-                   OnClose="CloseGrimoire" OnCopyExample="InsertExampleAsync" />
 }
 
 @code {
@@ -232,15 +233,24 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (focusVictoryPending)
+        var target = focusVictoryPending ? nextButton : resultBlock;
+        if (focusVictoryPending || focusResultPending)
         {
             focusVictoryPending = false;
-            await nextButton.FocusAsync();
-        }
-        else if (focusResultPending)
-        {
             focusResultPending = false;
-            await resultBlock.FocusAsync();
+            await TryFocusAsync(target);
+        }
+    }
+
+    private static async Task TryFocusAsync(ElementReference element)
+    {
+        try
+        {
+            await element.FocusAsync();
+        }
+        catch (JSException)
+        {
+            // The element was removed (level change, dialog closed) before the focus call arrived.
         }
     }
 

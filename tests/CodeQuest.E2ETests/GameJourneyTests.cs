@@ -74,7 +74,25 @@ public class GameJourneyTests(GameServerFixture server)
         await TypeCodeAsync(page, "string name = \"Merlin\";\nint health = ;\n");
         await RunAsync(page);
 
-        await Expect(page.Locator(".result-block .result")).ToBeInViewportAsync(new() { Timeout = Timeout });
+        await Expect(page.Locator(".result-block .result")).ToBeInViewportAsync(new() { Ratio = 1, Timeout = Timeout });
+    }
+
+    [Fact]
+    public async Task Level1_VictoryDialog_KeyboardNeverReachesPageBehind()
+    {
+        await using var context = await server.Browser.NewContextAsync();
+        var page = await context.NewPageAsync();
+
+        await OpenLevelAsync(page, "01-variables");
+        await TypeCodeAsync(page, Level1Solution);
+        await RunAsync(page);
+        await Expect(page.Locator(".victory button.next")).ToBeFocusedAsync(new() { Timeout = Timeout });
+
+        for (var presses = 0; presses < 4; presses++)
+        {
+            await page.Keyboard.PressAsync("Shift+Tab");
+            Assert.False(await page.EvaluateAsync<bool>("document.querySelector('.page-content').contains(document.activeElement)"));
+        }
     }
 
     [Fact]

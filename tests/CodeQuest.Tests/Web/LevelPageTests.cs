@@ -62,14 +62,14 @@ public sealed class LevelPageTests : BunitContext
     private void AssertRedirectedHome() =>
         Assert.Equal("/", Assert.Single(Services.GetRequiredService<BunitNavigationManager>().History).Uri);
 
-    private IReadOnlyList<string> FocusedReferences() =>
-        JSInterop.Invocations
-            .Where(call => call.Identifier == FocusCall)
-            .Select(call => ((ElementReference)call.Arguments[0]!).Id)
-            .ToList();
+    private void AssertFocused(IRenderedComponent<LevelPage> cut, string selector)
+    {
+        var focused = (ElementReference)JSInterop.VerifyFocusAsyncInvoke().Arguments[0]!;
+        Assert.Equal(cut.Find(selector).GetAttribute("blazor:elementReference"), focused.Id);
+    }
 
-    private void AssertFocused(IRenderedComponent<LevelPage> cut, string selector) =>
-        Assert.Contains(cut.Find(selector).GetAttribute("blazor:elementReference"), FocusedReferences());
+    private void AssertNothingFocused() =>
+        Assert.DoesNotContain(JSInterop.Invocations, call => call.Identifier == FocusCall);
 
     private string LastNavigation() => Services.GetRequiredService<BunitNavigationManager>().History.First().Uri;
 
@@ -232,6 +232,35 @@ public sealed class LevelPageTests : BunitContext
     }
 
     [Fact]
+    public async Task Victory_MakesPageBehindInertUntilClosed()
+    {
+        var cut = await RenderLevelAsync(First);
+        Assert.False(cut.Find(".page-content").HasAttribute("inert"));
+        await RunAsync(cut, new Passed(1));
+
+        Assert.True(cut.Find(".page-content").HasAttribute("inert"));
+        Assert.Empty(cut.FindAll(".page-content .victory"));
+        Assert.Single(cut.FindAll(".page-content .editor-frame"));
+
+        await cut.Find(".victory button.stay").ClickAsync(new());
+
+        Assert.False(cut.Find(".page-content").HasAttribute("inert"));
+        Assert.Single(editor.Invocations["create"]);
+        Assert.DoesNotContain(editor.Invocations, call => call.Identifier == "dispose");
+    }
+
+    [Fact]
+    public async Task Victory_Escape_RemovesInert()
+    {
+        var cut = await RenderLevelAsync(First);
+        await RunAsync(cut, new Passed(1));
+
+        await cut.Find(".victory button.next").KeyDownAsync(Key.Escape);
+
+        Assert.False(cut.Find(".page-content").HasAttribute("inert"));
+    }
+
+    [Fact]
     public async Task Victory_OtherKey_KeepsDialogOpen()
     {
         var cut = await RenderLevelAsync(First);
@@ -275,14 +304,14 @@ public sealed class LevelPageTests : BunitContext
 
         var click = cut.Find("button.run").ClickAsync(new());
         cut.WaitForAssertion(() => Assert.True(cut.Find("button.run").HasAttribute("disabled")));
-        Assert.Empty(FocusedReferences());
+        AssertNothingFocused();
 
         gate.SetResult(new TimedOut());
         await click;
-        cut.WaitForAssertion(() => Assert.Single(FocusedReferences()));
+        cut.WaitForAssertion(() => JSInterop.VerifyFocusAsyncInvoke());
         await cut.Find("button.hint").ClickAsync(new());
 
-        Assert.Single(FocusedReferences());
+        JSInterop.VerifyFocusAsyncInvoke();
     }
 
     [Fact]
@@ -293,7 +322,7 @@ public sealed class LevelPageTests : BunitContext
         await RunAsync(cut, new Passed(1));
 
         Assert.Empty(cut.FindAll(".result-block"));
-        Assert.Single(FocusedReferences());
+        JSInterop.VerifyFocusAsyncInvoke();
     }
 
     [Fact]
@@ -310,9 +339,8 @@ public sealed class LevelPageTests : BunitContext
         gate.SetResult(new TimedOut());
         await click;
 
-        Assert.Empty(FocusedReferences());
+        AssertNothingFocused();
     }
-
 
     [Fact]
     public async Task Run_Passed_World1WithHint_GivesTwoOrThreeStars()
