@@ -10,7 +10,7 @@
 }
 
 .result .original {
-    color: var(--parchment-dim);
+    color: var(--text-muted);
     display: block;
-    font-family: Consolas, monospace;
+    font-family: var(--font-code);
 }

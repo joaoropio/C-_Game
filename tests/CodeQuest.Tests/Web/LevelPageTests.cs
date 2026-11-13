@@ -468,7 +468,7 @@ public sealed class LevelPageTests : BunitContext
         var click = cut.Find("button.run").ClickAsync(new());
 
         cut.WaitForAssertion(() => Assert.True(cut.Find("button.run").HasAttribute("disabled")));
-        Assert.Contains("A executar", cut.Find("button.run").TextContent);
+        Assert.Contains("A lançar", cut.Find("button.run").TextContent);
 
         gate.SetResult(new TimedOut());
         await click;
@@ -610,7 +610,7 @@ public sealed class LevelPageTests : BunitContext
         await cut.InvokeAsync(() => Services.GetRequiredService<UiText>().SetLanguageAsync(Language.En));
 
         Assert.Contains(First.Story.En, cut.Find(".story").TextContent);
-        Assert.Contains("Run", cut.Find("button.run").TextContent);
+        Assert.Contains("Cast spell", cut.Find("button.run").TextContent);
     }
 
     private sealed class FakeRunner : ICodeRunner

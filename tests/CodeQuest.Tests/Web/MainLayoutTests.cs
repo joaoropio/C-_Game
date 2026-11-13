@@ -40,6 +40,19 @@ public sealed class MainLayoutTests : BunitContext
     }
 
     [Fact]
+    public void MainLayout_Header_HasBrandMarkAndAccessibleHomeLink()
+    {
+        this.AddGameServices();
+
+        var cut = Render<MainLayout>(parameters => parameters.Add(layout => layout.Body, "<p>page</p>"));
+
+        var brand = cut.Find("header a.brand");
+        Assert.Equal("/", brand.GetAttribute("href"));
+        Assert.Equal("Code Quest", brand.TextContent.Trim());
+        Assert.Equal("true", brand.QuerySelector("svg")!.GetAttribute("aria-hidden"));
+    }
+
+    [Fact]
     public void MainLayout_DismissWarning_HidesIt()
     {
         this.AddGameServices(savedProgress: "{ not json");

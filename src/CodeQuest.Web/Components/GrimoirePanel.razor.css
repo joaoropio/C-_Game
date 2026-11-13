@@ -31,7 +31,7 @@ header {
     background: var(--stone-700);
     border: 2px solid var(--torch-dark);
     border-radius: 6px;
-    color: var(--parchment);
+    color: var(--text);
     cursor: pointer;
     font: inherit;
     padding: 0.25rem 0.8rem;
@@ -41,7 +41,7 @@ input[type=search] {
     background: var(--stone-900);
     border: 2px solid var(--stone-700);
     border-radius: 6px;
-    color: var(--parchment);
+    color: var(--text);
     font: inherit;
     padding: 0.35rem 0.6rem;
 }
@@ -62,11 +62,12 @@ nav ul {
 }
 
 nav button.current {
-    background: var(--torch-dark);
+    background: var(--torch);
+    color: var(--on-torch);
 }
 
 .empty {
-    color: var(--parchment-dim);
+    color: var(--text-muted);
 }
 
 .page-detail h3 {
@@ -81,7 +82,7 @@ nav button.current {
 pre {
     background: var(--stone-900);
     border-radius: 6px;
-    font-family: Consolas, monospace;
+    font-family: var(--font-code);
     font-size: 0.95rem;
     margin: 0.5rem 0;
     overflow-x: auto;
@@ -89,7 +90,7 @@ pre {
 }
 
 .mistakes {
-    color: var(--parchment-dim);
+    color: var(--text-muted);
     padding-left: 1.2rem;
 }
 

@@ -22,11 +22,11 @@
 }
 
 .room.locked {
-    color: var(--parchment-dim);
+    color: var(--text-muted);
 }
 
 .room-number {
-    color: var(--parchment-dim);
+    color: var(--text-muted);
     min-width: 2.5rem;
 }
 

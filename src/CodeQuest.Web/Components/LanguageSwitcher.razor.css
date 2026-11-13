@@ -1,28 +1,29 @@
 .language-switcher {
+    border: 1px solid var(--stone-600);
+    border-radius: 6px;
     display: inline-flex;
+    overflow: hidden;
 }
 
 .language-switcher button {
-    background: var(--stone-800);
-    border: 2px solid var(--stone-700);
-    color: var(--parchment);
+    background: transparent;
+    border: 0;
+    color: var(--text);
     cursor: pointer;
-    font: inherit;
-    padding: 0.25rem 0.75rem;
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    padding: 0.55rem 1rem;
 }
 
-.language-switcher button:first-child {
-    border-radius: 6px 0 0 6px;
-}
-
-.language-switcher button:last-child {
-    border-radius: 0 6px 6px 0;
-    border-left-width: 0;
+.language-switcher button:hover:not([aria-pressed="true"]) {
+    background: var(--stone-800);
 }
 
 .language-switcher button[aria-pressed="true"] {
     background: var(--torch);
-    border-color: var(--torch);
-    color: var(--stone-900);
-    font-weight: bold;
+    color: var(--on-torch);
+}
+
+.language-switcher button:focus-visible {
+    outline-offset: -3px;
 }

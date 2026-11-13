@@ -7,7 +7,7 @@
 }
 
 .concept {
-    color: var(--parchment-dim);
+    color: var(--text-muted);
 }
 
 .editor-frame {
@@ -27,16 +27,19 @@
 
 .actions button {
     background: var(--stone-700);
-    border: 2px solid var(--torch-dark);
+    border: 1px solid var(--torch-dark);
     border-radius: 6px;
-    color: var(--parchment);
+    color: var(--text);
     cursor: pointer;
     font: inherit;
     padding: 0.4rem 1.1rem;
 }
 
 .actions button.run {
-    background: var(--torch-dark);
+    background: var(--torch);
+    border-color: var(--torch);
+    color: var(--on-torch);
+    font-weight: 700;
 }
 
 .actions button:disabled {
@@ -45,7 +48,7 @@
 }
 
 .hints {
-    color: var(--parchment-dim);
+    color: var(--text-muted);
     margin: 1rem 0;
 }
 
@@ -66,7 +69,7 @@
 
 .victory {
     background: var(--stone-800);
-    border: 2px solid var(--torch-dark);
+    border: 1px solid var(--torch-dark);
     border-radius: 8px;
     box-shadow: 0 0 2rem rgba(0, 0, 0, 0.8);
     max-height: 100%;
@@ -153,16 +156,17 @@
 
 .victory-actions button {
     background: var(--stone-700);
-    border: 2px solid var(--torch-dark);
+    border: 1px solid var(--torch-dark);
     border-radius: 6px;
-    color: var(--parchment);
+    color: var(--text);
     cursor: pointer;
     font: inherit;
     padding: 0.4rem 1.2rem;
 }
 
 .victory-actions button.next {
-    background: var(--torch-dark);
+    background: var(--torch);
+    color: var(--on-torch);
     border-color: var(--torch);
 }
 
