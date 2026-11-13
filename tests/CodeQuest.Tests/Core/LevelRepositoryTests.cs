@@ -4,6 +4,7 @@ namespace CodeQuest.Tests.Core;
 
 public class LevelRepositoryTests
 {
+    private const string SceneSvg = "<svg viewBox=\"0 0 10 10\" aria-hidden=\"true\"></svg>";
     private const string Template = "class T\n{\n    // {{PLAYER_CODE}}\n}\n";
 
     private static void WriteLevel(TempDirectory dir, string folder, int world, int number, string template = Template)
@@ -16,13 +17,15 @@ public class LevelRepositoryTests
               "concept": { "pt": "Conceito", "en": "Concept" },
               "hints": [ { "pt": "Dica 1", "en": "Hint 1" }, { "pt": "Dica 2", "en": "Hint 2" } ],
               "maxStatementsForThreeStars": 3,
-              "grimoirePageId": "page-{{folder}}"
+              "grimoirePageId": "page-{{folder}}",
+              "sceneLabel": { "pt": "Cena", "en": "Scene" }
             }
             """);
         dir.Write($"{folder}/Template.cs", template);
         dir.Write($"{folder}/Starter.cs", "// starter");
         dir.Write($"{folder}/Solution.cs", "var x = 1;");
         dir.Write($"{folder}/Validation.cs", "public static class Validation { }");
+        dir.Write($"{folder}/scene.svg", SceneSvg);
     }
 
     [Fact]
@@ -56,6 +59,32 @@ public class LevelRepositoryTests
         Assert.Equal(["Dica 1", "Dica 2"], level.Hints.Select(h => h.Pt));
         Assert.Equal(3, level.MaxStatementsForThreeStars);
         Assert.Equal("page-01-a", level.GrimoirePageId);
+    }
+
+    [Fact]
+    public void Load_ReadsSceneSvgAndLabel()
+    {
+        using var dir = new TempDirectory();
+        WriteLevel(dir, "01-a", world: 1, number: 1);
+
+        var level = Assert.Single(LevelRepository.Load(dir.Path));
+
+        Assert.Equal(SceneSvg, level.SceneSvg);
+        Assert.Equal("Cena", level.SceneLabel.Pt);
+        Assert.Equal("Scene", level.SceneLabel.En);
+    }
+
+    [Fact]
+    public void Load_MissingSceneSvg_ThrowsWithLevelFolderName()
+    {
+        using var dir = new TempDirectory();
+        WriteLevel(dir, "01-a", 1, 1);
+        File.Delete(Path.Combine(dir.Path, "01-a", "scene.svg"));
+
+        var ex = Assert.Throws<FileNotFoundException>(() => LevelRepository.Load(dir.Path));
+
+        Assert.Contains("01-a", ex.Message);
+        Assert.Contains("scene.svg", ex.Message);
     }
 
     [Fact]

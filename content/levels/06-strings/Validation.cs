@@ -11,7 +11,7 @@ public static class Validation
         })
         {
             var actual = Spell.SealCode(name);
-            yield return ($"name = \"{name}\"", $"\"{expected}\"", $"\"{actual}\"");
+            yield return ($"name = \"{name}\"", $"\"{expected}\"", actual is null ? "null" : $"\"{actual}\"");
         }
     }
 }

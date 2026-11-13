@@ -1,0 +1,16 @@
+<svg viewBox="0 0 540 210" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+<rect width="540" height="210" fill="#2a231c"/>
+<path d="M0 0H540M0 42H540M0 84H540M0 126H540M0 168H540M60 0V42M180 0V42M300 0V42M420 0V42M120 42V84M240 42V84M360 42V84M480 42V84M60 84V126M180 84V126M300 84V126M420 84V126M120 126V168M240 126V168M360 126V168M480 126V168" stroke="#352c23" stroke-width="2"/>
+<path d="M170 210V92A100 100 0 0 1 370 92V210Z" fill="#0e0c09" stroke="#5a4a38" stroke-width="4"/>
+<ellipse cx="270" cy="200" rx="70" ry="8" fill="#000" fill-opacity="0.5"/>
+<path d="M270 100V152M246 112H294M248 126H292M252 140H288" stroke="#e9dcc0" stroke-width="5" stroke-linecap="round"/>
+<path d="M246 112L224 150M294 112L322 142M270 152L250 196M270 152L292 196" fill="none" stroke="#e9dcc0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="270" cy="76" r="22" fill="#e9dcc0"/>
+<rect x="258" y="92" width="24" height="12" rx="3" fill="#e9dcc0"/>
+<circle cx="262" cy="74" r="5" fill="#0e0c09"/><circle cx="278" cy="74" r="5" fill="#0e0c09"/>
+<circle cx="262" cy="74" r="2" fill="#e8a33d"/><circle cx="278" cy="74" r="2" fill="#e8a33d"/>
+<path d="M266 86H274" stroke="#0e0c09" stroke-width="3" stroke-linecap="round"/>
+<path d="M322 142L352 52" stroke="#b8c4cc" stroke-width="6" stroke-linecap="round"/>
+<path d="M310 136L336 148" stroke="#8a6a3e" stroke-width="6" stroke-linecap="round"/>
+<path d="M90 70v20M80 80h20M450 110v16M442 118h16" stroke="#e8a33d" stroke-width="2" stroke-linecap="round"/>
+</svg>

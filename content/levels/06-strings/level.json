@@ -22,5 +22,6 @@
     }
   ],
   "maxStatementsForThreeStars": 3,
-  "grimoirePageId": "strings"
+  "grimoirePageId": "strings",
+  "sceneLabel": { "pt": "Uma carta fechada com um selo de cera", "en": "A sealed letter with a wax seal" }
 }

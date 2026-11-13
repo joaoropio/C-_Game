@@ -103,6 +103,19 @@ public class LevelSolutionTests
     public void EachLevel_HasTwoHints(string id) =>
         Assert.Equal(2, Find(id).Hints.Count);
 
+    [Theory]
+    [InlineData("01-variables", "string name = null;\nint health = 100;\ndouble mana = 50.5;\nbool isAlive = true;", "name")]
+    [InlineData("03-conditions", "return null;", "rune = \"fire\"")]
+    [InlineData("06-strings", "return null;", "name = \"merlin\"")]
+    public async Task NullResult_IsShownAsNullNotAsEmptyString(string id, string playerCode, string failingCase)
+    {
+        var level = Find(id);
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, playerCode));
+
+        Assert.Equal("null", result.Checks.First(check => check.Case == failingCase).Actual);
+    }
+
     [Fact]
     public async Task Level2_UnqualifiedMathMax_Passed()
     {

@@ -83,6 +83,22 @@ public class ContentTests
     }
 
     [Fact]
+    public void EveryLevel_HasASafeDecorativeSceneAndALocalizedLabel()
+    {
+        Assert.NotEmpty(Levels);
+        Assert.All(Levels, level =>
+        {
+            Assert.StartsWith("<svg", level.SceneSvg);
+            Assert.Contains("aria-hidden=\"true\"", level.SceneSvg);
+            Assert.DoesNotContain("<script", level.SceneSvg, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("foreignObject", level.SceneSvg, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotMatch(@"\son\w+\s*=", level.SceneSvg);
+            Assert.False(string.IsNullOrWhiteSpace(level.SceneLabel.Pt));
+            Assert.False(string.IsNullOrWhiteSpace(level.SceneLabel.En));
+        });
+    }
+
+    [Fact]
     public void EveryLevel_HasGrimoirePage()
     {
         Assert.NotEmpty(Levels);

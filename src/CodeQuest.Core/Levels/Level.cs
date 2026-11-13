@@ -13,4 +13,6 @@ public sealed record Level(
     string ValidationSource,
     IReadOnlyList<LocalizedText> Hints,
     int MaxStatementsForThreeStars,
-    string GrimoirePageId);
+    string GrimoirePageId,
+    LocalizedText SceneLabel,
+    string SceneSvg);

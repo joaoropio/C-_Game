@@ -1,0 +1,22 @@
+<svg viewBox="0 0 540 210" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+<rect width="540" height="210" fill="#2a231c"/>
+<path d="M0 0H540M0 42H540M0 84H540M0 126H540M0 168H540M60 0V42M180 0V42M300 0V42M420 0V42M120 42V84M240 42V84M360 42V84M480 42V84M60 84V126M180 84V126M300 84V126M420 84V126M120 126V168M240 126V168M360 126V168M480 126V168" stroke="#352c23" stroke-width="2"/>
+<defs>
+<g id="potion"><circle cx="0" cy="-14" r="13" fill="currentColor"/><rect x="-4" y="-42" width="8" height="16" fill="currentColor"/><rect x="-6" y="-46" width="12" height="6" rx="2" fill="#8a6a3e"/><path d="M-7 -20a8 8 0 0 1 6 -6" fill="none" stroke="#fff" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round"/></g>
+</defs>
+<rect x="40" y="92" width="460" height="8" rx="2" fill="#5a4a38"/>
+<rect x="40" y="168" width="460" height="8" rx="2" fill="#5a4a38"/>
+<rect x="36" y="40" width="8" height="150" fill="#3a3128"/><rect x="496" y="40" width="8" height="150" fill="#3a3128"/>
+<use href="#potion" x="90" y="92" color="#4fd1c5"/>
+<use href="#potion" x="150" y="92" color="#e8a33d"/>
+<use href="#potion" x="210" y="92" color="#c792ea"/>
+<use href="#potion" x="330" y="92" color="#e0705a"/>
+<use href="#potion" x="390" y="92" color="#4fd1c5"/>
+<use href="#potion" x="450" y="92" color="#e8a33d"/>
+<use href="#potion" x="110" y="168" color="#e0705a"/>
+<use href="#potion" x="170" y="168" color="#7fe3d9"/>
+<use href="#potion" x="270" y="168" color="#c792ea"/>
+<use href="#potion" x="360" y="168" color="#e8a33d"/>
+<use href="#potion" x="420" y="168" color="#4fd1c5"/>
+<path d="M270 40v16M262 48h16M60 130v12M54 136h12" stroke="#7fe3d9" stroke-width="2" stroke-linecap="round"/>
+</svg>

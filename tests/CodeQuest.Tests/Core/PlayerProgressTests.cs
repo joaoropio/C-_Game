@@ -10,7 +10,7 @@ public class PlayerProgressTests
     private static readonly LocalizedText Text = new("t", "t");
 
     private static Level MakeLevel(string id, int number, string pageId) =>
-        new(id, 1, number, Text, Text, Text, "", "", "", "", [], 4, pageId);
+        new(id, 1, number, Text, Text, Text, "", "", "", "", [], 4, pageId, Text, "");
 
     private static GrimoirePage MakePage(string id) =>
         new(id, 1, Text, Text, Text, "", [], "");

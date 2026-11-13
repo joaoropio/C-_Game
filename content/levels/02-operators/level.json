@@ -22,5 +22,6 @@
     }
   ],
   "maxStatementsForThreeStars": 1,
-  "grimoirePageId": "operators"
+  "grimoirePageId": "operators",
+  "sceneLabel": { "pt": "Um esqueleto armado bloqueia o corredor", "en": "An armed skeleton blocks the corridor" }
 }

@@ -1,0 +1,10 @@
+<svg viewBox="0 0 540 210" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+<rect width="540" height="210" fill="#2a231c"/>
+<path d="M0 0H540M0 42H540M0 84H540M0 126H540M0 168H540M60 0V42M180 0V42M300 0V42M420 0V42M120 42V84M240 42V84M360 42V84M480 42V84M60 84V126M180 84V126M300 84V126M420 84V126M120 126V168M240 126V168M360 126V168M480 126V168" stroke="#352c23" stroke-width="2"/>
+<circle cx="270" cy="110" r="95" fill="#4fd1c5" fill-opacity="0.12"/>
+<circle cx="270" cy="110" r="55" fill="#4fd1c5" fill-opacity="0.18"/>
+<path d="M270 30L305 95L270 175L235 95Z" fill="#7fe3d9" stroke="#e9fffb" stroke-width="2"/>
+<path d="M270 30L282 95L270 175M270 30L258 95L270 175M235 95H305" fill="none" stroke="#2a8c84" stroke-width="1.5"/>
+<path d="M210 190H330L315 175H225Z" fill="#5a4a38"/>
+<path d="M150 70v20M140 80h20M400 60v16M392 68h16M380 140v12M374 146h12" stroke="#7fe3d9" stroke-width="2" stroke-linecap="round"/>
+</svg>

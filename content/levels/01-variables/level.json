@@ -22,5 +22,6 @@
     }
   ],
   "maxStatementsForThreeStars": 4,
-  "grimoirePageId": "variables"
+  "grimoirePageId": "variables",
+  "sceneLabel": { "pt": "Um livro aberto com o nome do mago, numa sala de pedra", "en": "An open book bearing the wizard's name, in a stone room" }
 }

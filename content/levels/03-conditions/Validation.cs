@@ -11,7 +11,7 @@ public static class Validation
         })
         {
             var actual = Spell.ChooseDoor(rune);
-            yield return ($"rune = \"{rune}\"", $"\"{expected}\"", $"\"{actual}\"");
+            yield return ($"rune = \"{rune}\"", $"\"{expected}\"", actual is null ? "null" : $"\"{actual}\"");
         }
     }
 }

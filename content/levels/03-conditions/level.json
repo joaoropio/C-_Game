@@ -22,5 +22,6 @@
     }
   ],
   "maxStatementsForThreeStars": 5,
-  "grimoirePageId": "conditions"
+  "grimoirePageId": "conditions",
+  "sceneLabel": { "pt": "Três portas de pedra a brilhar em cores diferentes", "en": "Three stone doors glowing in different colours" }
 }

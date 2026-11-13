@@ -29,7 +29,9 @@ public static class LevelRepository
             File.ReadAllText(RequiredFile(folder, name, "Validation.cs")),
             metadata.Hints,
             metadata.MaxStatementsForThreeStars,
-            metadata.GrimoirePageId);
+            metadata.GrimoirePageId,
+            metadata.SceneLabel,
+            File.ReadAllText(RequiredFile(folder, name, "scene.svg")));
     }
 
     private static string RequiredFile(string folder, string levelName, string fileName)
@@ -62,6 +64,7 @@ public static class LevelRepository
         LocalizedText Concept,
         IReadOnlyList<LocalizedText> Hints,
         int MaxStatementsForThreeStars,
-        string GrimoirePageId);
+        string GrimoirePageId,
+        LocalizedText SceneLabel);
 }
 
