@@ -1,4 +1,4 @@
-﻿namespace CodeQuest.Core.Levels;
+namespace CodeQuest.Core.Levels;
 
 public static class LevelRepository
 {
