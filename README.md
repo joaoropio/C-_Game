@@ -51,6 +51,7 @@ content/
     Starter.cs      código inicial mostrado no editor
     Solution.cs     solução de referência
     Validation.cs   testes escondidos
+    scene.svg       vinheta mostrada no topo do pergaminho
   grimoire/<id>.json   uma página do Grimório por conceito
   ui.json              textos da interface em PT/EN
 ```
@@ -65,7 +66,8 @@ Não é preciso mexer no motor, na interface nem nos `.csproj`: os níveis são 
    - `title`, `story` e `concept`, cada um com `pt` e `en`;
    - `hints`: lista de textos `{ pt, en }`. Cada nível tem exatamente 2 dicas;
    - `maxStatementsForThreeStars`: nº máximo de instruções (contadas pelo Roslyn) da solução para ter 3 estrelas;
-   - `grimoirePageId`: `id` da página do Grimório deste nível.
+   - `grimoirePageId`: `id` da página do Grimório deste nível;
+   - `sceneLabel`: `{ pt, en }` com a descrição curta da vinheta (é o nome acessível da imagem).
 3. `Template.cs`: o código C# à volta do código do jogador. Tem de ter exatamente uma linha `// {{PLAYER_CODE}}`, sozinha na linha (os espaços à volta ignoram-se). É aí que o código do jogador é inserido. O jogador só escreve o corpo de um método já dado.
 4. `Starter.cs`: o código inicial que aparece no editor. Tem de **não** passar na validação.
 5. `Solution.cs`: uma solução que passa na validação e cabe em `maxStatementsForThreeStars`.
@@ -88,8 +90,9 @@ Não é preciso mexer no motor, na interface nem nos `.csproj`: os níveis são 
    }
    ```
 
-7. `content/grimoire/<id>.json`: a página do Grimório (`id`, `world`, `title`, `whatItIs`, `syntax` (os três com `pt` e `en`), `example`, `commonMistakes` com 2 ou 3 entradas, `learnUrl` para o Microsoft Learn). O `example` tem de compilar e não pode reutilizar os identificadores do nível. Se o nível usar uma página que já existe, não é preciso criar outra.
-8. Corre `dotnet test`. Os testes descobrem o novo nível sozinhos e verificam que a solução passa, que o inicial não passa, que a solução cabe no limite de estrelas, que há PT e EN em todos os textos, 2 dicas, um único marcador e uma página do Grimório válida.
+7. `scene.svg`: a vinheta do nível (viewBox `0 0 540 210`, estilo de parede de pedra). Começa por `<svg`, leva `aria-hidden="true"` (o nome acessível vem de `sceneLabel`) e não pode ter `<script`, `foreignObject` nem atributos `on…`: o teste de conteúdo verifica-o, porque o SVG é injetado como marcação.
+8. `content/grimoire/<id>.json`: a página do Grimório (`id`, `world`, `title`, `whatItIs`, `syntax` (os três com `pt` e `en`), `example`, `commonMistakes` com 2 ou 3 entradas, `learnUrl` para o Microsoft Learn). O `example` tem de compilar e não pode reutilizar os identificadores do nível. Se o nível usar uma página que já existe, não é preciso criar outra.
+9. Corre `dotnet test`. Os testes descobrem o novo nível sozinhos e verificam que a solução passa, que o inicial não passa, que a solução cabe no limite de estrelas, que a vinheta é segura, que há PT e EN em todos os textos, 2 dicas, um único marcador e uma página do Grimório válida.
 
 Regras do código do jogador: só são permitidos os namespaces `System`, `System.Collections.Generic`, `System.Linq` e `System.Text` (mais os tipos do próprio nível), já importados: o jogador nunca escreve `using`. Dentro de `System` ficam proibidos, entre outros, `Environment`, `AppDomain`, `GC`, `Activator`, `Type`, `Delegate`, a leitura da consola e `dynamic`. Um nível que precise de mais namespaces tem de alargar essa lista em `ForbiddenApiChecker`.
 

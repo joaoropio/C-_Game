@@ -134,7 +134,7 @@ public sealed class LevelPageTests : BunitContext
 
         await RunAsync(cut, new ChecksFailed([new CheckOutcome("x = 1", "2", "3")]));
 
-        Assert.Contains("x = 1: deu 3 · esperado 2", cut.Find(".result").TextContent);
+        Assert.Equal("deu 3 · esperado 2", cut.Find(".case-detail").TextContent);
         Assert.Empty(cut.FindAll(".door.open"));
         for (var attempt = 0; attempt < 2; attempt++)
         {
@@ -318,7 +318,7 @@ public sealed class LevelPageTests : BunitContext
         await RunAsync(cut, new ChecksFailed([new CheckOutcome("x = 1", "2", "3")]));
 
         Assert.Equal("-1", cut.Find(".result-block").GetAttribute("tabindex"));
-        Assert.Contains("x = 1: deu 3 · esperado 2", cut.Find(".result-block").TextContent);
+        Assert.Equal("deu 3 · esperado 2", cut.Find(".result-block .case-detail").TextContent);
         AssertLastFocused(ReferenceOf(cut, ".result-block"));
     }
 
@@ -380,6 +380,101 @@ public sealed class LevelPageTests : BunitContext
 
         await RunAsync(cut, new Passed(First.MaxStatementsForThreeStars, []));
         Assert.Equal(3, cut.FindAll(".result-stars .star.filled").Count);
+    }
+
+    [Fact]
+    public async Task Tabs_AreARealTablistWithStoryOpenByDefault()
+    {
+        var cut = await RenderLevelAsync(First);
+
+        Assert.Equal("tablist", cut.Find("[role=tablist]").GetAttribute("role"));
+        Assert.Equal("Secções do nível", cut.Find("[role=tablist]").GetAttribute("aria-label"));
+        var tabs = cut.FindAll("[role=tab]");
+        Assert.Equal(["História", "Conceito", "Dicas"], tabs.Select(tab => tab.TextContent.Trim()));
+        Assert.Equal(["true", "false", "false"], tabs.Select(tab => tab.GetAttribute("aria-selected")));
+        Assert.All(tabs, tab => Assert.Equal("button", tab.TagName.ToLowerInvariant()));
+        var panels = cut.FindAll("[role=tabpanel]");
+        Assert.Equal(3, panels.Count);
+        for (var index = 0; index < 3; index++)
+        {
+            Assert.Equal(panels[index].Id, tabs[index].GetAttribute("aria-controls"));
+            Assert.Equal(tabs[index].Id, panels[index].GetAttribute("aria-labelledby"));
+        }
+
+        Assert.Equal([false, true, true], panels.Select(panel => panel.HasAttribute("hidden")));
+    }
+
+    [Fact]
+    public async Task Tabs_ClickingConceptShowsConceptPanel()
+    {
+        var cut = await RenderLevelAsync(First);
+
+        await cut.FindAll("[role=tab]")[1].ClickAsync(new());
+
+        Assert.Equal(["false", "true", "false"], cut.FindAll("[role=tab]").Select(tab => tab.GetAttribute("aria-selected")));
+        Assert.False(cut.Find(".concept").HasAttribute("hidden"));
+        Assert.True(cut.Find(".story").HasAttribute("hidden"));
+    }
+
+    [Fact]
+    public async Task HintsTab_ExplainsHowToGetHintsWhenNoneRevealed()
+    {
+        var cut = await RenderLevelAsync(First);
+
+        await cut.FindAll("[role=tab]")[2].ClickAsync(new());
+
+        Assert.Contains("botão Pista", cut.Find(".hints-panel").TextContent);
+        Assert.Empty(cut.FindAll(".hints li"));
+    }
+
+    [Fact]
+    public async Task Hint_SwitchesToHintsTabAndCountsRevealedHints()
+    {
+        var cut = await RenderLevelAsync(First);
+
+        await cut.Find("button.hint").ClickAsync(new());
+
+        Assert.Equal("true", cut.FindAll("[role=tab]")[2].GetAttribute("aria-selected"));
+        Assert.Equal("Dicas (1)", cut.FindAll("[role=tab]")[2].TextContent.Trim());
+        Assert.False(cut.Find(".hints-panel").HasAttribute("hidden"));
+    }
+
+    [Fact]
+    public async Task Vignette_IsALabelledImageWithTheLevelsOwnDecorativeSvg()
+    {
+        var cut = await RenderLevelAsync(First);
+
+        var figure = cut.Find(".vignette");
+        Assert.Equal("img", figure.GetAttribute("role"));
+        Assert.Equal(First.SceneLabel.Pt, figure.GetAttribute("aria-label"));
+        Assert.Equal("true", figure.QuerySelector("svg")!.GetAttribute("aria-hidden"));
+
+        await cut.InvokeAsync(() => Services.GetRequiredService<UiText>().SetLanguageAsync(Language.En));
+
+        Assert.Equal(First.SceneLabel.En, cut.Find(".vignette").GetAttribute("aria-label"));
+    }
+
+    [Fact]
+    public async Task RunButton_ShowsDecorativeStarIcon()
+    {
+        var cut = await RenderLevelAsync(First);
+
+        var button = cut.Find("button.run");
+        Assert.Contains("btn-primary", button.ClassList);
+        Assert.Equal("true", button.QuerySelector("svg")!.GetAttribute("aria-hidden"));
+        Assert.Contains("Lançar feitiço", button.TextContent);
+    }
+
+    [Fact]
+    public async Task Spellbook_HoldsEditorAndActionsAndResultsFollowIt()
+    {
+        var cut = await RenderLevelAsync(First);
+        await RunAsync(cut, new TimedOut());
+
+        Assert.Equal("Livro de feitiços", cut.Find(".spellbook h2").TextContent);
+        Assert.Single(cut.FindAll(".spellbook .editor-frame"));
+        Assert.Single(cut.FindAll(".spellbook .actions button.run"));
+        Assert.Equal("Resultado do feitiço", cut.Find(".result-block h2").TextContent);
     }
 
     [Fact]

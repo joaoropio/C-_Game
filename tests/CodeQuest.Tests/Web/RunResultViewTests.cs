@@ -57,7 +57,7 @@ public sealed class RunResultViewTests : BunitContext
     }
 
     [Fact]
-    public void ChecksFailed_ListsEachFailedCheckWithCaseActualAndExpected()
+    public void ChecksFailed_ShowsEveryCaseWithGotAndExpectedAndTheScore()
     {
         var cut = RenderResult(new ChecksFailed([
             new CheckOutcome("turns = 1", "1", "1"),
@@ -65,20 +65,62 @@ public sealed class RunResultViewTests : BunitContext
             new CheckOutcome("name = \"ana\"", "\"A3\"", "\"83\""),
         ]));
 
-        var items = cut.FindAll("li");
-        Assert.Equal(2, items.Count);
-        Assert.Contains("Ainda não está certo", cut.Markup);
-        Assert.Equal("turns = 3: deu 3 · esperado 6", items[0].TextContent);
-        Assert.Equal("name = \"ana\": deu \"83\" · esperado \"A3\"", items[1].TextContent);
+        Assert.Equal("Resultado do feitiço", cut.Find("h2").TextContent);
+        Assert.Contains("1 de 3 certos", cut.Find(".result-meta").TextContent);
+        Assert.Contains("Ainda não está certo", cut.Find(".result-meta").TextContent);
+        var cases = cut.FindAll(".case");
+        Assert.Equal(3, cases.Count);
+        Assert.Single(cut.FindAll(".case.pass"));
+        Assert.Equal(2, cut.FindAll(".case.fail").Count);
+        Assert.Equal("turns = 1", cases[0].QuerySelector(".case-name")!.TextContent);
+        Assert.Equal("deu 1 certo", cases[0].QuerySelector(".case-detail")!.TextContent.Replace("✓", "").Trim());
+        Assert.Equal("deu 3 · esperado 6", cases[1].QuerySelector(".case-detail")!.TextContent);
+        Assert.Equal("deu \"83\" · esperado \"A3\"", cases[2].QuerySelector(".case-detail")!.TextContent);
     }
 
     [Fact]
-    public async Task ChecksFailed_InEnglish_UsesGotAndExpected()
+    public void ChecksFailed_DecorativePartsAreHiddenFromScreenReaders()
+    {
+        var cut = RenderResult(new ChecksFailed([
+            new CheckOutcome("a", "1", "1"),
+            new CheckOutcome("b", "2", "3"),
+        ]));
+
+        Assert.Equal("true", cut.Find(".case.fail .sep").GetAttribute("aria-hidden"));
+        Assert.Equal("true", cut.Find(".case.pass .mark").GetAttribute("aria-hidden"));
+        Assert.Equal("certo", cut.Find(".case.pass .visually-hidden").TextContent);
+    }
+
+    [Fact]
+    public async Task ChecksFailed_InEnglish_UsesGotExpectedAndScore()
     {
         await Services.GetRequiredService<UiText>().SetLanguageAsync(Language.En);
         var cut = RenderResult(new ChecksFailed([new CheckOutcome("turns = 3", "6", "3")]));
 
-        Assert.Equal("turns = 3: got 3 · expected 6", cut.Find("li").TextContent);
+        Assert.Equal("got 3 · expected 6", cut.Find(".case-detail").TextContent);
+        Assert.Contains("0 of 1 correct", cut.Find(".result-meta").TextContent);
+        Assert.Equal("Spell result", cut.Find("h2").TextContent);
+    }
+
+    public static TheoryData<RunResult, string> ResultIcons() => new()
+    {
+        { new ChecksFailed([new CheckOutcome("a", "1", "2")]), "icon-balance" },
+        { new CompilationFailed([new CompilationError(1, 1, "CS1002", null)]), "icon-rune" },
+        { new TimedOut(), "icon-hourglass" },
+        { new RuntimeError(new LocalizedText("Falhou.", "Failed."), "boom", 1), "icon-spiral" },
+        { new CodeRejected(new LocalizedText("Proibido.", "Forbidden."), 1), "icon-seal" },
+    };
+
+    [Theory]
+    [MemberData(nameof(ResultIcons))]
+    public void EveryResultType_HasTitleAndItsOwnDecorativeIcon(RunResult result, string iconClass)
+    {
+        var cut = RenderResult(result);
+
+        Assert.Equal("Resultado do feitiço", cut.Find(".result-head h2").TextContent);
+        var icon = cut.Find($".result-head svg.{iconClass}");
+        Assert.Equal("true", icon.GetAttribute("aria-hidden"));
+        Assert.Single(cut.FindAll(".result-head svg"));
     }
 
     [Fact]

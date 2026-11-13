@@ -13,50 +13,83 @@
     <PageTitle>@level.Title.Get(Ui.Language)</PageTitle>
 
     <div class="page-content" inert="@(earnedStars is not null)">
-        <h1>@level.Title.Get(Ui.Language)</h1>
+        <div class="level-layout">
+            <section class="parchment">
+                <figure class="vignette" role="img" aria-label="@level.SceneLabel.Get(Ui.Language)">
+                    @((MarkupString)level.SceneSvg)
+                </figure>
+                <div class="parchment-body">
+                    <h1>@level.Title.Get(Ui.Language)</h1>
 
-        <section class="story" aria-label="@Ui["level.story"]">
-            <p>@level.Story.Get(Ui.Language)</p>
-        </section>
-        <section class="concept" aria-label="@Ui["level.concept"]">
-            <p>@level.Concept.Get(Ui.Language)</p>
-        </section>
+                    <div class="tabs" role="tablist" aria-label="@Ui["level.tabs"]">
+                        <button type="button" role="tab" id="tab-story" class="tab" aria-selected="@Selected(LevelTab.Story)"
+                                aria-controls="panel-story" @onclick="() => activeTab = LevelTab.Story">@Ui["level.story"]</button>
+                        <button type="button" role="tab" id="tab-concept" class="tab" aria-selected="@Selected(LevelTab.Concept)"
+                                aria-controls="panel-concept" @onclick="() => activeTab = LevelTab.Concept">@Ui["level.concept"]</button>
+                        <button type="button" role="tab" id="tab-hints" class="tab" aria-selected="@Selected(LevelTab.Hints)"
+                                aria-controls="panel-hints" @onclick="() => activeTab = LevelTab.Hints">@HintsTabLabel</button>
+                    </div>
 
-        <div class="editor-frame">
-            <CodeEditor @key="level.Id" @ref="editor" InitialCode="@level.StarterCode" />
-        </div>
+                    <div class="story tab-panel" role="tabpanel" id="panel-story" aria-labelledby="tab-story" hidden="@(activeTab != LevelTab.Story)">
+                        <p>@level.Story.Get(Ui.Language)</p>
+                    </div>
+                    <div class="concept tab-panel" role="tabpanel" id="panel-concept" aria-labelledby="tab-concept" hidden="@(activeTab != LevelTab.Concept)">
+                        <p>@level.Concept.Get(Ui.Language)</p>
+                    </div>
+                    <div class="hints-panel tab-panel" role="tabpanel" id="panel-hints" aria-labelledby="tab-hints" hidden="@(activeTab != LevelTab.Hints)">
+                        @if (hintsShown > 0)
+                        {
+                            <ol class="hints">
+                                @foreach (var hint in level.Hints.Take(hintsShown))
+                                {
+                                    <li>@hint.Get(Ui.Language)</li>
+                                }
+                            </ol>
+                        }
+                        else
+                        {
+                            <p>@Ui["level.noHints"]</p>
+                        }
+                    </div>
+                </div>
+            </section>
 
-        <div class="actions">
-            <button type="button" class="run" @ref="runButton" disabled="@running" @onclick="RunAsync">
-                @Ui[running ? "level.running" : "level.run"]
-            </button>
-            <button type="button" class="grimoire-open" @onclick="OpenGrimoire">@Ui["grimoire.open"]</button>
-            @if (hintsShown < level.Hints.Count)
-            {
-                <button type="button" class="hint" @onclick="ShowHintAsync">@Ui["level.hint"]</button>
-            }
-            @if (progress.CanSeeSolution(level.Id) && !progress.IsCompleted(level.Id))
-            {
-                <button type="button" class="solution" @onclick="ShowSolutionAsync">@Ui["level.solution"]</button>
-            }
-        </div>
+            <div class="right-column">
+                <section class="spellbook" aria-labelledby="spellbook-title">
+                    <div class="spellbook-head">
+                        <h2 id="spellbook-title">@Ui["level.spellbook"]</h2>
+                        <span class="language-tag" aria-hidden="true">C#</span>
+                    </div>
 
-        @if (hintsShown > 0)
-        {
-            <ol class="hints">
-                @foreach (var hint in level.Hints.Take(hintsShown))
+                    <div class="editor-frame">
+                        <CodeEditor @key="level.Id" @ref="editor" InitialCode="@level.StarterCode" />
+                    </div>
+
+                    <div class="actions">
+                        <button type="button" class="run btn-primary" @ref="runButton" disabled="@running" @onclick="RunAsync">
+                            <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" focusable="false"><path d="M9 1l2 6 6 2-6 2-2 6-2-6-6-2 6-2z" fill="currentColor" /></svg>
+                            @Ui[running ? "level.running" : "level.run"]
+                        </button>
+                        <button type="button" class="grimoire-open btn-secondary" @onclick="OpenGrimoire">@Ui["grimoire.open"]</button>
+                        @if (hintsShown < level.Hints.Count)
+                        {
+                            <button type="button" class="hint btn-secondary" @onclick="ShowHintAsync">@Ui["level.hint"]</button>
+                        }
+                        @if (progress.CanSeeSolution(level.Id) && !progress.IsCompleted(level.Id))
+                        {
+                            <button type="button" class="solution btn-secondary" @onclick="ShowSolutionAsync">@Ui["level.solution"]</button>
+                        }
+                    </div>
+                </section>
+
+                @if (result is { } shown && shown is not Passed)
                 {
-                    <li>@hint.Get(Ui.Language)</li>
+                    <div class="result-block" tabindex="-1" @ref="resultBlock">
+                        <RunResultView Result="shown" />
+                    </div>
                 }
-            </ol>
-        }
-
-        @if (result is { } shown && shown is not Passed)
-        {
-            <div class="result-block" tabindex="-1" @ref="resultBlock">
-                <RunResultView Result="shown" />
             </div>
-        }
+        </div>
 
         <GrimoirePanel IsOpen="grimoireOpen" InitialPageId="@level.GrimoirePageId"
                        OnClose="CloseGrimoire" OnCopyExample="InsertExampleAsync" />
@@ -79,8 +112,8 @@
                     }
                 </p>
                 <div class="victory-actions">
-                    <button type="button" class="next" @ref="nextButton" @onclick="GoNext">@Ui[NextIsMap ? "level.backToMap" : "level.next"]</button>
-                    <button type="button" class="stay" @onclick="CloseVictory">@Ui["level.stay"]</button>
+                    <button type="button" class="next btn-primary" @ref="nextButton" @onclick="GoNext">@Ui[NextIsMap ? "level.backToMap" : "level.next"]</button>
+                    <button type="button" class="stay btn-secondary" @onclick="CloseVictory">@Ui["level.stay"]</button>
                 </div>
             </section>
         </div>
@@ -88,12 +121,15 @@
 }
 
 @code {
+    private enum LevelTab { Story, Concept, Hints }
+
     private CodeEditor? editor;
     private Level? level;
     private string? loadedId;
     private bool running;
     private bool grimoireOpen;
     private int hintsShown;
+    private LevelTab activeTab = LevelTab.Story;
     private RunResult? result;
     private int? earnedStars;
     private bool focusVictoryPending;
@@ -111,6 +147,10 @@
 
     private bool NextIsMap => NextIndex >= Content.Levels.Count;
 
+    private string HintsTabLabel => hintsShown > 0 ? $"{Ui["level.hints"]} ({hintsShown})" : Ui["level.hints"];
+
+    private string Selected(LevelTab tab) => activeTab == tab ? "true" : "false";
+
     private string NextHref => NextIsMap ? "/" : $"/level/{Content.Levels[NextIndex].Id}";
 
     protected override void OnInitialized()
@@ -126,6 +166,7 @@
             loadedId = Id;
             CancelRun();
             hintsShown = 0;
+            activeTab = LevelTab.Story;
             grimoireOpen = false;
             result = null;
             earnedStars = null;
@@ -302,6 +343,7 @@
         }
 
         hintsShown++;
+        activeTab = LevelTab.Hints;
         progress.RecordHintUsed(level.Id);
         await Store.SaveAsync(progress);
     }
