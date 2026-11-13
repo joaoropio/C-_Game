@@ -262,20 +262,37 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan, SemanticModel mode
         return block.WithStatements(block.Statements.Insert(index, enter));
     }
 
-    public override SyntaxNode? VisitWhileStatement(WhileStatementSyntax node) =>
-        node.WithStatement(Guard(node, (StatementSyntax)Visit(node.Statement)));
+    // Loops hidden in a header (a condition, initializer, incrementor or iterated expression, via lambdas
+    // or local functions) are visited too, so the whole node is rewritten before its body is guarded.
+    public override SyntaxNode? VisitWhileStatement(WhileStatementSyntax node)
+    {
+        var visited = (WhileStatementSyntax)base.VisitWhileStatement(node)!;
+        return visited.WithStatement(Guard(node, visited.Statement));
+    }
 
-    public override SyntaxNode? VisitDoStatement(DoStatementSyntax node) =>
-        node.WithStatement(Guard(node, (StatementSyntax)Visit(node.Statement)));
+    public override SyntaxNode? VisitDoStatement(DoStatementSyntax node)
+    {
+        var visited = (DoStatementSyntax)base.VisitDoStatement(node)!;
+        return visited.WithStatement(Guard(node, visited.Statement));
+    }
 
-    public override SyntaxNode? VisitForStatement(ForStatementSyntax node) =>
-        node.WithStatement(Guard(node, (StatementSyntax)Visit(node.Statement)));
+    public override SyntaxNode? VisitForStatement(ForStatementSyntax node)
+    {
+        var visited = (ForStatementSyntax)base.VisitForStatement(node)!;
+        return visited.WithStatement(Guard(node, visited.Statement));
+    }
 
-    public override SyntaxNode? VisitForEachStatement(ForEachStatementSyntax node) =>
-        node.WithStatement(Guard(node, (StatementSyntax)Visit(node.Statement)));
+    public override SyntaxNode? VisitForEachStatement(ForEachStatementSyntax node)
+    {
+        var visited = (ForEachStatementSyntax)base.VisitForEachStatement(node)!;
+        return visited.WithStatement(Guard(node, visited.Statement));
+    }
 
-    public override SyntaxNode? VisitForEachVariableStatement(ForEachVariableStatementSyntax node) =>
-        node.WithStatement(Guard(node, (StatementSyntax)Visit(node.Statement)));
+    public override SyntaxNode? VisitForEachVariableStatement(ForEachVariableStatementSyntax node)
+    {
+        var visited = (ForEachVariableStatementSyntax)base.VisitForEachVariableStatement(node)!;
+        return visited.WithStatement(Guard(node, visited.Statement));
+    }
 
     public override SyntaxNode? VisitGotoStatement(GotoStatementSyntax node) =>
         guardedSpan.Contains(node.SpanStart) ? WithTick(node) : node;

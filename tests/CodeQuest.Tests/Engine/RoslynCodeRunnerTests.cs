@@ -101,6 +101,21 @@ public class RoslynCodeRunnerTests
         Assert.True(watch.Elapsed < TimeSpan.FromSeconds(5), $"took {watch.Elapsed}");
     }
 
+    [Theory]
+    [InlineData("while (new Func<bool>(() => { while (true) { } return false; })()) { }\nreturn x;")]
+    [InlineData("for (var b = new Func<bool>(() => { while (true) { } return false; })(); b; ) { }\nreturn x;")]
+    [InlineData("for (var i = 0; i < 1; i += new Func<int>(() => { while (true) { } return 1; })()) { }\nreturn x;")]
+    [InlineData("foreach (var i in new Func<int[]>(() => { while (true) { } return new int[0]; })()) { }\nreturn x;")]
+    public async Task Run_LoopHiddenInLoopHeader_TimedOutByTickLimit(string playerCode)
+    {
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+
+        var result = await Run(playerCode);
+
+        Assert.IsType<TimedOut>(result);
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(1), $"took {watch.Elapsed}");
+    }
+
     [Fact]
     public async Task Run_BlockedOutsidePlayerCode_TimedOutByWallClock()
     {

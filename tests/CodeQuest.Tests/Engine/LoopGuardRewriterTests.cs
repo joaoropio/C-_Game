@@ -89,6 +89,21 @@ public class LoopGuardRewriterTests
         Assert.Empty(rewritten.GetDiagnostics());
     }
 
+    [Theory]
+    [InlineData("while (new Func<bool>(() => { while (true) { } return false; })()) { }")]
+    [InlineData("for (var b = new Func<bool>(() => { while (true) { } return false; })(); b; ) { }")]
+    [InlineData("for (var i = 0; i < 1; i += new Func<int>(() => { while (true) { } return 1; })()) { }")]
+    [InlineData("foreach (var i in new Func<int[]>(() => { while (true) { } return new int[0]; })()) { }")]
+    [InlineData("foreach (var (a, b) in new Func<(int, int)[]>(() => { while (true) { } return []; })()) { }")]
+    [InlineData("do { } while (new Func<bool>(() => { while (true) { } return false; })());")]
+    public void Rewrite_LoopInsideLoopHeader_IsGuarded(string code)
+    {
+        var rewritten = Rewrite(code);
+
+        Assert.Equal(2, TickCount(rewritten));
+        Assert.Empty(rewritten.GetDiagnostics());
+    }
+
     [Fact]
     public void Rewrite_Goto_InsertsTickBeforeJump()
     {
