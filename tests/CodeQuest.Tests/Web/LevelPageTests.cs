@@ -136,7 +136,7 @@ public sealed class LevelPageTests : BunitContext
         await RunAsync(cut, new ChecksFailed([new CheckOutcome("x = 1", "2", "3")]));
 
         Assert.Equal("deu 3 · esperado 2", cut.Find(".case-detail").TextContent);
-        Assert.Empty(cut.FindAll(".door.open"));
+        Assert.Empty(cut.FindAll(".victory-scene"));
         for (var attempt = 0; attempt < 2; attempt++)
         {
             await RunAsync(cut, new TimedOut());
@@ -164,7 +164,7 @@ public sealed class LevelPageTests : BunitContext
 
         await RunAsync(cut, new Passed(First.MaxStatementsForThreeStars, []));
 
-        Assert.NotEmpty(cut.FindAll(".door.open"));
+        Assert.NotEmpty(cut.FindAll(".victory .victory-scene"));
         Assert.Equal(3, cut.FindAll(".result-stars .star.filled").Count);
         Assert.Equal("3 de 3 estrelas", cut.Find(".result-stars").GetAttribute("aria-label"));
         Assert.Equal(3, Saved().StarsFor(First.Id));
@@ -181,7 +181,53 @@ public sealed class LevelPageTests : BunitContext
         Assert.Equal("dialog", dialog.GetAttribute("role"));
         Assert.Equal("true", dialog.GetAttribute("aria-modal"));
         var heading = cut.Find($"#{dialog.GetAttribute("aria-labelledby")}");
-        Assert.Equal("Nível concluído!", heading.TextContent);
+        Assert.Equal("Porta aberta!", heading.TextContent);
+    }
+
+    [Fact]
+    public async Task Victory_Scene_IsADecorativeSvgCentredByItsViewBox()
+    {
+        var cut = await RenderLevelAsync(First);
+
+        await RunAsync(cut, new Passed(1, []));
+
+        var scene = cut.Find(".victory > svg.victory-scene");
+        Assert.Equal("true", scene.GetAttribute("aria-hidden"));
+        Assert.Equal("0 0 500 300", scene.GetAttribute("viewBox"));
+        Assert.Equal("xMidYMid meet", scene.GetAttribute("preserveAspectRatio"));
+    }
+
+    [Fact]
+    public async Task Victory_ShowsSpellStatementCount()
+    {
+        var cut = await RenderLevelAsync(First);
+
+        await RunAsync(cut, new Passed(4, []));
+
+        Assert.Equal("Feitiço com 4 instruções.", cut.Find(".victory .victory-summary").TextContent.Trim());
+    }
+
+    [Fact]
+    public async Task Victory_SingleStatement_UsesSingularWording()
+    {
+        var cut = await RenderLevelAsync(First);
+
+        await RunAsync(cut, new Passed(1, []));
+
+        Assert.Equal("Feitiço com 1 instrução.", cut.Find(".victory .victory-summary").TextContent.Trim());
+    }
+
+    [Fact]
+    public async Task Victory_ShowsThreeStarsWithALargerMiddleOne()
+    {
+        var cut = await RenderLevelAsync(First);
+
+        await RunAsync(cut, new Passed(First.MaxStatementsForThreeStars + 1, []));
+
+        var stars = cut.FindAll(".victory .result-stars svg.star");
+        Assert.Equal(3, stars.Count);
+        Assert.Equal([false, true, false], stars.Select(star => star.ClassList.Contains("star-middle")));
+        Assert.All(stars, star => Assert.Equal("true", star.GetAttribute("aria-hidden")));
     }
 
     [Fact]

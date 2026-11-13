@@ -120,13 +120,33 @@ public sealed class GrimoirePanelTests : BunitContext
 
         var cut = await RenderAsync(initialPageId: "variables");
 
-        Assert.Equal(page.Title.Pt, cut.Find(".page-detail h3").TextContent);
+        Assert.Equal(page.Title.Pt, cut.Find(".page-detail h3").TextContent.Trim());
         Assert.Contains(page.WhatItIs.Pt, cut.Find(".page-detail").TextContent);
         Assert.Equal(page.Syntax.Pt, cut.Find(".page-detail pre.syntax code").TextContent);
-        Assert.Equal(page.Example, cut.Find(".page-detail pre.example code").TextContent);
+        Assert.Equal(page.Example, cut.Find(".page-detail pre.inscription code").TextContent);
         Assert.Equal(page.CommonMistakes.Count, cut.FindAll(".page-detail .mistakes li").Count);
         Assert.Contains("\"viewedPages\":[\"variables\"]", Services.GetRequiredService<ProgressStore>().Current!.ToJson());
         Assert.Contains("\"viewedPages\":[\"variables\"]", this.LastSavedValue(TestContextExtensions.ProgressKey));
+    }
+
+    [Fact]
+    public async Task Detail_ShowsTheIconOfThePage()
+    {
+        var cut = await RenderAsync(initialPageId: "variables");
+
+        Assert.Equal("box", cut.Find(".page-detail svg.page-icon").GetAttribute("data-icon"));
+        Assert.All(cut.FindAll("nav button"), button => Assert.Single(button.QuerySelectorAll("svg.page-icon[aria-hidden=true]")));
+    }
+
+    [Fact]
+    public async Task Example_IsAnInscriptionBlockAndKeepsExactCode()
+    {
+        var cut = await RenderAsync();
+
+        var inscription = cut.Find(".page-detail .inscription");
+
+        Assert.Equal("pre", inscription.TagName.ToLowerInvariant());
+        Assert.Equal(content.FindPage("variables")!.Example, inscription.QuerySelector("code")!.TextContent);
     }
 
     [Fact]
@@ -149,7 +169,7 @@ public sealed class GrimoirePanelTests : BunitContext
 
         await cut.FindAll("nav button").Single(button => button.TextContent.Contains(Title("operators"))).ClickAsync(new());
 
-        Assert.Equal(Title("operators"), cut.Find(".page-detail h3").TextContent);
+        Assert.Equal(Title("operators"), cut.Find(".page-detail h3").TextContent.Trim());
         Assert.Contains("\"operators\"", this.LastSavedValue(TestContextExtensions.ProgressKey));
     }
 

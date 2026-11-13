@@ -1,0 +1,54 @@
+<svg class="page-icon" data-icon="@Kind" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor"
+     stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+    @switch (Kind)
+    {
+        case "box":
+            <path d="M3 8l9-4 9 4-9 4z" />
+            <path d="M3 8v8l9 4 9-4V8" />
+            <path d="M12 12v8" />
+            break;
+        case "scales":
+            <path d="M12 4v16M7 20h10M5 7h14" />
+            <path d="M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0z" />
+            break;
+        case "fork":
+            <circle cx="12" cy="5" r="2" />
+            <circle cx="6" cy="19" r="2" />
+            <circle cx="18" cy="19" r="2" />
+            <path d="M12 7v4M12 11c0 3-6 3-6 6M12 11c0 3 6 3 6 6" />
+            break;
+        case "hourglass":
+            <path d="M6 3h12M6 21h12" />
+            <path d="M7 3c0 6 5 6 5 9s-5 3-5 9M17 3c0 6-5 6-5 9s5 3 5 9" />
+            break;
+        case "shelf":
+            <path d="M3 12h18M3 21h18" />
+            <path d="M6 12V9h3v3M7 9V6h1v3M12 12V8h3v4M13 8V5h1v3M17 21v-4h3v4M18 17v-3h1v3" />
+            break;
+        case "quill":
+            <path d="M20 4C12 4 7 9 7 16l-3 4" />
+            <path d="M20 4c0 8-5 13-13 12" />
+            <path d="M9 14l7-7" />
+            break;
+        default:
+            <path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z" />
+            <path d="M4 21V5M9 8h6" />
+            break;
+    }
+</svg>
+
+@code {
+    [Parameter, EditorRequired]
+    public string PageId { get; set; } = "";
+
+    private string Kind => PageId switch
+    {
+        "variables" => "box",
+        "operators" => "scales",
+        "conditions" => "fork",
+        "loops" => "hourglass",
+        "arrays" => "shelf",
+        "strings" => "quill",
+        _ => "book",
+    };
+}

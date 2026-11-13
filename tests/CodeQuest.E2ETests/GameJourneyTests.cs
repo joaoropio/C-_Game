@@ -23,13 +23,40 @@ public class GameJourneyTests(GameServerFixture server)
 
         await Expect(page.Locator(".victory[role=dialog][aria-modal=true]")).ToBeInViewportAsync(new() { Timeout = Timeout });
         await Expect(page.Locator(".victory button.next")).ToBeFocusedAsync(new() { Timeout = Timeout });
-        await Expect(page.Locator(".victory .door.open")).ToBeAttachedAsync(new() { Timeout = Timeout });
+        await Expect(page.Locator(".victory svg.victory-scene")).ToBeAttachedAsync(new() { Timeout = Timeout });
         await Expect(page.Locator(".victory .result-stars")).ToHaveAttributeAsync("aria-label", "3 de 3 estrelas", new() { Timeout = Timeout });
         await Expect(page.Locator(".victory .star.filled")).ToHaveCountAsync(3, new() { Timeout = Timeout });
 
         // Monaco starts its worker lazily: require positive proof that workerMain.js was served before trusting the problem list.
         await browser.WorkerLoaded.WaitAsync(TimeSpan.FromMilliseconds(Timeout));
         Assert.True(browser.Problems.Count == 0, string.Join(Environment.NewLine, browser.Problems));
+    }
+
+    [Theory]
+    [InlineData(1280, 800)]
+    [InlineData(360, 740)]
+    public async Task Level1_VictoryDialog_DoorIsCentredInTheDialog(int width, int height)
+    {
+        await using var context = await server.Browser.NewContextAsync();
+        var page = await context.NewPageAsync();
+        await page.SetViewportSizeAsync(width, height);
+
+        await OpenLevelAsync(page, "01-variables");
+        await TypeCodeAsync(page, Level1Solution);
+        await RunAsync(page);
+        await Expect(page.Locator(".victory .victory-scene")).ToBeVisibleAsync(new() { Timeout = Timeout });
+
+        var offsets = await page.EvaluateAsync<double[]>(
+            """
+            () => {
+                const centre = element => { const box = element.getBoundingClientRect(); return box.left + box.width / 2; };
+                const dialog = centre(document.querySelector('.victory'));
+                return ['.victory-scene', '.victory-scene .door-opening']
+                    .map(selector => Math.abs(centre(document.querySelector(selector)) - dialog));
+            }
+            """);
+
+        Assert.All(offsets, offset => Assert.InRange(offset, 0, 2));
     }
 
     [Fact]

@@ -1,15 +1,21 @@
+/* O grimório é um livro de pergaminho: lombada à esquerda, tinta escura, exemplos em pedra com runas. */
 .grimoire-panel {
-    background: var(--stone-800);
-    border-left: 3px solid var(--torch-dark);
+    --paper-edge: #c9b48c;
+    --muted-ink: #5a4632;
+    background:
+        linear-gradient(90deg, rgba(58, 42, 23, 0.22), transparent 1.5rem),
+        var(--parchment);
+    border-left: 6px solid #3a2a17;
     bottom: 0;
     box-shadow: -6px 0 18px rgba(0, 0, 0, 0.5);
     box-sizing: border-box;
+    color: var(--ink);
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
     max-width: 100vw;
     overflow-y: auto;
-    padding: 1rem;
+    padding: 1rem 1.25rem 1.5rem;
     position: fixed;
     right: 0;
     top: 0;
@@ -17,39 +23,84 @@
     z-index: 10;
 }
 
+/* Sobre pergaminho o anel de foco é de tinta, não âmbar. */
+.grimoire-panel :is(button, input, a):focus-visible {
+    outline: 3px solid var(--ink);
+    outline-offset: 2px;
+}
+
 header {
     align-items: center;
+    border-bottom: 2px solid var(--paper-edge);
     display: flex;
     justify-content: space-between;
+    padding-bottom: 0.6rem;
 }
 
 .panel-title {
+    color: #3a2a17;
     margin: 0;
 }
 
 .close, .copy, nav button {
-    background: var(--stone-700);
-    border: 2px solid var(--torch-dark);
+    background: #d9c79f;
+    border: 2px solid #8a6a3e;
     border-radius: 6px;
-    color: var(--text);
+    color: var(--ink);
     cursor: pointer;
     font: inherit;
+    font-family: var(--font-display);
     padding: 0.25rem 0.8rem;
 }
 
+.close:hover, nav button:hover {
+    background: #e3d3ae;
+}
+
+nav button {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.4rem;
+}
+
+nav button.current {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: #f1e6cf;
+}
+
+.copy {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: #f1e6cf;
+}
+
+.copy:hover {
+    background: #3a2a17;
+}
+
 input[type=search] {
-    background: var(--stone-900);
-    border: 2px solid var(--stone-700);
+    background: #f4ead2;
+    border: 2px solid #8a6a3e;
     border-radius: 6px;
-    color: var(--text);
+    color: var(--ink);
     font: inherit;
     padding: 0.35rem 0.6rem;
 }
 
+input[type=search]::placeholder {
+    color: var(--muted-ink);
+}
+
+/* Separador por mundo */
 nav h3 {
-    color: var(--torch);
-    font-size: 1rem;
-    margin: 0.5rem 0 0.25rem;
+    border-bottom: 1px solid var(--paper-edge);
+    color: var(--muted-ink);
+    font-size: 0.95rem;
+    letter-spacing: 0.1em;
+    margin: 0.6rem 0 0.4rem;
+    padding-bottom: 0.2rem;
+    text-transform: uppercase;
 }
 
 nav ul {
@@ -61,26 +112,35 @@ nav ul {
     padding: 0;
 }
 
-nav button.current {
-    background: var(--torch);
-    color: var(--on-torch);
+.empty {
+    color: var(--muted-ink);
 }
 
-.empty {
-    color: var(--text-muted);
+.page-icon {
+    flex: none;
+    height: 1.4rem;
+    width: 1.4rem;
 }
 
 .page-detail h3 {
-    color: var(--torch);
+    align-items: center;
+    color: #3a2a17;
+    display: flex;
+    gap: 0.6rem;
     margin: 0.5rem 0;
 }
 
+.page-detail h3 .page-icon {
+    height: 1.8rem;
+    width: 1.8rem;
+}
+
 .page-detail h4 {
+    color: #3a2a17;
     font-size: 1rem;
 }
 
 pre {
-    background: var(--stone-900);
     border-radius: 6px;
     font-family: var(--font-code);
     font-size: 0.95rem;
@@ -89,12 +149,30 @@ pre {
     padding: 0.6rem 0.8rem;
 }
 
+.syntax {
+    background: rgba(43, 34, 25, 0.08);
+    border-left: 4px solid #8a6a3e;
+    color: var(--ink);
+}
+
+/* Inscrição: pedra escura com código em cor arcana */
+.inscription {
+    background: #1a1510;
+    box-shadow: inset 0 0 0 2px #3a3128;
+    color: var(--arcane-light);
+}
+
 .mistakes {
-    color: var(--text-muted);
+    color: var(--muted-ink);
     padding-left: 1.2rem;
 }
 
 .learn-more {
+    color: #6b3f0a;
     display: inline-block;
     margin-top: 0.5rem;
+}
+
+.learn-more:hover {
+    color: var(--ink);
 }

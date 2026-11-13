@@ -26,7 +26,7 @@
                             <li>
                                 <button type="button" class="@(entry.Id == selectedId ? "current" : "")"
                                         aria-current="@(entry.Id == selectedId ? "page" : null)"
-                                        @onclick="() => SelectAsync(entry.Id)">@entry.Title.Get(Ui.Language)</button>
+                                        @onclick="() => SelectAsync(entry.Id)"><GrimoireIcon PageId="@entry.Id" />@entry.Title.Get(Ui.Language)</button>
                             </li>
                         }
                     </ul>
@@ -41,10 +41,10 @@
         @if (Content.FindPage(selectedId ?? "") is { } selected)
         {
             <article class="page-detail">
-                <h3>@selected.Title.Get(Ui.Language)</h3>
+                <h3><GrimoireIcon PageId="@selected.Id" />@selected.Title.Get(Ui.Language)</h3>
                 <p>@selected.WhatItIs.Get(Ui.Language)</p>
                 <pre class="syntax"><code>@selected.Syntax.Get(Ui.Language)</code></pre>
-                <pre class="example"><code>@selected.Example</code></pre>
+                <pre class="inscription"><code>@selected.Example</code></pre>
                 <button type="button" class="copy" @onclick="() => OnCopyExample.InvokeAsync(selected.Example)">@Ui["grimoire.copy"]</button>
                 <h4>@Ui["grimoire.mistakes"]</h4>
                 <ul class="mistakes">
