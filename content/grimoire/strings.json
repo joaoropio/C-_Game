@@ -10,7 +10,7 @@
     "pt": "s.Length       // número de letras\n\ns[0]           // a primeira letra, um char\n\ns.ToUpper()    // texto em maiúsculas (nova string)\n\ns.ToLower()    // texto em minúsculas (nova string)\n\nchar.ToUpper(c)   // uma só letra em maiúscula\n\na + b          // junta dois textos\n\n$\"{a} e {b}\"   // interpolação: mete valores no texto",
     "en": "s.Length       // number of letters\n\ns[0]           // the first letter, a char\n\ns.ToUpper()    // text in uppercase (a new string)\n\ns.ToLower()    // text in lowercase (a new string)\n\nchar.ToUpper(c)   // a single letter in uppercase\n\na + b          // joins two texts\n\n$\"{a} and {b}\"  // interpolation: puts values inside the text"
   },
-  "example": "string potion = \"elixir\";\nint size = potion.Length;\nchar initial = potion[0];\nstring shout = potion.ToUpper();\nstring label = potion + \"!\";\nstring note = $\"{potion} tem {size} letras\";\nConsole.WriteLine(initial);\nConsole.WriteLine(shout);\nConsole.WriteLine(label);\nConsole.WriteLine(note);",
+  "example": "string potion = \"elixir\";\nint size = potion.Length;\nchar initial = potion[0];\nstring shout = potion.ToUpper();\nstring label = potion + \"!\";\nstring note = $\"{potion}: {size}\";",
   "commonMistakes": [
     {
       "pt": "Somar um char com um int: 'a' + 1 dá um número, não texto. Usa a interpolação ou ToString() para obter texto.",
@@ -21,8 +21,8 @@
       "en": "Expecting ToUpper() to change the variable: strings never change, ToUpper() returns a new string, so keep the result."
     },
     {
-      "pt": "Esquecer que o índice começa em 0: a primeira letra é s[0], e a última é s[s.Length - 1].",
-      "en": "Forgetting that the index starts at 0: the first letter is s[0], and the last is s[s.Length - 1]."
+      "pt": "Escrever c.ToUpper() num char: para uma só letra usa char.ToUpper(c).",
+      "en": "Writing c.ToUpper() on a char: for a single letter use char.ToUpper(c)."
     }
   ],
   "learnUrl": "https://learn.microsoft.com/dotnet/csharp/programming-guide/strings/"

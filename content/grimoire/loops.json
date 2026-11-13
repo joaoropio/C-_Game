@@ -3,12 +3,12 @@
   "world": 1,
   "title": { "pt": "Ciclos", "en": "Loops" },
   "whatItIs": {
-    "pt": "Um ciclo repete código sem o escreveres várias vezes. O for conta por ti e tem três partes: onde começa, até quando continua e o que muda a cada volta (i++ soma 1 a i). O while repete enquanto uma condição for verdadeira. O foreach percorre, um a um, os elementos de uma lista.",
-    "en": "A loop repeats code without you writing it several times. The for counts for you and has three parts: where it starts, how long it keeps going and what changes each turn (i++ adds 1 to i). The while repeats as long as a condition is true. The foreach goes through the items of a list, one by one."
+    "pt": "Um ciclo repete código sem o escreveres várias vezes. O for conta por ti e tem três partes: onde começa, até quando continua e o que muda a cada volta (i++ soma 1 a i). O while repete enquanto uma condição for verdadeira. O foreach percorre, um a um, os valores de um array (uma série de valores).",
+    "en": "A loop repeats code without you writing it several times. The for counts for you and has three parts: where it starts, how long it keeps going and what changes each turn (i++ adds 1 to i). The while repeats as long as a condition is true. The foreach goes through the values of an array (a series of values), one by one."
   },
   "syntax": {
-    "pt": "for (int i = 0; i < n; i++) { ... }   // i = 0, 1, ..., n-1\n\nwhile (condição) { ... }\n\nforeach (var item in lista) { ... }\n\nx += y;   // soma y a x",
-    "en": "for (int i = 0; i < n; i++) { ... }   // i = 0, 1, ..., n-1\n\nwhile (condition) { ... }\n\nforeach (var item in list) { ... }\n\nx += y;   // adds y to x"
+    "pt": "for (int i = 0; i < n; i++) { ... }   // i = 0, 1, ..., n-1\n\nwhile (condição) { ... }\n\nforeach (int number in numbers) { ... }   // number é cada valor, um a um\n\nx += y;   // soma y a x",
+    "en": "for (int i = 0; i < n; i++) { ... }   // i = 0, 1, ..., n-1\n\nwhile (condition) { ... }\n\nforeach (int number in numbers) { ... }   // number is each value, one by one\n\nx += y;   // adds y to x"
   },
   "example": "int height = 0;\nfor (int stair = 1; stair <= 5; stair++)\n{\n    height += 20;\n}",
   "commonMistakes": [

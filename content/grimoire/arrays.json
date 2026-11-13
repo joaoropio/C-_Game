@@ -10,7 +10,7 @@
     "pt": "int[] x = { 4, 8, 15 };   // cria um array com 3 valores\n\nx[0]       // o primeiro valor (índice 0)\n\nx.Length   // quantos valores há (aqui 3)\n\nforeach (int v in x) { ... }   // v é cada valor, um a um",
     "en": "int[] x = { 4, 8, 15 };   // creates an array with 3 values\n\nx[0]       // the first value (index 0)\n\nx.Length   // how many values there are (here 3)\n\nforeach (int v in x) { ... }   // v is each value, one by one"
   },
-  "example": "string[] colors = { \"red\", \"green\", \"blue\" };\nConsole.WriteLine(colors[0]);\nConsole.WriteLine(colors.Length);\nforeach (string color in colors)\n{\n    Console.WriteLine(color);\n}",
+  "example": "string[] colors = { \"red\", \"green\", \"blue\" };\nstring first = colors[0];\nint size = colors.Length;\nbool hasGreen = false;\nforeach (string color in colors)\n{\n    if (color == \"green\")\n    {\n        hasGreen = true;\n    }\n}",
   "commonMistakes": [
     {
       "pt": "Esquecer que o índice começa em 0: o primeiro valor é x[0], não x[1].",

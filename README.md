@@ -2,7 +2,7 @@
 
 Jogo web onde o jogador é um mago e a magia é código C#. Cada sala da masmorra é um desafio: o código escrito no editor é compilado com Roslyn, validado por testes escondidos e, se passar, a porta abre. Pensado para aprender C# do zero, com interface em PT-PT e EN, Grimório (documentação dentro do jogo) e progresso guardado no `localStorage`.
 
-Estado atual: Mundo 1, níveis 1 a 3 (variáveis e tipos, operadores, if/else e switch).
+Estado atual: Mundo 1, níveis 1 a 6 (variáveis, operadores, condições, ciclos, arrays, strings).
 
 ## Requisitos
 
@@ -59,7 +59,7 @@ content/
 
 Não é preciso mexer no motor, na interface nem nos `.csproj`: os níveis são descobertos a partir das pastas de `content/levels/`.
 
-1. Cria a pasta `content/levels/<NN-nome>/` (por exemplo `04-loops`).
+1. Cria a pasta `content/levels/<NN-nome>/` (por exemplo `07-lists`).
 2. `level.json`, com estes campos:
    - `id` (igual ao nome da pasta, por convenção: nada o verifica), `world`, `number`;
    - `title`, `story` e `concept`, cada um com `pt` e `en`;
@@ -76,11 +76,12 @@ Não é preciso mexer no motor, na interface nem nos `.csproj`: os níveis são 
    {
        public static IEnumerable<(string Pt, string En)> Run()
        {
-           if (Spell.Damage(10, 3, 2) != 17)
+           var actual = Spell.Damage(10, 3, 2);
+           if (actual != 17)
            {
                yield return (
-                   "Com ataque 10, defesa 3 e multiplicador 2, o dano devia ser 17.",
-                   "With attack 10, defense 3 and multiplier 2, the damage should be 17.");
+                   $"Com attack = 10, defense = 3 e multiplier = 2, o dano devia ser 17, mas deu {actual}.",
+                   $"With attack = 10, defense = 3 and multiplier = 2, the damage should be 17, but it was {actual}.");
            }
        }
    }

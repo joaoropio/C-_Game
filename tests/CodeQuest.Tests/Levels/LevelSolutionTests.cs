@@ -32,8 +32,10 @@ public class LevelSolutionTests
             CancellationToken.None);
 
     [Fact]
-    public void RealContent_HasTheFirstThreeLevelsInOrder() =>
-        Assert.Equal(["01-variables", "02-operators", "03-conditions"], Levels.Take(3).Select(level => level.Id));
+    public void RealContent_HasTheSixWorld1LevelsInOrder() =>
+        Assert.Equal(
+            ["01-variables", "02-operators", "03-conditions", "04-loops", "05-arrays", "06-strings"],
+            Levels.Where(level => level.World == 1).Select(level => level.Id));
 
     [Theory]
     [MemberData(nameof(LevelIds))]
@@ -275,6 +277,56 @@ public class LevelSolutionTests
         var result = await Run(level, "return $\"{char.ToUpper(name[0])}{name.Length}\";");
 
         Assert.IsType<Passed>(result);
+    }
+
+    [Fact]
+    public async Task Level6_CharToUpperWithoutArguments_FailsToCompile()
+    {
+        var level = Find("06-strings");
+
+        var result = await Run(level, "return $\"{name[0].ToUpper()}{name.Length}\";");
+
+        Assert.IsType<CompilationFailed>(result);
+    }
+
+    [Fact]
+    public async Task Level2_WrongDamage_ReportsExpectedAndObtained()
+    {
+        var level = Find("02-operators");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, "return attack + multiplier - defense;"));
+
+        Assert.Contains(result.Failures, failure => failure.En.Contains("should be 17") && failure.En.Contains("but it was 9"));
+        Assert.Contains(result.Failures, failure => failure.Pt.Contains("devia ser 17") && failure.Pt.Contains("mas deu 9"));
+    }
+
+    [Fact]
+    public async Task Level3_WrongDoor_ReportsExpectedAndObtained()
+    {
+        var level = Find("03-conditions");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, "return \"center\";"));
+
+        Assert.Contains(result.Failures, failure =>
+            failure.En.Contains("rune = \"fire\"") && failure.En.Contains("\"left\"") && failure.En.Contains("but it was \"center\""));
+        Assert.Contains(result.Failures, failure =>
+            failure.Pt.Contains("rune = \"fire\"") && failure.Pt.Contains("\"left\"") && failure.Pt.Contains("mas deu \"center\""));
+    }
+
+    [Fact]
+    public async Task Level1_WrongHealth_ReportsExpectedAndObtained()
+    {
+        var level = Find("01-variables");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(
+            level,
+            "string name = \"Merlin\";\nint health = 90;\ndouble mana = 50.5;\nbool isAlive = true;"));
+
+        var failure = Assert.Single(result.Failures);
+        Assert.Contains("health = 100", failure.En);
+        Assert.Contains("but it was 90", failure.En);
+        Assert.Contains("health = 100", failure.Pt);
+        Assert.Contains("mas deu 90", failure.Pt);
     }
 
     [Fact]
