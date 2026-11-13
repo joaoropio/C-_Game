@@ -183,6 +183,29 @@ public class LevelSolutionTests
     }
 
     [Fact]
+    public async Task Level4_OffByOne_ExplainsExpectedAndActual()
+    {
+        var level = Find("04-loops");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(
+            level,
+            "int mana = 0;\nfor (int turn = 1; turn < turns; turn++)\n{\n    mana += turn;\n}\nreturn mana;"));
+
+        Assert.Contains(result.Failures, failure => failure.En.Contains("should be 6") && failure.En.Contains("was 3"));
+        Assert.Contains(result.Failures, failure => failure.Pt.Contains("devia ser 6") && failure.Pt.Contains("deu 3"));
+    }
+
+    [Fact]
+    public async Task Level4_InfiniteLoop_TimedOut()
+    {
+        var level = Find("04-loops");
+
+        var result = await Run(level, "while (true) { }");
+
+        Assert.IsType<TimedOut>(result);
+    }
+
+    [Fact]
     public async Task Level1_MissingVariable_ExplainsWhichOne()
     {
         var level = Find("01-variables");

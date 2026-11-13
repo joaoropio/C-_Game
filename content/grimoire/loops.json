@@ -1,0 +1,29 @@
+{
+  "id": "loops",
+  "world": 1,
+  "title": { "pt": "Ciclos", "en": "Loops" },
+  "whatItIs": {
+    "pt": "Um ciclo repete código sem o escreveres várias vezes. O for conta por ti, do início ao fim. O while repete enquanto uma condição for verdadeira. O foreach percorre, um a um, os elementos de uma lista.",
+    "en": "A loop repeats code without you writing it several times. The for counts for you, from start to end. The while repeats as long as a condition is true. The foreach goes through the items of a list, one by one."
+  },
+  "syntax": {
+    "pt": "for (int i = 0; i < n; i++) { ... }\n\nwhile (condição) { ... }\n\nforeach (var item in lista) { ... }\n\nx += y;   // soma y a x",
+    "en": "for (int i = 0; i < n; i++) { ... }\n\nwhile (condition) { ... }\n\nforeach (var item in list) { ... }\n\nx += y;   // adds y to x"
+  },
+  "example": "int climbed = 0;\nfor (int stair = 1; stair <= 5; stair++)\n{\n    climbed += stair;\n}",
+  "commonMistakes": [
+    {
+      "pt": "Usar < em vez de <= (ou ao contrário): o ciclo dá uma volta a menos ou a mais. Com i < 3 contas 0, 1, 2; com i <= 3 contas também o 3.",
+      "en": "Using < instead of <= (or the other way round): the loop runs one turn too few or too many. With i < 3 you count 0, 1, 2; with i <= 3 you count 3 as well."
+    },
+    {
+      "pt": "Esquecer de mudar a variável num while: a condição nunca deixa de ser verdadeira e o ciclo nunca acaba.",
+      "en": "Forgetting to change the variable in a while: the condition never stops being true and the loop never ends."
+    },
+    {
+      "pt": "Mudar a variável do ciclo dentro do corpo de um for: a contagem fica baralhada e podes saltar voltas.",
+      "en": "Changing the loop variable inside the body of a for: the count gets mixed up and you may skip turns."
+    }
+  ],
+  "learnUrl": "https://learn.microsoft.com/dotnet/csharp/language-reference/statements/iteration-statements"
+}
