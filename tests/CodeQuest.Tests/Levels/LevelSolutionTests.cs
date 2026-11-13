@@ -230,6 +230,31 @@ public class LevelSolutionTests
     }
 
     [Fact]
+    public async Task Level6_CharPlusInt_ExplainsWhatWentWrong()
+    {
+        var level = Find("06-strings");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(
+            level,
+            "return (char.ToUpper(name[0]) + name.Length).ToString();"));
+
+        Assert.Contains(result.Failures, failure =>
+            failure.En.Contains("name = \"merlin\"") && failure.En.Contains("\"M6\"") && failure.En.Contains("\"83\""));
+        Assert.Contains(result.Failures, failure =>
+            failure.Pt.Contains("name = \"merlin\"") && failure.Pt.Contains("\"M6\"") && failure.Pt.Contains("\"83\""));
+    }
+
+    [Fact]
+    public async Task Level6_Interpolation_Passes()
+    {
+        var level = Find("06-strings");
+
+        var result = await Run(level, "return $\"{char.ToUpper(name[0])}{name.Length}\";");
+
+        Assert.IsType<Passed>(result);
+    }
+
+    [Fact]
     public async Task Level1_MissingVariable_ExplainsWhichOne()
     {
         var level = Find("01-variables");

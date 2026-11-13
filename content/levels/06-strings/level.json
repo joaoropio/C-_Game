@@ -1,0 +1,26 @@
+{
+  "id": "06-strings",
+  "world": 1,
+  "number": 6,
+  "title": { "pt": "O Selo do Mago", "en": "The Wizard's Seal" },
+  "story": {
+    "pt": "Cada mago assina as suas cartas com um selo mágico. O nome do mago chega ao feitiço na variável name. O código do selo é a primeira letra do nome em maiúscula, seguida do número de letras do nome. Devolve esse código. Por exemplo, com name = \"merlin\" o código é \"M6\": a primeira letra é m, em maiúscula fica M, e o nome tem 6 letras.",
+    "en": "Every wizard signs their letters with a magic seal. The wizard's name reaches the spell in the variable name. The seal code is the first letter of the name in uppercase, followed by the number of letters in the name. Return that code. For example, with name = \"merlin\" the code is \"M6\": the first letter is m, in uppercase it becomes M, and the name has 6 letters."
+  },
+  "concept": {
+    "pt": "Uma string é texto. Exemplo: string spell = \"lumos\"; int letters = spell.Length; char first = spell[0]; string loud = spell.ToUpper(); string msg = $\"{spell} tem {letters} letras\"; Length é o número de letras (aqui 5). spell[0] dá a letra na posição 0, que é um char (uma só letra, como 'l'), não uma string. spell.ToUpper() devolve o texto todo em maiúsculas (\"LUMOS\"); para um único char usa-se char.ToUpper(c). Para juntar partes num só texto, usa + entre strings ou uma string com $ e as partes entre chaves, como no exemplo. Cuidado: somar um char com um int dá um número, não texto (por exemplo, 'l' + 5 dá 113). Para juntar letra e número em texto, usa a interpolação ou converte o número com ToString().",
+    "en": "A string is text. Example: string spell = \"lumos\"; int letters = spell.Length; char first = spell[0]; string loud = spell.ToUpper(); string msg = $\"{spell} has {letters} letters\"; Length is the number of letters (here 5). spell[0] gives the letter at position 0, which is a char (a single letter, like 'l'), not a string. spell.ToUpper() returns the whole text in uppercase (\"LUMOS\"); for a single char you use char.ToUpper(c). To join pieces into one text, use + between strings or a string starting with $ and the pieces between braces, as in the example. Careful: adding a char and an int gives a number, not text (for example, 'l' + 5 gives 113). To join a letter and a number into text, use interpolation or convert the number with ToString()."
+  },
+  "hints": [
+    {
+      "pt": "Precisas de duas coisas: a primeira letra de name em maiúscula e o número de letras de name. Depois junta as duas num só texto.",
+      "en": "You need two things: the first letter of name in uppercase and the number of letters in name. Then join the two into a single text."
+    },
+    {
+      "pt": "Escreve: return $\"{char.ToUpper(name[0])}{name.Length}\"; A primeira letra é name[0], char.ToUpper põe-na em maiúscula e name.Length é o número de letras. Se preferires, usa char.ToUpper(name[0]) + name.Length.ToString().",
+      "en": "Write: return $\"{char.ToUpper(name[0])}{name.Length}\"; The first letter is name[0], char.ToUpper makes it uppercase and name.Length is the number of letters. If you prefer, use char.ToUpper(name[0]) + name.Length.ToString()."
+    }
+  ],
+  "maxStatementsForThreeStars": 1,
+  "grimoirePageId": "strings"
+}

@@ -1,0 +1,29 @@
+{
+  "id": "strings",
+  "world": 1,
+  "title": { "pt": "Strings", "en": "Strings" },
+  "whatItIs": {
+    "pt": "Uma string é texto. Tem um Length (o número de letras) e cada letra tem um índice, que começa em 0. A letra numa posição é um char. ToUpper() e ToLower() mudam as maiúsculas e minúsculas. Podes juntar textos com + ou com a interpolação $\"…{x}…\".",
+    "en": "A string is text. It has a Length (the number of letters) and each letter has an index, which starts at 0. The letter at a position is a char. ToUpper() and ToLower() change the case. You can join texts with + or with interpolation $\"…{x}…\"."
+  },
+  "syntax": {
+    "pt": "s.Length       // número de letras\n\ns[0]           // a primeira letra, um char\n\ns.ToUpper()    // texto em maiúsculas (nova string)\n\ns.ToLower()    // texto em minúsculas (nova string)\n\na + b          // junta dois textos\n\n$\"{a} e {b}\"   // interpolação: mete valores no texto",
+    "en": "s.Length       // number of letters\n\ns[0]           // the first letter, a char\n\ns.ToUpper()    // text in uppercase (a new string)\n\ns.ToLower()    // text in lowercase (a new string)\n\na + b          // joins two texts\n\n$\"{a} and {b}\"  // interpolation: puts values inside the text"
+  },
+  "example": "string potion = \"elixir\";\nint size = potion.Length;\nchar initial = potion[0];\nstring shout = potion.ToUpper();\nstring label = potion + \"!\";\nstring note = $\"{potion} tem {size} letras\";\nConsole.WriteLine(initial);\nConsole.WriteLine(shout);\nConsole.WriteLine(label);\nConsole.WriteLine(note);",
+  "commonMistakes": [
+    {
+      "pt": "Somar um char com um int: 'a' + 1 dá um número, não texto. Usa a interpolação ou ToString() para obter texto.",
+      "en": "Adding a char and an int: 'a' + 1 gives a number, not text. Use interpolation or ToString() to get text."
+    },
+    {
+      "pt": "Esperar que ToUpper() mude a variável: as strings não mudam, ToUpper() devolve uma string nova, por isso guarda o resultado.",
+      "en": "Expecting ToUpper() to change the variable: strings never change, ToUpper() returns a new string, so keep the result."
+    },
+    {
+      "pt": "Esquecer que o índice começa em 0: a primeira letra é s[0], e a última é s[s.Length - 1].",
+      "en": "Forgetting that the index starts at 0: the first letter is s[0], and the last is s[s.Length - 1]."
+    }
+  ],
+  "learnUrl": "https://learn.microsoft.com/dotnet/csharp/programming-guide/strings/"
+}
