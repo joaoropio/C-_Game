@@ -13,6 +13,7 @@ public static class UiKeys
         "level.solution",
         "level.passed",
         "level.next",
+        "level.stay",
         "level.compileErrors",
         "level.checksFailed",
         "level.timedOut",

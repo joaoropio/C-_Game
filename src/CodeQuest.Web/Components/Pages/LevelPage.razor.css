@@ -1,4 +1,4 @@
-﻿.story, .concept {
+.story, .concept {
     background: var(--stone-800);
     border-left: 4px solid var(--torch-dark);
     border-radius: 4px;
@@ -48,9 +48,36 @@
     margin: 1rem 0;
 }
 
+.result-block:focus {
+    outline: none;
+}
+
+.victory-backdrop {
+    align-items: center;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    inset: 0;
+    justify-content: center;
+    padding: 1rem;
+    position: fixed;
+    z-index: 100;
+}
+
 .victory {
-    margin: 1.5rem 0;
+    background: var(--stone-800);
+    border: 2px solid var(--torch-dark);
+    border-radius: 8px;
+    box-shadow: 0 0 2rem rgba(0, 0, 0, 0.8);
+    max-height: 100%;
+    max-width: 24rem;
+    overflow-y: auto;
+    padding: 1.5rem;
     text-align: center;
+    width: 100%;
+}
+
+.victory:focus {
+    outline: none;
 }
 
 .scene {
@@ -116,12 +143,26 @@
     text-shadow: 0 0 8px var(--torch-dark);
 }
 
-.next {
-    border: 2px solid var(--torch);
+.victory-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+}
+
+.victory-actions button {
+    background: var(--stone-700);
+    border: 2px solid var(--torch-dark);
     border-radius: 6px;
-    display: inline-block;
+    color: var(--parchment);
+    cursor: pointer;
+    font: inherit;
     padding: 0.4rem 1.2rem;
-    text-decoration: none;
+}
+
+.victory-actions button.next {
+    background: var(--torch-dark);
+    border-color: var(--torch);
 }
 
 @keyframes door-open {

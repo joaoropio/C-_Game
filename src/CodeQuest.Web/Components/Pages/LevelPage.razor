@@ -1,4 +1,4 @@
-﻿@page "/level/{Id}"
+@page "/level/{Id}"
 @using CodeQuest.Core.Levels
 @using CodeQuest.Core.Progress
 @implements IDisposable
@@ -52,25 +52,33 @@
 
     @if (result is { } shown && shown is not Passed)
     {
-        <RunResultView Result="shown" />
+        <div class="result-block" tabindex="-1" @ref="resultBlock">
+            <RunResultView Result="shown" />
+        </div>
     }
 
     @if (earnedStars is { } stars)
     {
-        <section class="victory" role="status">
-            <div class="scene" aria-hidden="true">
-                <div class="door open"><div class="door-leaf"></div></div>
-                <div class="hero"></div>
-            </div>
-            <p class="passed">@Ui["level.passed"]</p>
-            <p class="result-stars" role="img" aria-label="@string.Format(Ui["level.stars"], stars)">
-                @for (var star = 1; star <= 3; star++)
-                {
-                    <span class="star @(star <= stars ? "filled" : "")" aria-hidden="true">★</span>
-                }
-            </p>
-            <a class="next" href="@NextHref">@Ui[NextIsMap ? "level.backToMap" : "level.next"]</a>
-        </section>
+        <div class="victory-backdrop">
+            <section class="victory" role="dialog" aria-modal="true" aria-labelledby="victory-title"
+                     tabindex="-1" @onkeydown="OnVictoryKeyDown">
+                <div class="scene" aria-hidden="true">
+                    <div class="door open"><div class="door-leaf"></div></div>
+                    <div class="hero"></div>
+                </div>
+                <h2 id="victory-title" class="passed">@Ui["level.passed"]</h2>
+                <p class="result-stars" role="img" aria-label="@string.Format(Ui["level.stars"], stars)">
+                    @for (var star = 1; star <= 3; star++)
+                    {
+                        <span class="star @(star <= stars ? "filled" : "")" aria-hidden="true">★</span>
+                    }
+                </p>
+                <div class="victory-actions">
+                    <button type="button" class="next" @ref="nextButton" @onclick="GoNext">@Ui[NextIsMap ? "level.backToMap" : "level.next"]</button>
+                    <button type="button" class="stay" @onclick="CloseVictory">@Ui["level.stay"]</button>
+                </div>
+            </section>
+        </div>
     }
 
     <GrimoirePanel IsOpen="grimoireOpen" InitialPageId="@level.GrimoirePageId"
@@ -86,6 +94,10 @@
     private int hintsShown;
     private RunResult? result;
     private int? earnedStars;
+    private bool focusVictoryPending;
+    private bool focusResultPending;
+    private ElementReference nextButton;
+    private ElementReference resultBlock;
     private CancellationTokenSource? runCancellation;
 
     [Parameter]
@@ -113,6 +125,8 @@
             grimoireOpen = false;
             result = null;
             earnedStars = null;
+            focusVictoryPending = false;
+            focusResultPending = false;
         }
 
         RedirectIfUnavailable();
@@ -162,6 +176,11 @@
             {
                 result = outcome;
                 await ApplyResultAsync(current, progress, activeEditor, outcome);
+                if (!cancellation.IsCancellationRequested)
+                {
+                    focusVictoryPending = outcome is Passed;
+                    focusResultPending = outcome is not Passed;
+                }
             }
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
@@ -209,6 +228,32 @@
         }
 
         await Store.SaveAsync(progress);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (focusVictoryPending)
+        {
+            focusVictoryPending = false;
+            await nextButton.FocusAsync();
+        }
+        else if (focusResultPending)
+        {
+            focusResultPending = false;
+            await resultBlock.FocusAsync();
+        }
+    }
+
+    private void GoNext() => Navigation.NavigateTo(NextHref);
+
+    private void CloseVictory() => earnedStars = null;
+
+    private void OnVictoryKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape")
+        {
+            CloseVictory();
+        }
     }
 
     private void OpenGrimoire() => grimoireOpen = true;

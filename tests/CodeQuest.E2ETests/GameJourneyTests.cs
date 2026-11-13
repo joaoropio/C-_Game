@@ -21,6 +21,8 @@ public class GameJourneyTests(GameServerFixture server)
         await TypeCodeAsync(page, Level1Solution);
         await RunAsync(page);
 
+        await Expect(page.Locator(".victory[role=dialog][aria-modal=true]")).ToBeInViewportAsync(new() { Timeout = Timeout });
+        await Expect(page.Locator(".victory button.next")).ToBeFocusedAsync(new() { Timeout = Timeout });
         await Expect(page.Locator(".victory .door.open")).ToBeAttachedAsync(new() { Timeout = Timeout });
         await Expect(page.Locator(".victory .result-stars")).ToHaveAttributeAsync("aria-label", "3 de 3 estrelas", new() { Timeout = Timeout });
         await Expect(page.Locator(".victory .star.filled")).ToHaveCountAsync(3, new() { Timeout = Timeout });
@@ -28,6 +30,51 @@ public class GameJourneyTests(GameServerFixture server)
         // Monaco starts its worker lazily: require positive proof that workerMain.js was served before trusting the problem list.
         await browser.WorkerLoaded.WaitAsync(TimeSpan.FromMilliseconds(Timeout));
         Assert.True(browser.Problems.Count == 0, string.Join(Environment.NewLine, browser.Problems));
+    }
+
+    [Fact]
+    public async Task Level1_VictoryDialog_NextLevelGoesToLevel2()
+    {
+        await using var context = await server.Browser.NewContextAsync();
+        var page = await context.NewPageAsync();
+
+        await OpenLevelAsync(page, "01-variables");
+        await TypeCodeAsync(page, Level1Solution);
+        await RunAsync(page);
+        await Expect(page.Locator(".victory")).ToBeInViewportAsync(new() { Timeout = Timeout });
+        await page.GetByRole(AriaRole.Button, new() { Name = "Próximo nível" }).ClickAsync();
+
+        await Expect(page).ToHaveURLAsync($"{server.BaseUrl}/level/02-operators", new() { Timeout = Timeout });
+        await Expect(page.Locator(".victory")).ToHaveCountAsync(0, new() { Timeout = Timeout });
+    }
+
+    [Fact]
+    public async Task Level1_VictoryDialog_StayKeepsCode()
+    {
+        await using var context = await server.Browser.NewContextAsync();
+        var page = await context.NewPageAsync();
+
+        await OpenLevelAsync(page, "01-variables");
+        await TypeCodeAsync(page, Level1Solution);
+        await RunAsync(page);
+        await Expect(page.Locator(".victory")).ToBeInViewportAsync(new() { Timeout = Timeout });
+        await page.Keyboard.PressAsync("Escape");
+
+        await Expect(page.Locator(".victory")).ToHaveCountAsync(0, new() { Timeout = Timeout });
+        Assert.Equal(Level1Solution, await page.EvaluateAsync<string>("monaco.editor.getEditors()[0].getValue()"));
+    }
+
+    [Fact]
+    public async Task FailingRun_ShowsErrorInViewportWithoutScrolling()
+    {
+        await using var context = await server.Browser.NewContextAsync();
+        var page = await context.NewPageAsync();
+
+        await OpenLevelAsync(page, "01-variables");
+        await TypeCodeAsync(page, "string name = \"Merlin\";\nint health = ;\n");
+        await RunAsync(page);
+
+        await Expect(page.Locator(".result-block .result")).ToBeInViewportAsync(new() { Timeout = Timeout });
     }
 
     [Fact]

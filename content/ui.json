@@ -8,6 +8,7 @@
   "level.solution": { "pt": "Ver solução", "en": "Show solution" },
   "level.passed": { "pt": "Nível concluído!", "en": "Level complete!" },
   "level.next": { "pt": "Próximo nível", "en": "Next level" },
+  "level.stay": { "pt": "Ficar aqui", "en": "Stay here" },
   "level.compileErrors": { "pt": "O código tem erros:", "en": "The code has errors:" },
   "level.checksFailed": { "pt": "Ainda não está certo:", "en": "Not quite right yet:" },
   "level.timedOut": { "pt": "O feitiço demora demasiado: verifica ciclos ou chamadas que nunca acabam.", "en": "The spell takes too long: check for loops or calls that never end." },

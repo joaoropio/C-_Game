@@ -1,4 +1,4 @@
-﻿using Bunit;
+using Bunit;
 using Bunit.TestDoubles;
 using CodeQuest.Core;
 using CodeQuest.Core.Levels;
@@ -6,6 +6,7 @@ using CodeQuest.Core.Progress;
 using CodeQuest.Core.Running;
 using CodeQuest.Web.Components.Pages;
 using CodeQuest.Web.Services;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CodeQuest.Tests.Web;
@@ -13,6 +14,7 @@ namespace CodeQuest.Tests.Web;
 public sealed class LevelPageTests : BunitContext
 {
     private const string EditorCode = "return 1;";
+    private const string FocusCall = "Blazor._internal.domWrapper.focus";
 
     private readonly GameContent content = TestContextExtensions.LoadContent();
     private readonly FakeRunner runner = new();
@@ -59,6 +61,17 @@ public sealed class LevelPageTests : BunitContext
 
     private void AssertRedirectedHome() =>
         Assert.Equal("/", Assert.Single(Services.GetRequiredService<BunitNavigationManager>().History).Uri);
+
+    private IReadOnlyList<string> FocusedReferences() =>
+        JSInterop.Invocations
+            .Where(call => call.Identifier == FocusCall)
+            .Select(call => ((ElementReference)call.Arguments[0]!).Id)
+            .ToList();
+
+    private void AssertFocused(IRenderedComponent<LevelPage> cut, string selector) =>
+        Assert.Contains(cut.Find(selector).GetAttribute("blazor:elementReference"), FocusedReferences());
+
+    private string LastNavigation() => Services.GetRequiredService<BunitNavigationManager>().History.First().Uri;
 
     private PlayerProgress Saved() => PlayerProgress.FromJson(this.LastSavedValue(TestContextExtensions.ProgressKey)).Progress;
 
@@ -151,8 +164,155 @@ public sealed class LevelPageTests : BunitContext
         Assert.Equal(3, cut.FindAll(".result-stars .star.filled").Count);
         Assert.Equal("3 de 3 estrelas", cut.Find(".result-stars").GetAttribute("aria-label"));
         Assert.Equal(3, Saved().StarsFor(First.Id));
-        Assert.Equal($"/level/{content.Levels[1].Id}", cut.Find("a.next").GetAttribute("href"));
     }
+
+    [Fact]
+    public async Task Run_Passed_OpensModalVictoryDialog()
+    {
+        var cut = await RenderLevelAsync(First);
+
+        await RunAsync(cut, new Passed(First.MaxStatementsForThreeStars));
+
+        var dialog = cut.Find(".victory");
+        Assert.Equal("dialog", dialog.GetAttribute("role"));
+        Assert.Equal("true", dialog.GetAttribute("aria-modal"));
+        var heading = cut.Find($"#{dialog.GetAttribute("aria-labelledby")}");
+        Assert.Equal("Nível concluído!", heading.TextContent);
+    }
+
+    [Fact]
+    public async Task Victory_Open_FocusesPrimaryButton()
+    {
+        var cut = await RenderLevelAsync(First);
+
+        await RunAsync(cut, new Passed(1));
+
+        AssertFocused(cut, ".victory button.next");
+    }
+
+    [Fact]
+    public async Task Victory_Next_NavigatesToNextLevel()
+    {
+        var cut = await RenderLevelAsync(First);
+        await RunAsync(cut, new Passed(1));
+
+        Assert.Contains("Próximo nível", cut.Find(".victory button.next").TextContent);
+        await cut.Find(".victory button.next").ClickAsync(new());
+
+        Assert.Equal($"/level/{content.Levels[1].Id}", LastNavigation());
+    }
+
+    [Fact]
+    public async Task Victory_Stay_ClosesDialogAndKeepsEditor()
+    {
+        var cut = await RenderLevelAsync(First);
+        await RunAsync(cut, new Passed(1));
+
+        Assert.Contains("Ficar aqui", cut.Find(".victory button.stay").TextContent);
+        await cut.Find(".victory button.stay").ClickAsync(new());
+
+        Assert.Empty(cut.FindAll(".victory"));
+        Assert.Single(cut.FindAll(".editor-frame"));
+        Assert.Single(editor.Invocations["create"]);
+        Assert.DoesNotContain(editor.Invocations, call => call.Identifier == "dispose");
+        Assert.Empty(Services.GetRequiredService<BunitNavigationManager>().History);
+    }
+
+    [Fact]
+    public async Task Victory_Escape_ClosesDialogAndKeepsEditor()
+    {
+        var cut = await RenderLevelAsync(First);
+        await RunAsync(cut, new Passed(1));
+
+        await cut.Find(".victory button.next").KeyDownAsync(Key.Escape);
+
+        Assert.Empty(cut.FindAll(".victory"));
+        Assert.Single(editor.Invocations["create"]);
+        Assert.DoesNotContain(editor.Invocations, call => call.Identifier == "dispose");
+    }
+
+    [Fact]
+    public async Task Victory_OtherKey_KeepsDialogOpen()
+    {
+        var cut = await RenderLevelAsync(First);
+        await RunAsync(cut, new Passed(1));
+
+        await cut.Find(".victory button.next").KeyDownAsync(Key.Enter);
+
+        Assert.Single(cut.FindAll(".victory"));
+    }
+
+    [Fact]
+    public async Task Run_FailingAfterVictory_KeepsDialogClosed()
+    {
+        var cut = await RenderLevelAsync(First);
+        await RunAsync(cut, new Passed(1));
+        await cut.Find(".victory button.stay").ClickAsync(new());
+
+        await RunAsync(cut, new TimedOut());
+
+        Assert.Empty(cut.FindAll(".victory"));
+    }
+
+    [Fact]
+    public async Task Run_Failure_FocusesResultBlock()
+    {
+        var cut = await RenderLevelAsync(First);
+
+        await RunAsync(cut, new ChecksFailed([new LocalizedText("Falhou.", "Failed.")]));
+
+        Assert.Equal("-1", cut.Find(".result-block").GetAttribute("tabindex"));
+        Assert.Contains("Falhou.", cut.Find(".result-block").TextContent);
+        AssertFocused(cut, ".result-block");
+    }
+
+    [Fact]
+    public async Task Run_Failure_FocusesResultOnlyOnceAndNotWhileRunning()
+    {
+        var cut = await RenderLevelAsync(First);
+        var gate = new TaskCompletionSource<RunResult>();
+        runner.Pending = gate.Task;
+
+        var click = cut.Find("button.run").ClickAsync(new());
+        cut.WaitForAssertion(() => Assert.True(cut.Find("button.run").HasAttribute("disabled")));
+        Assert.Empty(FocusedReferences());
+
+        gate.SetResult(new TimedOut());
+        await click;
+        cut.WaitForAssertion(() => Assert.Single(FocusedReferences()));
+        await cut.Find("button.hint").ClickAsync(new());
+
+        Assert.Single(FocusedReferences());
+    }
+
+    [Fact]
+    public async Task Run_Passed_DoesNotFocusResultBlock()
+    {
+        var cut = await RenderLevelAsync(First);
+
+        await RunAsync(cut, new Passed(1));
+
+        Assert.Empty(cut.FindAll(".result-block"));
+        Assert.Single(FocusedReferences());
+    }
+
+    [Fact]
+    public async Task Run_Cancelled_DoesNotFocusResultBlock()
+    {
+        progress.RecordPass(First.Id, 1);
+        var cut = await RenderLevelAsync(First);
+        var gate = new TaskCompletionSource<RunResult>();
+        runner.Pending = gate.Task;
+        var click = cut.Find("button.run").ClickAsync(new());
+        cut.WaitForAssertion(() => Assert.NotNull(runner.Request));
+
+        cut.Render(parameters => parameters.Add(page => page.Id, content.Levels[1].Id));
+        gate.SetResult(new TimedOut());
+        await click;
+
+        Assert.Empty(FocusedReferences());
+    }
+
 
     [Fact]
     public async Task Run_Passed_World1WithHint_GivesTwoOrThreeStars()
@@ -237,8 +397,10 @@ public sealed class LevelPageTests : BunitContext
 
         await RunAsync(cut, new Passed(1));
 
-        Assert.Equal("/", cut.Find("a.next").GetAttribute("href"));
-        Assert.Contains("Voltar ao mapa", cut.Find("a.next").TextContent);
+        Assert.Contains("Voltar ao mapa", cut.Find(".victory button.next").TextContent);
+        await cut.Find(".victory button.next").ClickAsync(new());
+
+        Assert.Equal("/", LastNavigation());
     }
 
     [Fact]
@@ -323,7 +485,7 @@ public sealed class LevelPageTests : BunitContext
         await RunAsync(cut, new Passed(First.MaxStatementsForThreeStars + 1));
 
         Assert.Equal(3, cut.FindAll(".result-stars .star.filled").Count);
-        Assert.Equal("status", cut.Find(".victory").GetAttribute("role"));
+        Assert.Equal("dialog", cut.Find(".victory").GetAttribute("role"));
     }
 
     [Fact]
