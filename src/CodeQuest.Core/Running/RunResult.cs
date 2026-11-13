@@ -6,9 +6,9 @@ public sealed record CodeRejected(LocalizedText Reason, int? Line) : RunResult;
 
 public sealed record CompilationFailed(IReadOnlyList<CompilationError> Errors) : RunResult;
 
-public sealed record ChecksFailed(IReadOnlyList<LocalizedText> Failures) : RunResult;
+public sealed record ChecksFailed(IReadOnlyList<CheckOutcome> Checks) : RunResult;
 
-public sealed record Passed(int StatementCount) : RunResult;
+public sealed record Passed(int StatementCount, IReadOnlyList<CheckOutcome> Checks) : RunResult;
 
 public sealed record TimedOut() : RunResult;
 

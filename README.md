@@ -69,19 +69,20 @@ Não é preciso mexer no motor, na interface nem nos `.csproj`: os níveis são 
 3. `Template.cs`: o código C# à volta do código do jogador. Tem de ter exatamente uma linha `// {{PLAYER_CODE}}`, sozinha na linha (os espaços à volta ignoram-se). É aí que o código do jogador é inserido. O jogador só escreve o corpo de um método já dado.
 4. `Starter.cs`: o código inicial que aparece no editor. Tem de **não** passar na validação.
 5. `Solution.cs`: uma solução que passa na validação e cabe em `maxStatementsForThreeStars`.
-6. `Validation.cs`: os testes escondidos, compilados juntamente com o `Template.cs` e o código do jogador. Define `public static class Validation` com `public static IEnumerable<(string Pt, string En)> Run()`. Cada `yield return (pt, en)` é uma falha com a mensagem para o jogador; se não devolver nada, o nível passa. Exemplo:
+6. `Validation.cs`: os testes escondidos, compilados juntamente com o `Template.cs` e o código do jogador. Define `public static class Validation` com `public static IEnumerable<(string Case, string Expected, string Actual)> Run()`. Cada `yield return (caso, esperado, obtido)` é **um caso testado**, passe ou falhe: devolve-se sempre todos. `Case` é a entrada em texto (`attack = 10, defense = 3`) ou o nome da variável a verificar; `Expected` e `Actual` são os valores escritos como literais C# (`6`, `"M6"`, `true`, `{ 2, 3, 5 }`, `{ }`; números com `InvariantCulture`), por isso não têm idioma. O motor compara `Expected` e `Actual` como texto: o caso passa se forem iguais, e o nível passa se todos passarem. Exemplo:
 
    ```csharp
    public static class Validation
    {
-       public static IEnumerable<(string Pt, string En)> Run()
+       public static IEnumerable<(string Case, string Expected, string Actual)> Run()
        {
-           var actual = Spell.Damage(10, 3, 2);
-           if (actual != 17)
+           foreach (var (attack, defense, multiplier, expected) in new[] { (10, 3, 2, 17), (5, 0, 3, 15) })
            {
+               var actual = Spell.Damage(attack, defense, multiplier);
                yield return (
-                   $"Com attack = 10, defense = 3 e multiplier = 2, o dano devia ser 17, mas deu {actual}.",
-                   $"With attack = 10, defense = 3 and multiplier = 2, the damage should be 17, but it was {actual}.");
+                   $"attack = {attack}, defense = {defense}, multiplier = {multiplier}",
+                   FormattableString.Invariant($"{expected}"),
+                   FormattableString.Invariant($"{actual}"));
            }
        }
    }

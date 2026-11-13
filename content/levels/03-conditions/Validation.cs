@@ -1,23 +1,17 @@
 public static class Validation
 {
-    public static IEnumerable<(string Pt, string En)> Run()
+    public static IEnumerable<(string Case, string Expected, string Actual)> Run()
     {
-        foreach (var (rune, expected, note) in new[]
+        foreach (var (rune, expected) in new[]
         {
-            ("fire", "left", ""),
-            ("ice", "right", ""),
-            ("wind", "center", ""),
-            ("earth", "back", " (qualquer outra runa)"),
+            ("fire", "left"),
+            ("ice", "right"),
+            ("wind", "center"),
+            ("earth", "back"),
         })
         {
             var actual = Spell.ChooseDoor(rune);
-            var noteEn = note == "" ? "" : " (any other rune)";
-            if (actual != expected)
-            {
-                yield return (
-                    $"Com rune = \"{rune}\"{note} a porta devia ser \"{expected}\", mas deu \"{actual}\".",
-                    $"With rune = \"{rune}\"{noteEn} the door should be \"{expected}\", but it was \"{actual}\".");
-            }
+            yield return ($"rune = \"{rune}\"", $"\"{expected}\"", $"\"{actual}\"");
         }
     }
 }

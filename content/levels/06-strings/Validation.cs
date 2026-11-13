@@ -1,6 +1,6 @@
 public static class Validation
 {
-    public static IEnumerable<(string Pt, string En)> Run()
+    public static IEnumerable<(string Case, string Expected, string Actual)> Run()
     {
         foreach (var (name, expected) in new[]
         {
@@ -11,12 +11,7 @@ public static class Validation
         })
         {
             var actual = Spell.SealCode(name);
-            if (actual != expected)
-            {
-                yield return (
-                    $"Com name = \"{name}\" o código devia ser \"{expected}\", mas deu \"{actual}\".",
-                    $"With name = \"{name}\" the code should be \"{expected}\", but it was \"{actual}\".");
-            }
+            yield return ($"name = \"{name}\"", $"\"{expected}\"", $"\"{actual}\"");
         }
     }
 }

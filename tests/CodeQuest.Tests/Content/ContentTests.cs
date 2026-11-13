@@ -23,7 +23,7 @@ public class ContentTests
     private const string EmptyValidation = """
         public static class Validation
         {
-            public static System.Collections.Generic.IEnumerable<(string Pt, string En)> Run()
+            public static System.Collections.Generic.IEnumerable<(string Case, string Expected, string Actual)> Run()
             {
                 yield break;
             }

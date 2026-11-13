@@ -50,6 +50,18 @@ public class LevelSolutionTests
 
     [Theory]
     [MemberData(nameof(LevelIds))]
+    public async Task Solution_EveryCheckPasses(string id)
+    {
+        var level = Find(id);
+
+        var result = Assert.IsType<Passed>(await Run(level, level.Solution));
+
+        Assert.NotEmpty(result.Checks);
+        Assert.All(result.Checks, check => Assert.True(check.Passed, $"{check.Case}: {check.Actual} vs {check.Expected}"));
+    }
+
+    [Theory]
+    [MemberData(nameof(LevelIds))]
     public async Task Starter_DoesNotPass(string id)
     {
         var level = Find(id);
@@ -193,8 +205,7 @@ public class LevelSolutionTests
             level,
             "int mana = 0;\nfor (int turn = 1; turn < turns; turn++)\n{\n    mana += turn;\n}\nreturn mana;"));
 
-        Assert.Contains(result.Failures, failure => failure.En.Contains("should be 6") && failure.En.Contains("was 3"));
-        Assert.Contains(result.Failures, failure => failure.Pt.Contains("devia ser 6") && failure.Pt.Contains("deu 3"));
+        Assert.Contains(new CheckOutcome("turns = 3", "6", "3"), result.Checks);
     }
 
     [Fact]
@@ -216,8 +227,7 @@ public class LevelSolutionTests
             level,
             "if (potions.Length == 0)\n{\n    return 1;\n}\n\nint total = 0;\nforeach (int count in potions)\n{\n    total += count;\n}\n\nreturn total;"));
 
-        Assert.Contains(result.Failures, failure => failure.En.Contains("potions = { }") && failure.En.Contains("should be 0"));
-        Assert.Contains(result.Failures, failure => failure.Pt.Contains("potions = { }") && failure.Pt.Contains("devia ser 0"));
+        Assert.Contains(new CheckOutcome("potions = { }", "0", "1"), result.Checks);
     }
 
     [Fact]
@@ -240,10 +250,7 @@ public class LevelSolutionTests
             level,
             "return (char.ToUpper(name[0]) + name.Length).ToString();"));
 
-        Assert.Contains(result.Failures, failure =>
-            failure.En.Contains("name = \"merlin\"") && failure.En.Contains("\"M6\"") && failure.En.Contains("\"83\""));
-        Assert.Contains(result.Failures, failure =>
-            failure.Pt.Contains("name = \"merlin\"") && failure.Pt.Contains("\"M6\"") && failure.Pt.Contains("\"83\""));
+        Assert.Contains(new CheckOutcome("name = \"merlin\"", "\"M6\"", "\"83\""), result.Checks);
     }
 
     [Fact]
@@ -296,8 +303,7 @@ public class LevelSolutionTests
 
         var result = Assert.IsType<ChecksFailed>(await Run(level, "return attack + multiplier - defense;"));
 
-        Assert.Contains(result.Failures, failure => failure.En.Contains("should be 17") && failure.En.Contains("but it was 9"));
-        Assert.Contains(result.Failures, failure => failure.Pt.Contains("devia ser 17") && failure.Pt.Contains("mas deu 9"));
+        Assert.Contains(new CheckOutcome("attack = 10, defense = 3, multiplier = 2", "17", "9"), result.Checks);
     }
 
     [Fact]
@@ -307,10 +313,7 @@ public class LevelSolutionTests
 
         var result = Assert.IsType<ChecksFailed>(await Run(level, "return \"center\";"));
 
-        Assert.Contains(result.Failures, failure =>
-            failure.En.Contains("rune = \"fire\"") && failure.En.Contains("\"left\"") && failure.En.Contains("but it was \"center\""));
-        Assert.Contains(result.Failures, failure =>
-            failure.Pt.Contains("rune = \"fire\"") && failure.Pt.Contains("\"left\"") && failure.Pt.Contains("mas deu \"center\""));
+        Assert.Contains(new CheckOutcome("rune = \"fire\"", "\"left\"", "\"center\""), result.Checks);
     }
 
     [Fact]
@@ -322,11 +325,8 @@ public class LevelSolutionTests
             level,
             "string name = \"Merlin\";\nint health = 90;\ndouble mana = 50.5;\nbool isAlive = true;"));
 
-        var failure = Assert.Single(result.Failures);
-        Assert.Contains("health should be 100", failure.En);
-        Assert.Contains("but it was 90", failure.En);
-        Assert.Contains("health devia ser 100", failure.Pt);
-        Assert.Contains("mas deu 90", failure.Pt);
+        Assert.Equal(new CheckOutcome("health", "100", "90"), Assert.Single(result.Checks, check => !check.Passed));
+        Assert.Equal(["name", "health", "mana", "isAlive"], result.Checks.Select(check => check.Case));
     }
 
     [Fact]

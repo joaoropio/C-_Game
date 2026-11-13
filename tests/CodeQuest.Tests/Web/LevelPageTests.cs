@@ -132,9 +132,9 @@ public sealed class LevelPageTests : BunitContext
     {
         var cut = await RenderLevelAsync(First);
 
-        await RunAsync(cut, new ChecksFailed([new LocalizedText("Falhou.", "Failed.")]));
+        await RunAsync(cut, new ChecksFailed([new CheckOutcome("x = 1", "2", "3")]));
 
-        Assert.Contains("Falhou.", cut.Markup);
+        Assert.Contains("x = 1: deu 3 · esperado 2", cut.Find(".result").TextContent);
         Assert.Empty(cut.FindAll(".door.open"));
         for (var attempt = 0; attempt < 2; attempt++)
         {
@@ -161,7 +161,7 @@ public sealed class LevelPageTests : BunitContext
     {
         var cut = await RenderLevelAsync(First);
 
-        await RunAsync(cut, new Passed(First.MaxStatementsForThreeStars));
+        await RunAsync(cut, new Passed(First.MaxStatementsForThreeStars, []));
 
         Assert.NotEmpty(cut.FindAll(".door.open"));
         Assert.Equal(3, cut.FindAll(".result-stars .star.filled").Count);
@@ -174,7 +174,7 @@ public sealed class LevelPageTests : BunitContext
     {
         var cut = await RenderLevelAsync(First);
 
-        await RunAsync(cut, new Passed(First.MaxStatementsForThreeStars));
+        await RunAsync(cut, new Passed(First.MaxStatementsForThreeStars, []));
 
         var dialog = cut.Find(".victory");
         Assert.Equal("dialog", dialog.GetAttribute("role"));
@@ -188,7 +188,7 @@ public sealed class LevelPageTests : BunitContext
     {
         var cut = await RenderLevelAsync(First);
 
-        await RunAsync(cut, new Passed(1));
+        await RunAsync(cut, new Passed(1, []));
 
         AssertLastFocused(ReferenceOf(cut, ".victory button.next"));
     }
@@ -197,7 +197,7 @@ public sealed class LevelPageTests : BunitContext
     public async Task Victory_Next_NavigatesToNextLevel()
     {
         var cut = await RenderLevelAsync(First);
-        await RunAsync(cut, new Passed(1));
+        await RunAsync(cut, new Passed(1, []));
 
         Assert.Contains("Próximo nível", cut.Find(".victory button.next").TextContent);
         await cut.Find(".victory button.next").ClickAsync(new());
@@ -209,7 +209,7 @@ public sealed class LevelPageTests : BunitContext
     public async Task Victory_Stay_ClosesDialogAndKeepsEditor()
     {
         var cut = await RenderLevelAsync(First);
-        await RunAsync(cut, new Passed(1));
+        await RunAsync(cut, new Passed(1, []));
 
         Assert.Contains("Ficar aqui", cut.Find(".victory button.stay").TextContent);
         await cut.Find(".victory button.stay").ClickAsync(new());
@@ -225,7 +225,7 @@ public sealed class LevelPageTests : BunitContext
     public async Task Victory_Escape_ClosesDialogAndKeepsEditor()
     {
         var cut = await RenderLevelAsync(First);
-        await RunAsync(cut, new Passed(1));
+        await RunAsync(cut, new Passed(1, []));
 
         await cut.Find(".victory button.next").KeyDownAsync(Key.Escape);
 
@@ -239,7 +239,7 @@ public sealed class LevelPageTests : BunitContext
     {
         var cut = await RenderLevelAsync(First);
         Assert.False(cut.Find(".page-content").HasAttribute("inert"));
-        await RunAsync(cut, new Passed(1));
+        await RunAsync(cut, new Passed(1, []));
 
         Assert.True(cut.Find(".page-content").HasAttribute("inert"));
         Assert.Empty(cut.FindAll(".page-content .victory"));
@@ -256,7 +256,7 @@ public sealed class LevelPageTests : BunitContext
     public async Task Victory_Escape_RemovesInert()
     {
         var cut = await RenderLevelAsync(First);
-        await RunAsync(cut, new Passed(1));
+        await RunAsync(cut, new Passed(1, []));
 
         await cut.Find(".victory button.next").KeyDownAsync(Key.Escape);
 
@@ -268,7 +268,7 @@ public sealed class LevelPageTests : BunitContext
     {
         var cut = await RenderLevelAsync(First);
         var runReference = ReferenceOf(cut, "button.run");
-        await RunAsync(cut, new Passed(1));
+        await RunAsync(cut, new Passed(1, []));
 
         await cut.Find(".victory button.stay").ClickAsync(new());
 
@@ -280,7 +280,7 @@ public sealed class LevelPageTests : BunitContext
     {
         var cut = await RenderLevelAsync(First);
         var runReference = ReferenceOf(cut, "button.run");
-        await RunAsync(cut, new Passed(1));
+        await RunAsync(cut, new Passed(1, []));
 
         await cut.Find(".victory button.next").KeyDownAsync(Key.Escape);
 
@@ -291,7 +291,7 @@ public sealed class LevelPageTests : BunitContext
     public async Task Victory_OtherKey_KeepsDialogOpen()
     {
         var cut = await RenderLevelAsync(First);
-        await RunAsync(cut, new Passed(1));
+        await RunAsync(cut, new Passed(1, []));
 
         await cut.Find(".victory button.next").KeyDownAsync(Key.Enter);
 
@@ -302,7 +302,7 @@ public sealed class LevelPageTests : BunitContext
     public async Task Run_FailingAfterVictory_KeepsDialogClosed()
     {
         var cut = await RenderLevelAsync(First);
-        await RunAsync(cut, new Passed(1));
+        await RunAsync(cut, new Passed(1, []));
         await cut.Find(".victory button.stay").ClickAsync(new());
 
         await RunAsync(cut, new TimedOut());
@@ -315,10 +315,10 @@ public sealed class LevelPageTests : BunitContext
     {
         var cut = await RenderLevelAsync(First);
 
-        await RunAsync(cut, new ChecksFailed([new LocalizedText("Falhou.", "Failed.")]));
+        await RunAsync(cut, new ChecksFailed([new CheckOutcome("x = 1", "2", "3")]));
 
         Assert.Equal("-1", cut.Find(".result-block").GetAttribute("tabindex"));
-        Assert.Contains("Falhou.", cut.Find(".result-block").TextContent);
+        Assert.Contains("x = 1: deu 3 · esperado 2", cut.Find(".result-block").TextContent);
         AssertLastFocused(ReferenceOf(cut, ".result-block"));
     }
 
@@ -346,7 +346,7 @@ public sealed class LevelPageTests : BunitContext
     {
         var cut = await RenderLevelAsync(First);
 
-        await RunAsync(cut, new Passed(1));
+        await RunAsync(cut, new Passed(1, []));
 
         Assert.Empty(cut.FindAll(".result-block"));
         JSInterop.VerifyFocusAsyncInvoke();
@@ -375,10 +375,10 @@ public sealed class LevelPageTests : BunitContext
         var cut = await RenderLevelAsync(First);
         await cut.Find("button.hint").ClickAsync(new());
 
-        await RunAsync(cut, new Passed(First.MaxStatementsForThreeStars + 1));
+        await RunAsync(cut, new Passed(First.MaxStatementsForThreeStars + 1, []));
         Assert.Equal(2, cut.FindAll(".result-stars .star.filled").Count);
 
-        await RunAsync(cut, new Passed(First.MaxStatementsForThreeStars));
+        await RunAsync(cut, new Passed(First.MaxStatementsForThreeStars, []));
         Assert.Equal(3, cut.FindAll(".result-stars .star.filled").Count);
     }
 
@@ -438,7 +438,7 @@ public sealed class LevelPageTests : BunitContext
         Assert.Equal(First.Solution, set.Arguments[1]);
         Assert.True(Saved().SawSolution(First.Id));
 
-        await RunAsync(cut, new Passed(1));
+        await RunAsync(cut, new Passed(1, []));
 
         Assert.Empty(cut.FindAll(".result-stars .star.filled"));
         Assert.Equal("0 de 3 estrelas", cut.Find(".result-stars").GetAttribute("aria-label"));
@@ -450,7 +450,7 @@ public sealed class LevelPageTests : BunitContext
         CompleteAllBefore(Last);
         var cut = await RenderLevelAsync(Last);
 
-        await RunAsync(cut, new Passed(1));
+        await RunAsync(cut, new Passed(1, []));
 
         Assert.Contains("Voltar ao mapa", cut.Find(".victory button.next").TextContent);
         await cut.Find(".victory button.next").ClickAsync(new());
@@ -488,7 +488,7 @@ public sealed class LevelPageTests : BunitContext
         var second = content.Levels[1];
 
         cut.Render(parameters => parameters.Add(page => page.Id, second.Id));
-        gate.SetResult(new Passed(1));
+        gate.SetResult(new Passed(1, []));
         await click;
 
         Assert.DoesNotContain(JSInterop.Invocations, call => call.Identifier == TestContextExtensions.SetItem);
@@ -526,7 +526,7 @@ public sealed class LevelPageTests : BunitContext
             await RunAsync(cut, new TimedOut());
         }
 
-        await RunAsync(cut, new Passed(1));
+        await RunAsync(cut, new Passed(1, []));
 
         Assert.Empty(cut.FindAll("button.solution"));
     }
@@ -535,9 +535,9 @@ public sealed class LevelPageTests : BunitContext
     public async Task Victory_ShowsBestSavedStars()
     {
         var cut = await RenderLevelAsync(First);
-        await RunAsync(cut, new Passed(First.MaxStatementsForThreeStars));
+        await RunAsync(cut, new Passed(First.MaxStatementsForThreeStars, []));
 
-        await RunAsync(cut, new Passed(First.MaxStatementsForThreeStars + 1));
+        await RunAsync(cut, new Passed(First.MaxStatementsForThreeStars + 1, []));
 
         Assert.Equal(3, cut.FindAll(".result-stars .star.filled").Count);
         Assert.Equal("dialog", cut.Find(".victory").GetAttribute("role"));
@@ -549,7 +549,7 @@ public sealed class LevelPageTests : BunitContext
         progress.RecordPass(First.Id, 1);
         var cut = await RenderLevelAsync(First);
         await cut.Find("button.hint").ClickAsync(new());
-        await RunAsync(cut, new Passed(1));
+        await RunAsync(cut, new Passed(1, []));
 
         cut.Render(parameters => parameters.Add(page => page.Id, content.Levels[1].Id));
 

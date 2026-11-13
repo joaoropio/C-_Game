@@ -19,12 +19,10 @@ public class RoslynCodeRunnerTests
     private const string Validation = """
         public static class Validation
         {
-            public static System.Collections.Generic.IEnumerable<(string Pt, string En)> Run()
+            public static System.Collections.Generic.IEnumerable<(string Case, string Expected, string Actual)> Run()
             {
-                if (Spell.Twice(2) != 4)
-                {
-                    yield return ("Twice(2) devia ser 4.", "Twice(2) should be 4.");
-                }
+                yield return ("x = 2", "4", Spell.Twice(2).ToString());
+                yield return ("x = 5", "10", Spell.Twice(5).ToString());
             }
         }
         """;
@@ -48,14 +46,42 @@ public class RoslynCodeRunnerTests
         Assert.IsType<Passed>(await Run(playerCode));
 
     [Fact]
-    public async Task Run_WrongResult_ChecksFailedWithMessages()
+    public async Task Run_WrongResult_ChecksFailedWithEveryCheck()
     {
         var result = Assert.IsType<ChecksFailed>(await Run("return x + 1;"));
 
-        var failure = Assert.Single(result.Failures);
-        Assert.Equal("Twice(2) should be 4.", failure.En);
-        Assert.Equal("Twice(2) devia ser 4.", failure.Pt);
+        Assert.Equal(2, result.Checks.Count);
+        Assert.Equal(new CheckOutcome("x = 2", "4", "3"), result.Checks[0]);
+        Assert.False(result.Checks[0].Passed);
+        Assert.False(result.Checks[1].Passed);
     }
+
+    [Fact]
+    public async Task Run_PartlyWrong_ChecksFailedKeepsPassingChecksToo()
+    {
+        var result = Assert.IsType<ChecksFailed>(await Run("return x == 5 ? 10 : x + 1;"));
+
+        Assert.False(result.Checks[0].Passed);
+        Assert.True(result.Checks[1].Passed);
+    }
+
+    [Fact]
+    public async Task Run_CorrectCode_PassedCarriesEveryCheck()
+    {
+        var result = Assert.IsType<Passed>(await Run("return x * 2;"));
+
+        Assert.Equal(
+            [new CheckOutcome("x = 2", "4", "4"), new CheckOutcome("x = 5", "10", "10")],
+            result.Checks);
+        Assert.All(result.Checks, check => Assert.True(check.Passed));
+    }
+
+    [Fact]
+    public async Task Run_ValidationRunWithOldReturnType_ThrowsInvalidOperation() =>
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => Run(
+                "return x;",
+                "public static class Validation { public static System.Collections.Generic.IEnumerable<(string Pt, string En)> Run() { yield break; } }"));
 
     [Fact]
     public async Task Run_CompileError_CompilationFailed()
@@ -126,7 +152,7 @@ public class RoslynCodeRunnerTests
         const string blockingValidation = """
             public static class Validation
             {
-                public static System.Collections.Generic.IEnumerable<(string Pt, string En)> Run()
+                public static System.Collections.Generic.IEnumerable<(string Case, string Expected, string Actual)> Run()
                 {
                     System.Threading.Thread.Sleep(4000);
                     yield break;
@@ -166,7 +192,7 @@ public class RoslynCodeRunnerTests
         const string throwingValidation = """
             public static class Validation
             {
-                public static System.Collections.Generic.IEnumerable<(string Pt, string En)> Run()
+                public static System.Collections.Generic.IEnumerable<(string Case, string Expected, string Actual)> Run()
                 {
                     throw new System.FormatException("bad");
                     yield break;

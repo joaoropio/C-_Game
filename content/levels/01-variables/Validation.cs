@@ -1,36 +1,13 @@
 public static class Validation
 {
-    public static IEnumerable<(string Pt, string En)> Run()
+    public static IEnumerable<(string Case, string Expected, string Actual)> Run()
     {
         var hero = Spell.Cast();
+        var invariant = System.Globalization.CultureInfo.InvariantCulture;
 
-        if (hero.Name != "Merlin")
-        {
-            yield return (
-                $"name devia ser \"Merlin\", mas deu \"{hero.Name}\".",
-                $"name should be \"Merlin\", but it was \"{hero.Name}\".");
-        }
-
-        if (hero.Health != 100)
-        {
-            yield return (
-                $"health devia ser 100, mas deu {hero.Health}.",
-                $"health should be 100, but it was {hero.Health}.");
-        }
-
-        if (hero.Mana != 50.5)
-        {
-            var mana = hero.Mana.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            yield return (
-                $"mana devia ser 50.5, mas deu {mana}.",
-                $"mana should be 50.5, but it was {mana}.");
-        }
-
-        if (!hero.IsAlive)
-        {
-            yield return (
-                "isAlive devia ser true, mas deu false.",
-                "isAlive should be true, but it was false.");
-        }
+        yield return ("name", "\"Merlin\"", $"\"{hero.Name}\"");
+        yield return ("health", "100", hero.Health.ToString(invariant));
+        yield return ("mana", "50.5", hero.Mana.ToString(invariant));
+        yield return ("isAlive", "true", hero.IsAlive ? "true" : "false");
     }
 }

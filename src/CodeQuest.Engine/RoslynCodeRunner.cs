@@ -67,11 +67,13 @@ public sealed class RoslynCodeRunner : ICodeRunner
     {
         try
         {
-            var results = (IEnumerable<(string Pt, string En)>)run.Invoke(null, null)!;
-            var failures = results.Select(result => new LocalizedText(result.Pt, result.En)).ToList();
-            return failures.Count > 0
-                ? new ChecksFailed(failures)
-                : new Passed(StatementCounter.Count(playerCode));
+            var results = (IEnumerable<(string Case, string Expected, string Actual)>)run.Invoke(null, null)!;
+            var checks = results
+                .Select(result => new CheckOutcome(result.Case, result.Expected, result.Actual))
+                .ToList();
+            return checks.Any(check => !check.Passed)
+                ? new ChecksFailed(checks)
+                : new Passed(StatementCounter.Count(playerCode), checks);
         }
         catch (Exception exception)
         {
@@ -90,9 +92,9 @@ public sealed class RoslynCodeRunner : ICodeRunner
         var run = validation.GetMethod(ValidationMethodName, BindingFlags.Public | BindingFlags.Static, Type.EmptyTypes)
             ?? throw new InvalidOperationException(
                 $"'{ValidationTypeName}' has no public static parameterless method named '{ValidationMethodName}'.");
-        return typeof(IEnumerable<(string, string)>).IsAssignableFrom(run.ReturnType)
+        return typeof(IEnumerable<(string, string, string)>).IsAssignableFrom(run.ReturnType)
             ? run
             : throw new InvalidOperationException(
-                $"'{ValidationTypeName}.{ValidationMethodName}' must return IEnumerable<(string Pt, string En)>.");
+                $"'{ValidationTypeName}.{ValidationMethodName}' must return IEnumerable<(string Case, string Expected, string Actual)>.");
     }
 }

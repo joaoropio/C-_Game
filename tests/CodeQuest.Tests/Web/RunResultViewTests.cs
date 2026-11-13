@@ -2,6 +2,8 @@ using Bunit;
 using CodeQuest.Core;
 using CodeQuest.Core.Running;
 using CodeQuest.Web.Components;
+using CodeQuest.Web.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CodeQuest.Tests.Web;
 
@@ -55,16 +57,28 @@ public sealed class RunResultViewTests : BunitContext
     }
 
     [Fact]
-    public void ChecksFailed_ListsEachFailure()
+    public void ChecksFailed_ListsEachFailedCheckWithCaseActualAndExpected()
     {
         var cut = RenderResult(new ChecksFailed([
-            new LocalizedText("Primeira falha.", "First failure."),
-            new LocalizedText("Segunda falha.", "Second failure."),
+            new CheckOutcome("turns = 1", "1", "1"),
+            new CheckOutcome("turns = 3", "6", "3"),
+            new CheckOutcome("name = \"ana\"", "\"A3\"", "\"83\""),
         ]));
 
-        Assert.Equal(2, cut.FindAll("li").Count);
+        var items = cut.FindAll("li");
+        Assert.Equal(2, items.Count);
         Assert.Contains("Ainda não está certo", cut.Markup);
-        Assert.Contains("Segunda falha.", cut.Markup);
+        Assert.Equal("turns = 3: deu 3 · esperado 6", items[0].TextContent);
+        Assert.Equal("name = \"ana\": deu \"83\" · esperado \"A3\"", items[1].TextContent);
+    }
+
+    [Fact]
+    public async Task ChecksFailed_InEnglish_UsesGotAndExpected()
+    {
+        await Services.GetRequiredService<UiText>().SetLanguageAsync(Language.En);
+        var cut = RenderResult(new ChecksFailed([new CheckOutcome("turns = 3", "6", "3")]));
+
+        Assert.Equal("turns = 3: got 3 · expected 6", cut.Find("li").TextContent);
     }
 
     [Fact]
@@ -98,7 +112,7 @@ public sealed class RunResultViewTests : BunitContext
     [Fact]
     public void Passed_RendersNothing()
     {
-        var cut = RenderResult(new Passed(3));
+        var cut = RenderResult(new Passed(3, []));
 
         Assert.Empty(cut.Markup.Trim());
     }

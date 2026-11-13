@@ -16,6 +16,8 @@ public static class UiKeys
         "level.stay",
         "level.compileErrors",
         "level.checksFailed",
+        "level.checkGot",
+        "level.checkExpected",
         "level.timedOut",
         "level.runtimeError",
         "level.rejected",

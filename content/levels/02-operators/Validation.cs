@@ -1,6 +1,6 @@
 public static class Validation
 {
-    public static IEnumerable<(string Pt, string En)> Run()
+    public static IEnumerable<(string Case, string Expected, string Actual)> Run()
     {
         foreach (var (attack, defense, multiplier, expected) in new[]
         {
@@ -10,12 +10,10 @@ public static class Validation
         })
         {
             var actual = Spell.Damage(attack, defense, multiplier);
-            if (actual != expected)
-            {
-                yield return (
-                    $"Com attack = {attack}, defense = {defense} e multiplier = {multiplier}, o dano devia ser {expected}, mas deu {actual}.",
-                    $"With attack = {attack}, defense = {defense} and multiplier = {multiplier}, the damage should be {expected}, but it was {actual}.");
-            }
+            yield return (
+                $"attack = {attack}, defense = {defense}, multiplier = {multiplier}",
+                FormattableString.Invariant($"{expected}"),
+                FormattableString.Invariant($"{actual}"));
         }
     }
 }

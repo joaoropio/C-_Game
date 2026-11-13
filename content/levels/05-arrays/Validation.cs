@@ -1,6 +1,6 @@
 public static class Validation
 {
-    public static IEnumerable<(string Pt, string En)> Run()
+    public static IEnumerable<(string Case, string Expected, string Actual)> Run()
     {
         foreach (var (shelves, expected) in new[]
         {
@@ -11,13 +11,8 @@ public static class Validation
         })
         {
             var actual = Spell.CountPotions(shelves);
-            if (actual != expected)
-            {
-                var list = shelves.Length == 0 ? "{ }" : "{ " + string.Join(", ", shelves) + " }";
-                yield return (
-                    $"Com potions = {list} o total devia ser {expected}, mas deu {actual}.",
-                    $"With potions = {list} the total should be {expected}, but it was {actual}.");
-            }
+            var list = shelves.Length == 0 ? "{ }" : "{ " + string.Join(", ", shelves) + " }";
+            yield return ($"potions = {list}", FormattableString.Invariant($"{expected}"), FormattableString.Invariant($"{actual}"));
         }
     }
 }

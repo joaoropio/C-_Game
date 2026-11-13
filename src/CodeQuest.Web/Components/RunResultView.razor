@@ -29,9 +29,9 @@
         <div class="result" role="alert">
             <p>@Ui["level.checksFailed"]</p>
             <ul>
-                @foreach (var failure in checks.Failures)
+                @foreach (var check in checks.Checks.Where(check => !check.Passed))
                 {
-                    <li>@failure.Get(Ui.Language)</li>
+                    <li>@check.Case: @Ui["level.checkGot"] @check.Actual · @Ui["level.checkExpected"] @check.Expected</li>
                 }
             </ul>
         </div>
