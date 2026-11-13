@@ -195,3 +195,7 @@
     border-color: var(--torch);
     box-shadow: 0 0 0 1px var(--torch), 0 0 14px rgba(232, 163, 61, 0.35);
 }
+
+.story, .concept {
+    max-width: 52rem;
+}

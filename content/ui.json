@@ -1,7 +1,6 @@
 {
   "app.title": { "pt": "Code Quest", "en": "Code Quest" },
   "map.title": { "pt": "Mapa da masmorra", "en": "Dungeon map" },
-  "map.locked": { "pt": "Bloqueado: conclui o nível anterior.", "en": "Locked: finish the previous level." },
   "map.floor": { "pt": "Mundo {0} · Primeiro andar", "en": "World {0} · First floor" },
   "map.world.1": { "pt": "As Fundações", "en": "The Foundations" },
   "map.stars": { "pt": "{0} de {1} estrelas", "en": "{0} of {1} stars" },

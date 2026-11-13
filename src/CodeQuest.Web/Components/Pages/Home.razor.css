@@ -171,7 +171,7 @@ a.room-title::after {
     display: flex;
     font-size: 0.95rem;
     gap: 0.6rem;
-    margin: 1.25rem 0 0;
+    margin: 0 1rem 1rem;
     padding: 0.6rem 1rem;
     width: fit-content;
 }
@@ -181,7 +181,7 @@ a.room-title::after {
     width: 1.1rem;
 }
 
-@media (min-width: 900px) {
+@media (min-width: 1200px) {
     .floor {
         aspect-ratio: var(--ratio);
     }
@@ -214,16 +214,28 @@ a.room-title::after {
         text-align: center;
         top: var(--y);
         transform: translate(-50%, -2.6rem);
-        width: 9.5rem;
+        width: var(--w);
     }
 
     .room.current {
         box-shadow: none;
+        transform: translate(-50%, -3.2rem);
         z-index: 1;
     }
 
     .room-body {
         align-items: center;
+        background: rgba(27, 23, 19, 0.82);
+        border-radius: 8px;
+        padding: 0.3rem 0.5rem;
+    }
+
+    .next-world {
+        background: var(--stone-850);
+        bottom: 1rem;
+        margin: 0;
+        position: absolute;
+        right: 1.5rem;
     }
 
     .door {
@@ -232,10 +244,6 @@ a.room-title::after {
 
     .room.current .door {
         width: 5.2rem;
-    }
-
-    .room.current {
-        transform: translate(-50%, -3.2rem);
     }
 }
 

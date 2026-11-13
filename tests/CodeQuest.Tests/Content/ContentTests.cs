@@ -76,6 +76,13 @@ public class ContentTests
             .ToHashSet();
 
     [Fact]
+    public void EveryLevelWorld_HasAMapWorldName()
+    {
+        Assert.All(Levels.Select(level => level.World).Distinct(), world =>
+            Assert.False(string.IsNullOrWhiteSpace(Ui.Get($"map.world.{world}", Language.Pt))));
+    }
+
+    [Fact]
     public void EveryLevel_HasGrimoirePage()
     {
         Assert.NotEmpty(Levels);

@@ -116,11 +116,11 @@ public sealed class HomeTests : BunitContext
     }
 
     [Fact]
-    public async Task Home_ShowsNextWorldTeaser()
+    public async Task Home_ShowsNextWorldTeaserInsideTheFloor()
     {
         var cut = await RenderHomeAsync();
 
-        Assert.Contains("em breve", cut.Find(".next-world").TextContent);
+        Assert.Contains("em breve", cut.Find(".floor .next-world").TextContent);
     }
 
     [Fact]
@@ -131,6 +131,34 @@ public sealed class HomeTests : BunitContext
         var corridor = cut.Find("svg.corridor");
         Assert.Equal("true", corridor.GetAttribute("aria-hidden"));
         Assert.StartsWith("M", cut.Find("svg.corridor path.corridor-path").GetAttribute("d"));
+    }
+
+    [Fact]
+    public async Task Home_Trail_StopsAtTheCurrentRoom()
+    {
+        var progress = new PlayerProgress();
+        progress.RecordPass(Content.Levels[0].Id, stars: 3);
+
+        var cut = await RenderHomeAsync(progress);
+
+        var trail = cut.Find("svg.corridor path.trail").GetAttribute("d")!;
+        Assert.Equal(1, trail.Split(" C ").Length - 1);
+    }
+
+    [Fact]
+    public async Task Home_Trail_CoversWholeCorridorWhenAllDone()
+    {
+        var progress = new PlayerProgress();
+        foreach (var level in Content.Levels)
+        {
+            progress.RecordPass(level.Id, stars: 3);
+        }
+
+        var cut = await RenderHomeAsync(progress);
+
+        Assert.Equal(
+            cut.Find("svg.corridor path.corridor-path").GetAttribute("d"),
+            cut.Find("svg.corridor path.trail").GetAttribute("d"));
     }
 
     [Fact]
