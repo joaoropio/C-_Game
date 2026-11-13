@@ -162,6 +162,75 @@ public sealed class HomeTests : BunitContext
     }
 
     [Fact]
+    public async Task Home_LaterWorldWithAllRoomsLocked_HasNoTrail()
+    {
+        var progress = new PlayerProgress();
+        foreach (var level in Content.Levels.Take(3))
+        {
+            progress.RecordPass(level.Id, stars: 3);
+        }
+
+        var cut = await RenderTwoWorldsAsync(progress);
+
+        var worlds = cut.FindAll("section.world");
+        Assert.Equal(2, worlds.Count);
+        Assert.Single(worlds[0].QuerySelectorAll("path.trail"));
+        Assert.Empty(worlds[1].QuerySelectorAll("path.trail"));
+        Assert.Equal(2, worlds[1].QuerySelectorAll("li.room.locked").Length);
+    }
+
+    [Fact]
+    public async Task Home_LaterWorldFirstRoomCurrent_HasNoTrailYet()
+    {
+        var progress = new PlayerProgress();
+        foreach (var level in Content.Levels.Take(4))
+        {
+            progress.RecordPass(level.Id, stars: 3);
+        }
+
+        var cut = await RenderTwoWorldsAsync(progress);
+
+        var second = cut.FindAll("section.world")[1];
+        Assert.Empty(second.QuerySelectorAll("path.trail"));
+        Assert.Single(second.QuerySelectorAll("li.room.current"));
+    }
+
+    private async Task<IRenderedComponent<Home>> RenderTwoWorldsAsync(PlayerProgress progress)
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "cq-two-worlds-" + Guid.NewGuid().ToString("N"));
+        CopyDirectory(Path.Combine(AppContext.BaseDirectory, "content"), directory);
+        foreach (var id in new[] { "05-arrays", "06-strings" })
+        {
+            var file = Path.Combine(directory, "levels", id, "level.json");
+            File.WriteAllText(file, File.ReadAllText(file).Replace("\"world\": 1", "\"world\": 2"));
+        }
+
+        var ui = Path.Combine(directory, "ui.json");
+        File.WriteAllText(ui, File.ReadAllText(ui).Replace(
+            "\"map.world.1\":",
+            "\"map.world.2\": { \"pt\": \"Mundo dois\", \"en\": \"World two\" },\n  \"map.world.1\":"));
+
+        this.AddGameServices(savedProgress: progress.ToJson());
+        Services.AddSingleton(new GameContent(directory));
+        await Services.GetRequiredService<ProgressStore>().LoadAsync();
+        return Render<Home>();
+    }
+
+    private static void CopyDirectory(string source, string target)
+    {
+        Directory.CreateDirectory(target);
+        foreach (var file in Directory.GetFiles(source))
+        {
+            File.Copy(file, Path.Combine(target, Path.GetFileName(file)));
+        }
+
+        foreach (var directory in Directory.GetDirectories(source))
+        {
+            CopyDirectory(directory, Path.Combine(target, Path.GetFileName(directory)));
+        }
+    }
+
+    [Fact]
     public async Task Home_EnglishLanguage_UsesEnglishTexts()
     {
         this.AddGameServices();

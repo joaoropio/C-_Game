@@ -18,7 +18,7 @@
         var floor = MapLayout.For(levels.Count);
         var starTotal = levels.Sum(level => progress.StarsFor(level.Id));
         var currentIndex = levels.FindIndex(level => level.Id == currentId);
-        var trail = floor.Trail(currentIndex >= 0 ? currentIndex : levels.Count - 1);
+        var trail = floor.Trail(levels.FindLastIndex(level => progress.IsUnlocked(Content.Levels, level.Id)));
         <section class="world" aria-labelledby="world-@world.Key">
             <header class="world-header">
                 <div>
@@ -30,7 +30,8 @@
                     <span class="world-stars">@string.Format(Ui["map.stars"], starTotal, levels.Count * 3)</span>
                 </p>
             </header>
-            <div class="floor" style="--ratio: @floor.Width / @floor.Height; --w: @(floor.RoomWidthPercent.ToString("0.###", CultureInfo.InvariantCulture))%">
+            <div class="floor">
+                <div class="stage" style="--ratio: @floor.Width / @floor.Height; --w: @(floor.RoomWidthPercent.ToString("0.###", CultureInfo.InvariantCulture))%">
                 <svg class="corridor" viewBox="0 0 @floor.Width @floor.Height" aria-hidden="true" focusable="false">
                     <defs>
                         <pattern id="stone-@world.Key" width="80" height="40" patternUnits="userSpaceOnUse">
@@ -103,6 +104,7 @@
                         </li>
                     }
                 </ol>
+                </div>
                 @if (world.Key == Content.Levels.Max(level => level.World))
                 {
                     <p class="next-world">

@@ -9,6 +9,7 @@ public sealed class MapLayoutTests
 
     [Theory]
     [MemberData(nameof(RoomCounts))]
+    // Boxes are idealised floor-unit rectangles (RoomWidth x RoomHeight); real rendered sizes depend on rem text and scale.
     public void Rooms_DoNotOverlapAndStayInsideTheFloor(int count)
     {
         var layout = MapLayout.For(count);
