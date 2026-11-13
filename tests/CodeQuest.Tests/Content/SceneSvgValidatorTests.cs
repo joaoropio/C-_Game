@@ -29,6 +29,7 @@ public class SceneSvgValidatorTests
         $"{Open}<rect style=\"background-image:image-set('https://x.test/a' 1x)\"/></svg>",
         $"{Open}<rect style=\"width:expression(alert(1))\"/></svg>",
         $"{Open}<rect fill=\"image(https://x.test/a)\"/></svg>",
+        $"{Open}<rect fill=\"src(https://x.test/a)\"/></svg>",
         "<!DOCTYPE svg [<!ENTITY e \"x\">]><svg xmlns=\"http://www.w3.org/2000/svg\"><rect/></svg>",
         $"{Open}<rect></svg>",
     };

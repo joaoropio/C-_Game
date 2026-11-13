@@ -23,7 +23,7 @@ public static class SceneSvgValidator
         "xlink:href", "offset", "stop-color", "stop-opacity", "gradientUnits", "aria-hidden", "focusable",
     };
 
-    private static readonly string[] ForbiddenInValues = ["\\", "image-set(", "image(", "expression("];
+    private static readonly string[] ForbiddenInValues = ["\\", "image-set(", "image(", "src(", "expression("];
 
     public static IReadOnlyList<string> Problems(string svg)
     {

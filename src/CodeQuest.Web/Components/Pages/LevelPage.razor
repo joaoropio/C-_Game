@@ -22,13 +22,15 @@
                 <div class="parchment-body">
                     <h1>@level.Title.Get(Ui.Language)</h1>
 
-                    <div class="tabs" role="tablist" aria-label="@Ui["level.tabs"]">
-                        <button type="button" role="tab" id="tab-story" class="tab" aria-selected="@Selected(LevelTab.Story)"
-                                aria-controls="panel-story" @onclick="() => activeTab = LevelTab.Story">@Ui["level.story"]</button>
-                        <button type="button" role="tab" id="tab-concept" class="tab" aria-selected="@Selected(LevelTab.Concept)"
-                                aria-controls="panel-concept" @onclick="() => activeTab = LevelTab.Concept">@Ui["level.concept"]</button>
-                        <button type="button" role="tab" id="tab-hints" class="tab" aria-selected="@Selected(LevelTab.Hints)"
-                                aria-controls="panel-hints" @onclick="() => activeTab = LevelTab.Hints">@HintsTabLabel</button>
+                    <div class="tabs" role="tablist" aria-label="@Ui["level.tabs"]" @onkeydown="OnTabKeyDown">
+                        @foreach (var tab in Tabs)
+                        {
+                            var index = (int)tab;
+                            var key = tab.ToString().ToLowerInvariant();
+                            <button type="button" role="tab" id="tab-@key" class="tab" @ref="tabButtons[index]"
+                                    aria-selected="@Selected(tab)" tabindex="@(activeTab == tab ? 0 : -1)"
+                                    aria-controls="panel-@key" @onclick="() => activeTab = tab">@TabLabel(tab)</button>
+                        }
                     </div>
 
                     <div class="story tab-panel" role="tabpanel" id="panel-story" aria-labelledby="tab-story" hidden="@(activeTab != LevelTab.Story)">
@@ -152,7 +154,16 @@
 
     private bool NextIsMap => NextIndex >= Content.Levels.Count;
 
-    private string HintsTabLabel => hintsShown > 0 ? $"{Ui["level.hints"]} ({hintsShown})" : Ui["level.hints"];
+    private static readonly LevelTab[] Tabs = [LevelTab.Story, LevelTab.Concept, LevelTab.Hints];
+
+    private readonly ElementReference[] tabButtons = new ElementReference[Tabs.Length];
+
+    private string TabLabel(LevelTab tab) => tab switch
+    {
+        LevelTab.Story => Ui["level.story"],
+        LevelTab.Concept => Ui["level.concept"],
+        _ => hintsShown > 0 ? $"{Ui["level.hints"]} ({hintsShown})" : Ui["level.hints"],
+    };
 
     private string Selected(LevelTab tab) => activeTab == tab ? "true" : "false";
 
@@ -332,6 +343,24 @@
         if (args.Key == "Escape")
         {
             CloseVictory();
+        }
+    }
+
+    private async Task OnTabKeyDown(KeyboardEventArgs args)
+    {
+        var current = (int)activeTab;
+        int? target = args.Key switch
+        {
+            "ArrowRight" => (current + 1) % Tabs.Length,
+            "ArrowLeft" => (current + Tabs.Length - 1) % Tabs.Length,
+            "Home" => 0,
+            "End" => Tabs.Length - 1,
+            _ => null,
+        };
+        if (target is { } index)
+        {
+            activeTab = Tabs[index];
+            await TryFocusAsync(tabButtons[index]);
         }
     }
 

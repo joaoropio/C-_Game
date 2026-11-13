@@ -7,6 +7,7 @@ using CodeQuest.Core.Running;
 using CodeQuest.Web.Components.Pages;
 using CodeQuest.Web.Services;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CodeQuest.Tests.Web;
@@ -414,6 +415,71 @@ public sealed class LevelPageTests : BunitContext
         Assert.Equal(["false", "true", "false"], cut.FindAll("[role=tab]").Select(tab => tab.GetAttribute("aria-selected")));
         Assert.False(cut.Find(".concept").HasAttribute("hidden"));
         Assert.True(cut.Find(".story").HasAttribute("hidden"));
+    }
+
+    [Fact]
+    public async Task Tabs_OnlySelectedTabIsInTheTabOrder()
+    {
+        var cut = await RenderLevelAsync(First);
+
+        Assert.Equal(["0", "-1", "-1"], cut.FindAll("[role=tab]").Select(tab => tab.GetAttribute("tabindex")));
+
+        await cut.FindAll("[role=tab]")[1].ClickAsync(new());
+
+        Assert.Equal(["-1", "0", "-1"], cut.FindAll("[role=tab]").Select(tab => tab.GetAttribute("tabindex")));
+    }
+
+    [Theory]
+    [InlineData(0, "ArrowRight", 1)]
+    [InlineData(2, "ArrowRight", 0)]
+    [InlineData(1, "ArrowLeft", 0)]
+    [InlineData(0, "ArrowLeft", 2)]
+    [InlineData(1, "Home", 0)]
+    [InlineData(0, "End", 2)]
+    public async Task Tabs_ArrowKeysHomeAndEndMoveSelectionAndFocus(int from, string key, int expected)
+    {
+        var cut = await RenderLevelAsync(First);
+        await cut.FindAll("[role=tab]")[from].ClickAsync(new());
+
+        await cut.FindAll("[role=tab]")[from].KeyDownAsync(new KeyboardEventArgs { Key = key });
+
+        var tabs = cut.FindAll("[role=tab]");
+        Assert.Equal(expected, tabs.ToList().FindIndex(tab => tab.GetAttribute("aria-selected") == "true"));
+        Assert.Equal("0", tabs[expected].GetAttribute("tabindex"));
+        Assert.Contains(JSInterop.Invocations, call => call.Identifier == FocusCall);
+    }
+
+    [Fact]
+    public async Task Tabs_KeyboardMovesFocusToTheTabThatBecomesSelected()
+    {
+        var cut = await RenderLevelAsync(First);
+        string FocusedAfter(int pressedOn, string key)
+        {
+            cut.FindAll("[role=tab]")[pressedOn].KeyDown(new KeyboardEventArgs { Key = key });
+            var focus = JSInterop.Invocations.Last(call => call.Identifier == FocusCall);
+            return ((ElementReference)focus.Arguments[0]!).Id;
+        }
+
+        var last = FocusedAfter(0, "End");
+        var first = FocusedAfter(2, "Home");
+        var middle = FocusedAfter(0, "ArrowRight");
+
+        Assert.Equal(3, new[] { first, middle, last }.Distinct().Count());
+        Assert.Equal(last, FocusedAfter(1, "ArrowRight"));
+        Assert.Equal(first, FocusedAfter(2, "ArrowRight"));
+        Assert.Equal(last, FocusedAfter(0, "ArrowLeft"));
+        Assert.Equal(middle, FocusedAfter(2, "ArrowLeft"));
+    }
+
+    [Fact]
+    public async Task Tabs_OtherKeysDoNotChangeSelection()
+    {
+        var cut = await RenderLevelAsync(First);
+
+        await cut.FindAll("[role=tab]")[0].KeyDownAsync(new KeyboardEventArgs { Key = "a" });
+
+        Assert.Equal(["true", "false", "false"], cut.FindAll("[role=tab]").Select(tab => tab.GetAttribute("aria-selected")));
+        AssertNothingFocused();
     }
 
     [Fact]
