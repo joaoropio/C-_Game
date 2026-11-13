@@ -13,6 +13,7 @@
     <PageTitle>@level.Title.Get(Ui.Language)</PageTitle>
 
     <div class="page-content" inert="@(earnedStars is not null)">
+        <p class="crumb">@string.Format(Ui["level.crumb"], level.World, level.Number, Content.Levels.Count(candidate => candidate.World == level.World))</p>
         <div class="level-layout">
             <section class="parchment">
                 <figure class="vignette" role="img" aria-label="@level.SceneLabel.Get(Ui.Language)">
@@ -36,7 +37,7 @@
                     <div class="concept tab-panel" role="tabpanel" id="panel-concept" aria-labelledby="tab-concept" hidden="@(activeTab != LevelTab.Concept)">
                         <p>@level.Concept.Get(Ui.Language)</p>
                     </div>
-                    <div class="hints-panel tab-panel" role="tabpanel" id="panel-hints" aria-labelledby="tab-hints" hidden="@(activeTab != LevelTab.Hints)">
+                    <div class="hints-panel tab-panel" role="tabpanel" tabindex="-1" @ref="hintsPanel" id="panel-hints" aria-labelledby="tab-hints" hidden="@(activeTab != LevelTab.Hints)">
                         @if (hintsShown > 0)
                         {
                             <ol class="hints">
@@ -51,6 +52,7 @@
                             <p>@Ui["level.noHints"]</p>
                         }
                     </div>
+                    <div class="hint-announcer visually-hidden" role="status" aria-live="polite">@announcedHint</div>
                 </div>
             </section>
 
@@ -129,6 +131,9 @@
     private bool running;
     private bool grimoireOpen;
     private int hintsShown;
+    private string announcedHint = "";
+    private bool focusHintsPending;
+    private ElementReference hintsPanel;
     private LevelTab activeTab = LevelTab.Story;
     private RunResult? result;
     private int? earnedStars;
@@ -166,6 +171,8 @@
             loadedId = Id;
             CancelRun();
             hintsShown = 0;
+            announcedHint = "";
+            focusHintsPending = false;
             activeTab = LevelTab.Story;
             grimoireOpen = false;
             result = null;
@@ -288,6 +295,11 @@
             focusResultPending = false;
             await TryFocusAsync(resultBlock);
         }
+        else if (focusHintsPending)
+        {
+            focusHintsPending = false;
+            await TryFocusAsync(hintsPanel);
+        }
         else if (focusRunPending)
         {
             focusRunPending = false;
@@ -343,6 +355,8 @@
         }
 
         hintsShown++;
+        announcedHint = level.Hints[hintsShown - 1].Get(Ui.Language);
+        focusHintsPending = hintsShown == level.Hints.Count;
         activeTab = LevelTab.Hints;
         progress.RecordHintUsed(level.Id);
         await Store.SaveAsync(progress);

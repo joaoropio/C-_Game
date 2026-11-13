@@ -90,9 +90,7 @@ public class ContentTests
         {
             Assert.StartsWith("<svg", level.SceneSvg);
             Assert.Contains("aria-hidden=\"true\"", level.SceneSvg);
-            Assert.DoesNotContain("<script", level.SceneSvg, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("foreignObject", level.SceneSvg, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotMatch(@"\son\w+\s*=", level.SceneSvg);
+            Assert.Empty(SceneSvgValidator.Problems(level.SceneSvg));
             Assert.False(string.IsNullOrWhiteSpace(level.SceneLabel.Pt));
             Assert.False(string.IsNullOrWhiteSpace(level.SceneLabel.En));
         });

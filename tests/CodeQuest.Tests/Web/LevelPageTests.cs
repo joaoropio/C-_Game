@@ -495,6 +495,43 @@ public sealed class LevelPageTests : BunitContext
     }
 
     [Fact]
+    public async Task Hint_AnnouncesTheRevealedHintInAPoliteLiveRegion()
+    {
+        var cut = await RenderLevelAsync(First);
+        Assert.Equal("status", cut.Find(".hint-announcer").GetAttribute("role"));
+        Assert.Equal("", cut.Find(".hint-announcer").TextContent);
+
+        await cut.Find("button.hint").ClickAsync(new());
+
+        Assert.Equal(First.Hints[0].Pt, cut.Find(".hint-announcer").TextContent);
+        Assert.Equal("polite", cut.Find(".hint-announcer").GetAttribute("aria-live"));
+    }
+
+    [Fact]
+    public async Task Hint_LastHintRemovesButtonAndMovesFocusToHintsPanel()
+    {
+        var cut = await RenderLevelAsync(First);
+        var panelReference = ReferenceOf(cut, ".hints-panel");
+
+        foreach (var _ in First.Hints)
+        {
+            await cut.Find("button.hint").ClickAsync(new());
+        }
+
+        Assert.Equal("-1", cut.Find(".hints-panel").GetAttribute("tabindex"));
+        AssertLastFocused(panelReference);
+    }
+
+    [Fact]
+    public async Task Header_ShowsWorldAndRoomCrumb()
+    {
+        var cut = await RenderLevelAsync(First);
+
+        var worldRooms = content.Levels.Count(level => level.World == First.World);
+        Assert.Equal($"Mundo {First.World} · Sala {First.Number} de {worldRooms}", cut.Find(".crumb").TextContent);
+    }
+
+    [Fact]
     public async Task Hint_ButtonDisappearsAfterLastHint()
     {
         var cut = await RenderLevelAsync(First);

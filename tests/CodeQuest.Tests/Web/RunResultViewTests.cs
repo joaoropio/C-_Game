@@ -67,7 +67,8 @@ public sealed class RunResultViewTests : BunitContext
 
         Assert.Equal("Resultado do feitiço", cut.Find("h2").TextContent);
         Assert.Contains("1 de 3 certos", cut.Find(".result-meta").TextContent);
-        Assert.Contains("Ainda não está certo", cut.Find(".result-meta").TextContent);
+        Assert.Contains("1 de 3 certos — ainda não está certo", System.Text.RegularExpressions.Regex.Replace(cut.Find(".result-meta").TextContent, @"\s+", " "));
+        Assert.Equal("status", cut.Find(".result").GetAttribute("role"));
         var cases = cut.FindAll(".case");
         Assert.Equal(3, cases.Count);
         Assert.Single(cut.FindAll(".case.pass"));

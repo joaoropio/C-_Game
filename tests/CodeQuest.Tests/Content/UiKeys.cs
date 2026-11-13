@@ -32,6 +32,7 @@ public static class UiKeys
         "level.story",
         "level.concept",
         "level.originalMessage",
+        "level.crumb",
         "level.tabs",
         "level.hints",
         "level.noHints",

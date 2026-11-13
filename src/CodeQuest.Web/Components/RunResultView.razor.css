@@ -51,7 +51,7 @@
 .cases {
     display: grid;
     gap: 0.75rem;
-    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
     list-style: none;
 }
 
