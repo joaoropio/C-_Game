@@ -101,6 +101,7 @@ public class LoopGuardRewriterTests
         var rewritten = Rewrite(code);
 
         Assert.Equal(2, TickCount(rewritten));
+        Assert.Equal(1, rewritten.ToFullString().Split(Enter).Length - 1);
         Assert.Empty(rewritten.GetDiagnostics());
     }
 
