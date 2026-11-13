@@ -323,9 +323,9 @@ public class LevelSolutionTests
             "string name = \"Merlin\";\nint health = 90;\ndouble mana = 50.5;\nbool isAlive = true;"));
 
         var failure = Assert.Single(result.Failures);
-        Assert.Contains("health = 100", failure.En);
+        Assert.Contains("health should be 100", failure.En);
         Assert.Contains("but it was 90", failure.En);
-        Assert.Contains("health = 100", failure.Pt);
+        Assert.Contains("health devia ser 100", failure.Pt);
         Assert.Contains("mas deu 90", failure.Pt);
     }
 
