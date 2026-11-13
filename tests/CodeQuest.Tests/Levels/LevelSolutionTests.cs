@@ -206,6 +206,29 @@ public class LevelSolutionTests
     }
 
     [Fact]
+    public async Task Level5_EmptyShelf_IsChecked()
+    {
+        var level = Find("05-arrays");
+
+        var result = Assert.IsType<RuntimeError>(await Run(
+            level,
+            "int total = potions[0];\nfor (int i = 1; i < potions.Length; i++)\n{\n    total += potions[i];\n}\nreturn total;"));
+
+        Assert.Contains("position that doesn't exist", result.Explanation.En);
+    }
+
+    [Fact]
+    public async Task Level5_IndexPastEnd_ExplainsPosition()
+    {
+        var level = Find("05-arrays");
+
+        var result = Assert.IsType<RuntimeError>(await Run(level, "return potions[potions.Length];"));
+
+        Assert.Contains("position that doesn't exist", result.Explanation.En);
+        Assert.Contains("posição que não existe", result.Explanation.Pt);
+    }
+
+    [Fact]
     public async Task Level1_MissingVariable_ExplainsWhichOne()
     {
         var level = Find("01-variables");

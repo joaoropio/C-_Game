@@ -1,0 +1,29 @@
+{
+  "id": "arrays",
+  "world": 1,
+  "title": { "pt": "Arrays", "en": "Arrays" },
+  "whatItIs": {
+    "pt": "Um array guarda vários valores do mesmo tipo numa só variável. Cria-se com o tipo seguido de [] e os valores entre chaves. Cada valor tem um índice, que começa em 0. O Length diz quantos valores há. O foreach percorre os valores, um a um.",
+    "en": "An array holds several values of the same type in one variable. You create it with the type followed by [] and the values between braces. Each value has an index, which starts at 0. Length tells you how many values there are. The foreach goes through the values, one by one."
+  },
+  "syntax": {
+    "pt": "int[] x = { 4, 8, 15 };   // cria um array com 3 valores\n\nx[0]       // o primeiro valor (índice 0)\n\nx.Length   // quantos valores há (aqui 3)\n\nforeach (int v in x) { ... }   // v é cada valor, um a um",
+    "en": "int[] x = { 4, 8, 15 };   // creates an array with 3 values\n\nx[0]       // the first value (index 0)\n\nx.Length   // how many values there are (here 3)\n\nforeach (int v in x) { ... }   // v is each value, one by one"
+  },
+  "example": "string[] colors = { \"red\", \"green\", \"blue\" };\nConsole.WriteLine(colors[0]);\nConsole.WriteLine(colors.Length);\nforeach (string color in colors)\n{\n    Console.WriteLine(color);\n}",
+  "commonMistakes": [
+    {
+      "pt": "Esquecer que o índice começa em 0: o primeiro valor é x[0], não x[1].",
+      "en": "Forgetting that the index starts at 0: the first value is x[0], not x[1]."
+    },
+    {
+      "pt": "Usar x[x.Length]: essa posição não existe, porque o último índice é x.Length - 1. Dá um erro ao correr.",
+      "en": "Using x[x.Length]: that position does not exist, because the last index is x.Length - 1. It gives an error when it runs."
+    },
+    {
+      "pt": "Esperar que um array cresça: o tamanho é fixo depois de criado, não podes acrescentar valores.",
+      "en": "Expecting an array to grow: its size is fixed once created, you cannot add values."
+    }
+  ],
+  "learnUrl": "https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/arrays"
+}
