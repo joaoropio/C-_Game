@@ -27,3 +27,7 @@
 .language-switcher button:focus-visible {
     outline-offset: -3px;
 }
+
+.language-switcher button[aria-pressed="true"]:focus-visible {
+    outline-color: var(--on-torch);
+}

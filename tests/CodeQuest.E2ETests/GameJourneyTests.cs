@@ -235,6 +235,8 @@ public class GameJourneyTests(GameServerFixture server)
     {
         await page.GotoAsync($"{server.BaseUrl}/level/{levelId}");
         await Expect(page.Locator(".monaco-editor").First).ToBeVisibleAsync(new() { Timeout = Timeout });
+        // A web-font swap after the result is focused would shift the layout; wait for fonts first.
+        await page.EvaluateAsync("document.fonts.ready.then(() => true)");
     }
 
     // Monaco auto-closes brackets and quotes, so typing key by key corrupts the code; inserting the text
