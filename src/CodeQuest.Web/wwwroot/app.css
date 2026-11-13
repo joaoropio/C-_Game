@@ -130,3 +130,15 @@ button {
     padding: 1rem 1rem 1rem 3.7rem;
     color: white;
 }
+
+.visually-hidden {
+    border: 0;
+    clip-path: inset(50%);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+}

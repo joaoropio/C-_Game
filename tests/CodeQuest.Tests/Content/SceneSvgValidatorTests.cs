@@ -22,13 +22,21 @@ public class SceneSvgValidatorTests
         $"{Open}<iframe src=\"https://x.test\"/></svg>",
         $"{Open}<img/src=x onerror=\"alert(1)\"/></svg>",
         "<div></div>",
+        $"{Open}<!--><img src=x onerror=alert(1)>--></svg>",
+        $"{Open}<!---><img src=x onerror=alert(1)>--></svg>",
+        $"{Open}<?x ><img src=x onerror=alert(1)>?></svg>",
+        $"{Open}<rect fill=\"u\\rl(https://x.test/a)\"/></svg>",
+        $"{Open}<rect style=\"background-image:image-set('https://x.test/a' 1x)\"/></svg>",
+        $"{Open}<rect style=\"width:expression(alert(1))\"/></svg>",
+        $"{Open}<rect fill=\"image(https://x.test/a)\"/></svg>",
+        "<!DOCTYPE svg [<!ENTITY e \"x\">]><svg xmlns=\"http://www.w3.org/2000/svg\"><rect/></svg>",
         $"{Open}<rect></svg>",
     };
 
     [Theory]
     [MemberData(nameof(Malicious))]
     public void Validator_RejectsMaliciousOrMalformedSvg(string svg) =>
-        Assert.NotEmpty(SceneSvgValidator.Problems(svg));
+        Assert.True(SceneSvgValidator.Problems(svg).Count > 0, $"accepted: {svg}");
 
     [Fact]
     public void Validator_AcceptsLocalReferencesAndPlainShapes() =>
