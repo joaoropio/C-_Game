@@ -245,6 +245,29 @@ public class LevelSolutionTests
     }
 
     [Fact]
+    public async Task Level6_CharPlusInt_WithoutToString_ExplainsTypeMismatch()
+    {
+        var explanation = await ExplanationFor("06-strings", "return char.ToUpper(name[0]) + name.Length;");
+
+        Assert.Contains("int", explanation.Pt);
+        Assert.Contains("string", explanation.Pt);
+        Assert.Contains("int", explanation.En);
+        Assert.Contains("string", explanation.En);
+    }
+
+    [Fact]
+    public async Task Level6_ThreeStatementSolution_FitsThreeStarLimit()
+    {
+        var level = Find("06-strings");
+
+        var result = Assert.IsType<Passed>(await Run(
+            level,
+            "char first = char.ToUpper(name[0]);\nint letters = name.Length;\nreturn $\"{first}{letters}\";"));
+
+        Assert.True(result.StatementCount <= level.MaxStatementsForThreeStars);
+    }
+
+    [Fact]
     public async Task Level6_Interpolation_Passes()
     {
         var level = Find("06-strings");

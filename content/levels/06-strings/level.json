@@ -21,6 +21,6 @@
       "en": "Write: return $\"{char.ToUpper(name[0])}{name.Length}\"; The first letter is name[0], char.ToUpper makes it uppercase and name.Length is the number of letters. If you prefer, use char.ToUpper(name[0]) + name.Length.ToString()."
     }
   ],
-  "maxStatementsForThreeStars": 1,
+  "maxStatementsForThreeStars": 3,
   "grimoirePageId": "strings"
 }

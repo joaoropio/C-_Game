@@ -7,8 +7,8 @@
     "en": "A string is text. It has a Length (the number of letters) and each letter has an index, which starts at 0. The letter at a position is a char. ToUpper() and ToLower() change the case. You can join texts with + or with interpolation $\"…{x}…\"."
   },
   "syntax": {
-    "pt": "s.Length       // número de letras\n\ns[0]           // a primeira letra, um char\n\ns.ToUpper()    // texto em maiúsculas (nova string)\n\ns.ToLower()    // texto em minúsculas (nova string)\n\na + b          // junta dois textos\n\n$\"{a} e {b}\"   // interpolação: mete valores no texto",
-    "en": "s.Length       // number of letters\n\ns[0]           // the first letter, a char\n\ns.ToUpper()    // text in uppercase (a new string)\n\ns.ToLower()    // text in lowercase (a new string)\n\na + b          // joins two texts\n\n$\"{a} and {b}\"  // interpolation: puts values inside the text"
+    "pt": "s.Length       // número de letras\n\ns[0]           // a primeira letra, um char\n\ns.ToUpper()    // texto em maiúsculas (nova string)\n\ns.ToLower()    // texto em minúsculas (nova string)\n\nchar.ToUpper(c)   // uma só letra em maiúscula\n\na + b          // junta dois textos\n\n$\"{a} e {b}\"   // interpolação: mete valores no texto",
+    "en": "s.Length       // number of letters\n\ns[0]           // the first letter, a char\n\ns.ToUpper()    // text in uppercase (a new string)\n\ns.ToLower()    // text in lowercase (a new string)\n\nchar.ToUpper(c)   // a single letter in uppercase\n\na + b          // joins two texts\n\n$\"{a} and {b}\"  // interpolation: puts values inside the text"
   },
   "example": "string potion = \"elixir\";\nint size = potion.Length;\nchar initial = potion[0];\nstring shout = potion.ToUpper();\nstring label = potion + \"!\";\nstring note = $\"{potion} tem {size} letras\";\nConsole.WriteLine(initial);\nConsole.WriteLine(shout);\nConsole.WriteLine(label);\nConsole.WriteLine(note);",
   "commonMistakes": [
