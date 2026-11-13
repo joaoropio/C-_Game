@@ -8,8 +8,8 @@
     "en": "A huge crystal fills with mana, turn by turn. The number of turns reaches the spell in the variable turns. On turn 1 the crystal gains 1 mana, on turn 2 it gains 2, on turn 3 it gains 3, and so on. Return the total mana at the end. For example, with turns = 3 the mana is 1 + 2 + 3 = 6. With turns = 0 there are no turns, so the mana is 0."
   },
   "concept": {
-    "pt": "Um ciclo repete código. O for tem três partes: onde começa (int stair = 1), até quando continua (stair <= 4) e o que muda a cada volta (stair++ soma 1 a stair). Exemplo, em que cada degrau tem 20 cm: int height = 0; for (int stair = 1; stair <= 4; stair++) { height += 20; } Aqui height += 20 soma 20 a height. O while repete enquanto uma condição for verdadeira.",
-    "en": "A loop repeats code. The for has three parts: where it starts (int stair = 1), how long it keeps going (stair <= 4) and what changes each turn (stair++ adds 1 to stair). Example, where each stair is 20 cm: int height = 0; for (int stair = 1; stair <= 4; stair++) { height += 20; } Here height += 20 adds 20 to height. The while repeats as long as a condition is true."
+    "pt": "Um ciclo repete código. O for tem três partes: onde começa (int stair = 1), até quando continua (stair <= 4) e o que muda a cada volta (stair++ soma 1 a stair). Exemplo, em que cada degrau tem 20 cm: int height = 0; for (int stair = 1; stair <= 4; stair++) { height += 20; } Dentro do corpo, stair vale 1, depois 2, 3 e 4. Aqui height += 20 soma 20 a height. O while repete enquanto uma condição for verdadeira.",
+    "en": "A loop repeats code. The for has three parts: where it starts (int stair = 1), how long it keeps going (stair <= 4) and what changes each turn (stair++ adds 1 to stair). Example, where each stair is 20 cm: int height = 0; for (int stair = 1; stair <= 4; stair++) { height += 20; } Inside the body, stair is 1, then 2, 3 and 4. Here height += 20 adds 20 to height. The while repeats as long as a condition is true."
   },
   "hints": [
     {
