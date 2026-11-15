@@ -48,6 +48,14 @@ internal static class PlayerMessages
         $"stackalloc não é permitido nesta masmorra (linha {line}).",
         $"stackalloc is not allowed in this dungeon (line {line}).");
 
+    public static readonly LocalizedText TypesNotAllowed = new(
+        "Ainda não podes criar tipos: escreve só métodos static.",
+        "You can't create types yet: write only static methods.");
+
+    public static readonly LocalizedText OnlyMethodsAllowed = new(
+        "Para já só podes escrever métodos static, sem campos, propriedades nem construtores.",
+        "For now you can only write static methods, not fields, properties or constructors.");
+
     public static readonly LocalizedText DividedByZero = new(
         "Dividiste por zero.",
         "You divided by zero.");

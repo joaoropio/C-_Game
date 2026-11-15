@@ -185,7 +185,7 @@ public class PlayerCompilerTests
     }
 
     [Fact]
-    public void Compile_PlayerDeclaredLoopGuardClass_DoesNotShadowTheGuard()
+    public void Compile_PlayerDeclaredLoopGuardClass_IsRejectedBeforeItCanShadowTheGuard()
     {
         const string code = """
             while (true) { }
@@ -198,7 +198,8 @@ public class PlayerCompilerTests
 
         var outcome = _compiler.Compile(Request(code), Language.En);
 
-        Assert.IsType<TimeoutException>(RunCast(outcome));
+        Assert.NotNull(outcome.Rejected);
+        Assert.Null(outcome.Assembly);
     }
 
     [Fact]

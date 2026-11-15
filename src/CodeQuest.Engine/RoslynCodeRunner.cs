@@ -33,7 +33,7 @@ public sealed class RoslynCodeRunner : ICodeRunner
         }
 
         var execution = Task.Factory.StartNew(
-            () => Execute(outcome, request.PlayerCode),
+            () => Execute(outcome, request.PlayerCode, PlayerScope.IsClassScope(request.Template)),
             CancellationToken.None,
             TaskCreationOptions.LongRunning,
             TaskScheduler.Default);
@@ -47,7 +47,7 @@ public sealed class RoslynCodeRunner : ICodeRunner
         }
     }
 
-    private static RunResult Execute(CompileOutcome outcome, string playerCode)
+    private static RunResult Execute(CompileOutcome outcome, string playerCode, bool atClassScope)
     {
         var context = new PlayerLoadContext();
         try
@@ -55,7 +55,7 @@ public sealed class RoslynCodeRunner : ICodeRunner
             using var assemblyStream = new MemoryStream(outcome.Assembly!);
             using var pdbStream = new MemoryStream(outcome.Pdb!);
             var run = FindValidationMethod(context.LoadFromStream(assemblyStream, pdbStream));
-            return RunValidation(run, outcome, playerCode);
+            return RunValidation(run, outcome, playerCode, atClassScope);
         }
         finally
         {
@@ -63,7 +63,7 @@ public sealed class RoslynCodeRunner : ICodeRunner
         }
     }
 
-    private static RunResult RunValidation(MethodInfo run, CompileOutcome outcome, string playerCode)
+    private static RunResult RunValidation(MethodInfo run, CompileOutcome outcome, string playerCode, bool atClassScope)
     {
         try
         {
@@ -73,7 +73,7 @@ public sealed class RoslynCodeRunner : ICodeRunner
                 .ToList();
             return checks.Any(check => !check.Passed)
                 ? new ChecksFailed(checks)
-                : new Passed(StatementCounter.Count(playerCode), checks);
+                : new Passed(StatementCounter.Count(playerCode, atClassScope), checks);
         }
         catch (Exception exception)
         {

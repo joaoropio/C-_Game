@@ -60,7 +60,8 @@ internal sealed partial class PlayerCompiler
         var writtenCompilation = CreateCompilation(otherTrees.Prepend(written));
         var writtenModel = writtenCompilation.GetSemanticModel(written);
 
-        var rejected = ForbiddenApiChecker.Check(writtenModel, written.GetRoot(), markerIndex, playerLineCount);
+        var rejected = PlayerMemberChecker.Check(written.GetRoot(), markerIndex, playerLineCount)
+            ?? ForbiddenApiChecker.Check(writtenModel, written.GetRoot(), markerIndex, playerLineCount);
         if (rejected is not null)
         {
             return new CompileOutcome(null, null, [], markerIndex, playerLineCount, rejected);
