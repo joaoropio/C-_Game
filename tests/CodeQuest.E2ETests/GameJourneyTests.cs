@@ -35,6 +35,8 @@ public class GameJourneyTests(GameServerFixture server)
     [Theory]
     [InlineData(1280, 800)]
     [InlineData(360, 740)]
+    [InlineData(1280, 480)]
+    [InlineData(800, 450)]
     public async Task Level1_VictoryDialog_DoorIsCentredInTheDialog(int width, int height)
     {
         await using var context = await server.Browser.NewContextAsync();

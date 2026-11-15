@@ -372,6 +372,7 @@
 
     private async Task OnTabKeyDown(KeyboardEventArgs args)
     {
+        // Focus always follows selection, so the focused tab is the selected one and the target comes from activeTab.
         var current = (int)activeTab;
         int? target = args.Key switch
         {

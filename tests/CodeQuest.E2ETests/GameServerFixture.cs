@@ -71,7 +71,12 @@ public sealed class GameServerFixture : IAsyncLifetime
         }
 
         _playwright = await Playwright.CreateAsync();
-        Browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions { Headless = true });
+        Browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
+        {
+            Headless = true,
+            // Headless Chromium hides scrollbars by default; real players get classic ones that narrow scrollable boxes.
+            IgnoreDefaultArgs = ["--hide-scrollbars"],
+        });
     }
 }
 
