@@ -1,11 +1,10 @@
 /* O grimório é um livro de pergaminho: lombada à esquerda, tinta escura, exemplos em pedra com runas. */
 .grimoire-panel {
-    --paper-edge: #c9b48c;
-    --muted-ink: #5a4632;
+    color-scheme: light;
     background:
         linear-gradient(90deg, rgba(58, 42, 23, 0.22), transparent 1.5rem),
         var(--parchment);
-    border-left: 6px solid #3a2a17;
+    border-left: 6px solid var(--ink-strong);
     bottom: 0;
     box-shadow: -6px 0 18px rgba(0, 0, 0, 0.5);
     box-sizing: border-box;
@@ -38,13 +37,13 @@ header {
 }
 
 .panel-title {
-    color: #3a2a17;
+    color: var(--ink-strong);
     margin: 0;
 }
 
 .close, .copy, nav button {
     background: #d9c79f;
-    border: 2px solid #8a6a3e;
+    border: 2px solid var(--torch-dark);
     border-radius: 6px;
     color: var(--ink);
     cursor: pointer;
@@ -66,22 +65,22 @@ nav button {
 nav button.current {
     background: var(--ink);
     border-color: var(--ink);
-    color: #f1e6cf;
+    color: var(--text-bright);
 }
 
 .copy {
     background: var(--ink);
     border-color: var(--ink);
-    color: #f1e6cf;
+    color: var(--text-bright);
 }
 
 .copy:hover {
-    background: #3a2a17;
+    background: var(--ink-strong);
 }
 
 input[type=search] {
     background: #f4ead2;
-    border: 2px solid #8a6a3e;
+    border: 2px solid var(--torch-dark);
     border-radius: 6px;
     color: var(--ink);
     font: inherit;
@@ -89,13 +88,13 @@ input[type=search] {
 }
 
 input[type=search]::placeholder {
-    color: var(--muted-ink);
+    color: var(--ink-muted);
 }
 
 /* Separador por mundo */
 nav h3 {
     border-bottom: 1px solid var(--paper-edge);
-    color: var(--muted-ink);
+    color: var(--ink-muted);
     font-size: 0.95rem;
     letter-spacing: 0.1em;
     margin: 0.6rem 0 0.4rem;
@@ -113,7 +112,7 @@ nav ul {
 }
 
 .empty {
-    color: var(--muted-ink);
+    color: var(--ink-muted);
 }
 
 .page-icon {
@@ -124,7 +123,7 @@ nav ul {
 
 .page-detail h3 {
     align-items: center;
-    color: #3a2a17;
+    color: var(--ink-strong);
     display: flex;
     gap: 0.6rem;
     margin: 0.5rem 0;
@@ -136,7 +135,7 @@ nav ul {
 }
 
 .page-detail h4 {
-    color: #3a2a17;
+    color: var(--ink-strong);
     font-size: 1rem;
 }
 
@@ -151,7 +150,7 @@ pre {
 
 .syntax {
     background: rgba(43, 34, 25, 0.08);
-    border-left: 4px solid #8a6a3e;
+    border-left: 4px solid var(--torch-dark);
     color: var(--ink);
 }
 
@@ -163,7 +162,7 @@ pre {
 }
 
 .mistakes {
-    color: var(--muted-ink);
+    color: var(--ink-muted);
     padding-left: 1.2rem;
 }
 

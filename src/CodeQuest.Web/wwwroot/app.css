@@ -1,4 +1,6 @@
 :root {
+    color-scheme: dark;
+
     --stone-950: #0e0c09;
     --stone-900: #17140f;
     --stone-850: #1b1713;
@@ -8,6 +10,9 @@
 
     --parchment: #e9dcc0;
     --ink: #2b2219;
+    --ink-strong: #3a2a17;
+    --ink-muted: #5a4632;
+    --paper-edge: #c9b48c;
 
     --torch: #e8a33d;
     --torch-bright: #f4c06a;
@@ -19,6 +24,8 @@
 
     --text: #ece3d0;
     --text-muted: #b8ab93;
+    --text-soft: #d7cbb5;
+    --text-bright: #f1e6cf;
 
     --danger: #e0705a;
     --danger-text: #ffb3a8;
@@ -69,6 +76,11 @@ a {
 
 a:hover {
     color: var(--torch-bright);
+}
+
+/* O título focado por código ao navegar não é um controlo: sem anel âmbar sobre o pergaminho. */
+h1[tabindex="-1"]:focus-visible {
+    outline: none;
 }
 
 a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {

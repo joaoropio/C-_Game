@@ -3,7 +3,7 @@
     border: 1px solid #2f4f4b;
     border-radius: 12px;
     box-sizing: border-box;
-    color: #d7cbb5;
+    color: var(--text-soft);
     display: flex;
     flex-direction: column;
     gap: 0.9rem;
@@ -101,4 +101,12 @@
     color: var(--text-muted);
     display: block;
     font-family: var(--font-code);
+}
+
+.result.passed {
+    border-color: #2f6b63;
+}
+
+.result.passed .icon, .result.passed .result-meta {
+    color: var(--success-text);
 }

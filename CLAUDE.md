@@ -39,7 +39,7 @@ Jogo web em que o jogador avança numa masmorra escrevendo código C#. Cada sala
 - Erros para iniciantes: exceções comuns e erros fora do código do jogador são explicados em PT/EN, com a linha do jogador quando existe e a mensagem original por baixo.
 - Progresso guardado tem `version`; se estiver ilegível, o jogo recomeça e avisa o jogador.
 - Conteúdo (níveis, Grimório, textos da UI) fica em `content/` na raiz, partilhado pela Web e pelos testes. Os leitores de JSON ficam no Core (só `System.Text.Json`).
-- Cada nível é uma pasta em `content/levels/` com `level.json` (textos PT/EN, código inicial, dicas, solução, limite de instruções) e `Validation.cs` (testes escondidos, compilados junto com o código do jogador, mensagens PT/EN). Os testes descobrem os níveis automaticamente.
+- Cada nível é uma pasta em `content/levels/` com `level.json` (textos PT/EN incluindo `sceneLabel`, código inicial, dicas, solução, limite de instruções para 3 estrelas), `scene.svg` (a vinheta do pergaminho; obrigatória e validada pelo `SceneSvgValidator`, porque é injetada como marcação) e `Validation.cs` (testes escondidos, compilados junto com o código do jogador), que devolve `(Case, Expected, Actual)` para cada caso, com literais C# em cultura invariante, comparados como texto (ordinal); o nível só passa se todos os casos coincidirem. Os testes descobrem os níveis automaticamente.
 
 ## Funcionalidades
 
@@ -50,6 +50,7 @@ Jogo web em que o jogador avança numa masmorra escrevendo código C#. Cada sala
 - Níveis desbloqueiam por ordem: o seguinte só abre depois de passar o anterior.
 - Editor Monaco com realce de sintaxe e erros de compilação sublinhados. Sem autocompletar por agora. Carregado da CDN jsDelivr com versão fixa (não funciona offline).
 - Erros de compilação mostrados com linha e mensagem clara.
+- Resultado do feitiço caso a caso (entrada, obtido, esperado), também quando o nível passa.
 - Progresso guardado em `localStorage` (sem contas nem base de dados).
 - Dicas grátis no Mundo 1 (não tiram estrelas). Opção de ver a solução após 3 tentativas falhadas (o nível fica sem estrelas).
 - Estrelas por nível: 1 por passar; 2 sem dicas (só conta a partir do Mundo 2; no Mundo 1 passar já dá 2); 3 se a solução tiver no máximo N instruções, contadas pelo Roslyn, com N definido no `level.json`.

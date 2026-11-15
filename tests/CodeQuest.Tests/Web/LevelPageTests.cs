@@ -393,10 +393,35 @@ public sealed class LevelPageTests : BunitContext
     {
         var cut = await RenderLevelAsync(First);
 
-        await RunAsync(cut, new Passed(1, []));
+        await RunAsync(cut, new Passed(1, [new CheckOutcome("x = 1", "1", "1")]));
 
-        Assert.Empty(cut.FindAll(".result-block"));
-        JSInterop.VerifyFocusAsyncInvoke();
+        Assert.DoesNotContain(JSInterop.Invocations, call => call.Identifier == FocusCall
+            && ((ElementReference)call.Arguments[0]!).Id == ReferenceOf(cut, ".result-block"));
+        AssertLastFocused(ReferenceOf(cut, ".victory button.next"));
+    }
+
+    [Fact]
+    public async Task Run_Passed_AfterClosingDialog_ShowsGreenCaseGridUnderTheSpellbook()
+    {
+        var cut = await RenderLevelAsync(First);
+
+        await RunAsync(cut, new Passed(1, [new CheckOutcome("x = 1", "1", "1"), new CheckOutcome("x = 2", "2", "2")]));
+        await cut.Find(".victory button.stay").ClickAsync(new());
+
+        Assert.Empty(cut.FindAll(".victory"));
+        Assert.Equal(2, cut.FindAll(".result-block .case.pass").Count);
+        Assert.Empty(cut.FindAll(".result-block .case.fail"));
+        Assert.Contains("2 de 2 certos", cut.Find(".result-block .result-meta").TextContent);
+    }
+
+    [Fact]
+    public async Task Header_HasBackToMapLinkWithAccessibleName()
+    {
+        var cut = await RenderLevelAsync(First);
+
+        var link = cut.Find("a.back-link");
+        Assert.Equal("/", link.GetAttribute("href"));
+        Assert.Equal("Voltar ao mapa", link.GetAttribute("aria-label"));
     }
 
     [Fact]

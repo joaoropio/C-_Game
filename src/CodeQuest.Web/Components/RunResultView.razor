@@ -1,103 +1,105 @@
 @inject UiText Ui
 
-@if (Result is not Passed)
-{
-    <div class="result @Kind" role="status">
-        <header class="result-head">
-            @switch (Result)
-            {
-                case ChecksFailed:
-                    <svg class="icon icon-balance" width="30" height="30" viewBox="0 0 30 30" aria-hidden="true" focusable="false">
-                        <path d="M15 3v24M5 9h20M5 9l-3 8h6zM25 9l-3 8h6zM9 27h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
-                        <path d="M2 17a3 3 0 0 0 6 0M22 17a3 3 0 0 0 6 0" fill="none" stroke="currentColor" stroke-width="1.8" />
-                    </svg>
-                    break;
-                case CompilationFailed:
-                    <svg class="icon icon-rune" width="30" height="30" viewBox="0 0 30 30" aria-hidden="true" focusable="false">
-                        <path d="M9 3h12l6 7v12l-6 5H9l-6-5V10z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
-                        <path d="M16 3l-4 8 6 4-5 6 3 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" />
-                    </svg>
-                    break;
-                case TimedOut:
-                    <svg class="icon icon-hourglass" width="30" height="30" viewBox="0 0 30 30" aria-hidden="true" focusable="false">
-                        <path d="M7 3h16M7 27h16M9 3c0 7 6 8 6 12s-6 5-6 12M21 3c0 7-6 8-6 12s6 5 6 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                        <path d="M12 24h6l-3-4z" fill="currentColor" />
-                    </svg>
-                    break;
-                case RuntimeError:
-                    <svg class="icon icon-spiral" width="30" height="30" viewBox="0 0 30 30" aria-hidden="true" focusable="false">
-                        <path d="M15 15c0-2 3-2 3 0s-4 4-6 1-1-8 5-9 11 3 10 10-8 11-14 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                    </svg>
-                    break;
-                case CodeRejected:
-                    <svg class="icon icon-seal" width="30" height="30" viewBox="0 0 30 30" aria-hidden="true" focusable="false">
-                        <circle cx="15" cy="15" r="12" fill="none" stroke="currentColor" stroke-width="1.8" />
-                        <circle cx="15" cy="15" r="7" fill="none" stroke="currentColor" stroke-width="1.4" />
-                        <path d="M12 12l6 6M18 12l-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                    </svg>
-                    break;
-            }
-            <h2>@Ui["level.result"]</h2>
-            @if (Result is ChecksFailed scored)
-            {
-                <span class="result-meta">
-                    @string.Format(Ui["level.checksScore"], scored.Checks.Count(check => check.Passed), scored.Checks.Count)
-                    <span aria-hidden="true"> — </span>
-                    @Ui["level.checksFailed"]
-                </span>
-            }
-        </header>
-
+<div class="result @Kind" role="status">
+    <header class="result-head">
         @switch (Result)
         {
-            case CodeRejected rejected:
-                <p>@Ui["level.rejected"]</p>
-                <p>@LinePrefix(rejected.Line)@rejected.Reason.Get(Ui.Language)</p>
+            case Passed:
+                <svg class="icon icon-star" width="30" height="30" viewBox="0 0 30 30" aria-hidden="true" focusable="false">
+                    <path d="M15 3l3.6 7.9 8.4.8-6.3 5.7 1.9 8.4L15 21.4 7.4 25.8l1.9-8.4L3 11.7l8.4-.8z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                </svg>
                 break;
-            case CompilationFailed failed:
-                <p>@Ui["level.compileErrors"]</p>
-                <ul class="errors">
-                    @foreach (var error in failed.Errors)
-                    {
-                        <li>
-                            @LinePrefix(error.Line)@(error.Explanation?.Get(Ui.Language) ?? error.Message)
-                            @if (error.Explanation is not null)
-                            {
-                                <small class="original">@Ui["level.originalMessage"]: @error.Message</small>
-                            }
-                        </li>
-                    }
-                </ul>
+            case ChecksFailed:
+                <svg class="icon icon-balance" width="30" height="30" viewBox="0 0 30 30" aria-hidden="true" focusable="false">
+                    <path d="M15 3v24M5 9h20M5 9l-3 8h6zM25 9l-3 8h6zM9 27h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                    <path d="M2 17a3 3 0 0 0 6 0M22 17a3 3 0 0 0 6 0" fill="none" stroke="currentColor" stroke-width="1.8" />
+                </svg>
                 break;
-            case ChecksFailed checks:
-                <ul class="cases">
-                    @foreach (var check in checks.Checks)
-                    {
-                        <li class="case @(check.Passed ? "pass" : "fail")">
-                            <span class="case-name">@check.Case</span>
-                            @if (check.Passed)
-                            {
-                                <span class="case-detail">@Ui["level.checkGot"] @check.Actual <span class="mark" aria-hidden="true">✓</span><span class="visually-hidden">@Ui["level.checkOk"]</span></span>
-                            }
-                            else
-                            {
-                                <span class="case-detail">@Ui["level.checkGot"] @check.Actual <span class="sep" aria-hidden="true">·</span> @Ui["level.checkExpected"] @check.Expected</span>
-                            }
-                        </li>
-                    }
-                </ul>
+            case CompilationFailed:
+                <svg class="icon icon-rune" width="30" height="30" viewBox="0 0 30 30" aria-hidden="true" focusable="false">
+                    <path d="M9 3h12l6 7v12l-6 5H9l-6-5V10z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                    <path d="M16 3l-4 8 6 4-5 6 3 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" />
+                </svg>
                 break;
             case TimedOut:
-                <p>@Ui["level.timedOut"]</p>
+                <svg class="icon icon-hourglass" width="30" height="30" viewBox="0 0 30 30" aria-hidden="true" focusable="false">
+                    <path d="M7 3h16M7 27h16M9 3c0 7 6 8 6 12s-6 5-6 12M21 3c0 7-6 8-6 12s6 5 6 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                    <path d="M12 24h6l-3-4z" fill="currentColor" />
+                </svg>
                 break;
-            case RuntimeError error:
-                <p>@Ui["level.runtimeError"]</p>
-                <p>@LinePrefix(error.Line)@error.Explanation.Get(Ui.Language)</p>
-                <small class="original">@Ui["level.originalMessage"]: @error.Message</small>
+            case RuntimeError:
+                <svg class="icon icon-spiral" width="30" height="30" viewBox="0 0 30 30" aria-hidden="true" focusable="false">
+                    <path d="M15 15c0-2 3-2 3 0s-4 4-6 1-1-8 5-9 11 3 10 10-8 11-14 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+                break;
+            case CodeRejected:
+                <svg class="icon icon-seal" width="30" height="30" viewBox="0 0 30 30" aria-hidden="true" focusable="false">
+                    <circle cx="15" cy="15" r="12" fill="none" stroke="currentColor" stroke-width="1.8" />
+                    <circle cx="15" cy="15" r="7" fill="none" stroke="currentColor" stroke-width="1.4" />
+                    <path d="M12 12l6 6M18 12l-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
                 break;
         }
-    </div>
-}
+        <h2>@Ui["level.result"]</h2>
+        @if (Checks is { } scored)
+        {
+            <span class="result-meta">
+                @string.Format(Ui["level.checksScore"], scored.Count(check => check.Passed), scored.Count)
+                <span aria-hidden="true"> — </span>
+                @Ui[Result is Passed ? "level.checksPassed" : "level.checksFailed"]
+            </span>
+        }
+    </header>
+
+    @switch (Result)
+    {
+        case CodeRejected rejected:
+            <p>@Ui["level.rejected"]</p>
+            <p>@LinePrefix(rejected.Line)@rejected.Reason.Get(Ui.Language)</p>
+            break;
+        case CompilationFailed failed:
+            <p>@Ui["level.compileErrors"]</p>
+            <ul class="errors">
+                @foreach (var error in failed.Errors)
+                {
+                    <li>
+                        @LinePrefix(error.Line)@(error.Explanation?.Get(Ui.Language) ?? error.Message)
+                        @if (error.Explanation is not null)
+                        {
+                            <small class="original">@Ui["level.originalMessage"]: @error.Message</small>
+                        }
+                    </li>
+                }
+            </ul>
+            break;
+        case ChecksFailed or Passed:
+            <ul class="cases">
+                @foreach (var check in Checks!)
+                {
+                    <li class="case @(check.Passed ? "pass" : "fail")">
+                        <span class="case-name">@check.Case</span>
+                        @if (check.Passed)
+                        {
+                            <span class="case-detail">@Ui["level.checkGot"] @check.Actual <span class="mark" aria-hidden="true">✓</span><span class="visually-hidden">@Ui["level.checkOk"]</span></span>
+                        }
+                        else
+                        {
+                            <span class="case-detail">@Ui["level.checkGot"] @check.Actual <span class="sep" aria-hidden="true">·</span> @Ui["level.checkExpected"] @check.Expected</span>
+                        }
+                    </li>
+                }
+            </ul>
+            break;
+        case TimedOut:
+            <p>@Ui["level.timedOut"]</p>
+            break;
+        case RuntimeError error:
+            <p>@Ui["level.runtimeError"]</p>
+            <p>@LinePrefix(error.Line)@error.Explanation.Get(Ui.Language)</p>
+            <small class="original">@Ui["level.originalMessage"]: @error.Message</small>
+            break;
+    }
+</div>
 
 @code {
     [Parameter, EditorRequired]
@@ -107,9 +109,17 @@
     {
         ChecksFailed => "checks",
         CompilationFailed => "compile",
+        Passed => "passed",
         TimedOut => "timeout",
         RuntimeError => "runtime",
         _ => "rejected",
+    };
+
+    private IReadOnlyList<CheckOutcome>? Checks => Result switch
+    {
+        ChecksFailed failed => failed.Checks,
+        Passed passed => passed.Checks,
+        _ => null,
     };
 
     private string LinePrefix(int? line) => line is { } number ? $"{Ui["level.line"]} {number}: " : "";

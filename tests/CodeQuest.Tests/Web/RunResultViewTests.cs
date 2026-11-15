@@ -153,10 +153,37 @@ public sealed class RunResultViewTests : BunitContext
     }
 
     [Fact]
-    public void Passed_RendersNothing()
+    public void Passed_ShowsAllGreenCasesWithScoreAndSuccessPhrase()
     {
-        var cut = RenderResult(new Passed(3, []));
+        var cut = RenderResult(new Passed(3, [
+            new CheckOutcome("turns = 1", "1", "1"),
+            new CheckOutcome("turns = 3", "3", "3"),
+        ]));
 
-        Assert.Empty(cut.Markup.Trim());
+        Assert.Equal("Resultado do feitiço", cut.Find(".result-head h2").TextContent);
+        Assert.Equal("2 de 2 certos — o feitiço funcionou", System.Text.RegularExpressions.Regex.Replace(cut.Find(".result-meta").TextContent, @"\s+", " ").Trim());
+        Assert.Equal(2, cut.FindAll(".case.pass").Count);
+        Assert.Empty(cut.FindAll(".case.fail"));
+        Assert.Equal("deu 3 certo", cut.FindAll(".case")[1].QuerySelector(".case-detail")!.TextContent.Replace("✓", "").Trim());
+        Assert.Contains("passed", cut.Find(".result").ClassList);
+    }
+
+    [Fact]
+    public void Passed_HasOneDecorativeSuccessIcon()
+    {
+        var cut = RenderResult(new Passed(1, [new CheckOutcome("a", "1", "1")]));
+
+        Assert.Equal("true", cut.Find(".result-head svg.icon-star").GetAttribute("aria-hidden"));
+        Assert.Single(cut.FindAll(".result-head svg"));
+    }
+
+    [Fact]
+    public async Task Passed_InEnglish_UsesSuccessPhrase()
+    {
+        await Services.GetRequiredService<UiText>().SetLanguageAsync(Language.En);
+        var cut = RenderResult(new Passed(1, [new CheckOutcome("a", "1", "1")]));
+
+        Assert.Contains("1 of 1 correct", cut.Find(".result-meta").TextContent);
+        Assert.Contains("the spell worked", cut.Find(".result-meta").TextContent);
     }
 }

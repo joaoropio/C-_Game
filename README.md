@@ -90,7 +90,7 @@ Não é preciso mexer no motor, na interface nem nos `.csproj`: os níveis são 
    }
    ```
 
-7. `scene.svg`: a vinheta do nível (viewBox `0 0 540 210`, estilo de parede de pedra). Começa por `<svg`, leva `aria-hidden="true"` (o nome acessível vem de `sceneLabel`) e não pode ter `<script`, `foreignObject` nem atributos `on…`: o teste de conteúdo verifica-o, porque o SVG é injetado como marcação.
+7. `scene.svg`: a vinheta do nível (obrigatória; viewBox `0 0 540 210`, `preserveAspectRatio="xMidYMid slice"`, estilo de parede de pedra; `aria-hidden="true"`, porque o nome acessível vem de `sceneLabel`). Como o SVG é injetado como marcação, o `SceneSvgValidator` (nos testes) só aceita: XML bem formado com raiz `svg`; elementos e atributos de uma lista permitida; nada de `<style>`, comentários, instruções de processamento ou doctype; `href` só internos (`#id`); `url(...)` só para `#id`.
 8. `content/grimoire/<id>.json`: a página do Grimório (`id`, `world`, `title`, `whatItIs`, `syntax` (os três com `pt` e `en`), `example`, `commonMistakes` com 2 ou 3 entradas, `learnUrl` para o Microsoft Learn). O `example` tem de compilar e não pode reutilizar os identificadores do nível. Se o nível usar uma página que já existe, não é preciso criar outra.
 9. Corre `dotnet test`. Os testes descobrem o novo nível sozinhos e verificam que a solução passa, que o inicial não passa, que a solução cabe no limite de estrelas, que a vinheta é segura, que há PT e EN em todos os textos, 2 dicas, um único marcador e uma página do Grimório válida.
 

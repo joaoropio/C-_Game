@@ -13,7 +13,10 @@
     <PageTitle>@level.Title.Get(Ui.Language)</PageTitle>
 
     <div class="page-content" inert="@(earnedStars is not null)">
-        <p class="crumb">@string.Format(Ui["level.crumb"], level.World, level.Number, Content.Levels.Count(candidate => candidate.World == level.World))</p>
+        <div class="level-header">
+            <a class="back-link" href="/" aria-label="@Ui["level.backToMap"]"><span aria-hidden="true">‹</span> @Ui["level.mapShort"]</a>
+            <p class="crumb">@string.Format(Ui["level.crumb"], level.World, level.Number, Content.Levels.Count(candidate => candidate.World == level.World))</p>
+        </div>
         <div class="level-layout">
             <section class="parchment">
                 <figure class="vignette" role="img" aria-label="@level.SceneLabel.Get(Ui.Language)">
@@ -86,7 +89,7 @@
                     </div>
                 </section>
 
-                @if (result is { } shown && shown is not Passed)
+                @if (result is { } shown)
                 {
                     <div class="result-block" tabindex="-1" @ref="resultBlock">
                         <RunResultView Result="shown" />
@@ -117,8 +120,8 @@
                     <path class="light-beam" d="M250 300 L120 300 L190 70 L310 70 L380 300 Z" fill="url(#victory-light)" opacity="0.6" />
                     <path class="door-opening" d="M165 300V140a85 85 0 0 1 170 0v160z" fill="#ffe2a8" />
                     <path class="door-frame" d="M165 300V140a85 85 0 0 1 170 0v160" fill="none" stroke="#c8913f" stroke-width="10" />
-                    <path d="M165 300V140 L120 120 V300 Z" fill="#5a4026" stroke="#3a2a17" stroke-width="2" />
-                    <path d="M335 300V140 L380 120 V300 Z" fill="#5a4026" stroke="#3a2a17" stroke-width="2" />
+                    <path class="door-leaf door-leaf-left" d="M165 300V140 L120 120 V300 Z" fill="#5a4026" stroke="#3a2a17" stroke-width="2" />
+                    <path class="door-leaf door-leaf-right" d="M335 300V140 L380 120 V300 Z" fill="#5a4026" stroke="#3a2a17" stroke-width="2" />
                     <path d="M128 150v120M372 150v120" stroke="#3a2a17" stroke-width="3" />
                     <path class="wizard" d="M250 205 a14 14 0 1 1 0.1 0 M236 222 L264 222 L272 290 L228 290 Z M262 218 L292 182" fill="#2b1f14" stroke="#2b1f14" stroke-width="4" stroke-linejoin="round" />
                     <circle cx="294" cy="178" r="6" fill="#4fd1c5" />
