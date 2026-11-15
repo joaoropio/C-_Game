@@ -199,9 +199,15 @@
     overflow-x: hidden;
     overflow-y: auto;
     padding: 0 0 2.25rem;
-    scrollbar-gutter: stable both-edges;
     text-align: center;
     width: 100%;
+}
+
+/* Só em ecrãs baixos o diálogo pode ter scroll: reserva a faixa da barra nos dois lados para a porta ficar centrada. */
+@media (max-height: 40rem) {
+    .victory {
+        scrollbar-gutter: stable both-edges;
+    }
 }
 
 .victory:focus {
