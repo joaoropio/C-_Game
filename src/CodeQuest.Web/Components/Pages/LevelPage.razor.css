@@ -293,11 +293,11 @@
     }
 
     .door-leaf-left {
-        transform-origin: left center;
+        transform-origin: right center;
     }
 
     .door-leaf-right {
-        transform-origin: right center;
+        transform-origin: left center;
     }
 
     .door-opening {
@@ -327,7 +327,7 @@
 }
 
 @keyframes door-swing {
-    from { transform: scaleX(0.1); }
+    from { transform: scaleX(-1); }
 }
 
 @keyframes door-glow {
