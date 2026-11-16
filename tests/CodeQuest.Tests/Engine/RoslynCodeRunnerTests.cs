@@ -147,6 +147,14 @@ public class RoslynCodeRunnerTests
     }
 
     [Fact]
+    public async Task Run_TimeoutExceptionThrownByThePlayer_IsARuntimeErrorNotATimeout()
+    {
+        var result = await Run("throw new TimeoutException();");
+
+        Assert.IsType<RuntimeError>(result);
+    }
+
+    [Fact]
     public async Task Run_BlockedOutsidePlayerCode_TimedOutByWallClock()
     {
         const string blockingValidation = """

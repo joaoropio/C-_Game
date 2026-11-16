@@ -7,7 +7,15 @@ namespace CodeQuest.Engine;
 
 internal sealed class LoopGuardRewriter(TextSpan guardedSpan, SemanticModel model) : CSharpSyntaxRewriter
 {
-    public const string GuardSource = """
+    // The guard throws its own exception type so that a TimeoutException thrown by the player's code is not
+    // mistaken for a tripped limit.
+    public const string LimitExceptionName = "__LimitExceededException";
+
+    public const string GuardSource = $$"""
+        internal sealed class {{LimitExceptionName}} : System.Exception
+        {
+        }
+
         internal static class __LoopGuard
         {
             public const int Limit = 1_000_000;
@@ -25,7 +33,7 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan, SemanticModel mode
                 if (Tripped || ++_ticks > Limit)
                 {
                     Trip();
-                    throw new System.TimeoutException();
+                    throw new {{LimitExceptionName}}();
                 }
             }
 
@@ -34,7 +42,7 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan, SemanticModel mode
                 if (Tripped || ++_calls > CallLimit)
                 {
                     Trip();
-                    throw new System.TimeoutException();
+                    throw new {{LimitExceptionName}}();
                 }
 
                 if (!global::System.Runtime.CompilerServices.RuntimeHelpers.TryEnsureSufficientExecutionStack())

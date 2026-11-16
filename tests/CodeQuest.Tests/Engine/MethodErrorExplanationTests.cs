@@ -27,8 +27,8 @@ public class MethodErrorExplanationTests
         }
         """;
 
-    private IReadOnlyList<CompilationError> Errors(string playerCode, string validationCall = "Spell.Heal(1)", string template = Template, Language language = Language.En) =>
-        _compiler.Compile(new RunRequest(template, playerCode, Validation(validationCall)), language).Errors;
+    private IReadOnlyList<CompilationError> Errors(string playerCode, string validationCall = "Spell.Heal(1)", string template = Template) =>
+        _compiler.Compile(new RunRequest(template, playerCode, Validation(validationCall))).Errors;
 
     private static CompilationError Single(IReadOnlyList<CompilationError> errors, bool insidePlayerCode)
     {
@@ -81,7 +81,7 @@ public class MethodErrorExplanationTests
         var error = Single(Errors("public static int Cast(string s) => s.Heal();\n" + Heal), insidePlayerCode: true);
 
         Assert.Equal(1, error.Line);
-        Assert.Equal("The method \"Heal\" is missing.", error.Explanation!.En);
+        Assert.Equal("\"string\" has no method \"Heal\". Check the name.", error.Explanation!.En);
     }
 
     [Fact]
@@ -89,8 +89,8 @@ public class MethodErrorExplanationTests
     {
         var error = Single(Errors(Heal, "Spell.Heal(1, 2)"), insidePlayerCode: false);
 
-        Assert.Equal("The method \"Heal\" doesn't take 2 arguments.", error.Explanation!.En);
-        Assert.Equal("O método \"Heal\" não recebe 2 argumentos.", error.Explanation.Pt);
+        Assert.Equal("There's no version of \"Heal\" that takes 2 arguments.", error.Explanation!.En);
+        Assert.Equal("Falta uma versão de \"Heal\" que receba 2 argumentos.", error.Explanation.Pt);
     }
 
     [Fact]
@@ -98,8 +98,8 @@ public class MethodErrorExplanationTests
     {
         var error = Single(Errors("public static int Heal() => 1;"), insidePlayerCode: false);
 
-        Assert.Equal("The method \"Heal\" doesn't take 1 argument.", error.Explanation!.En);
-        Assert.Equal("O método \"Heal\" não recebe 1 argumento.", error.Explanation.Pt);
+        Assert.Equal("There's no version of \"Heal\" that takes 1 argument.", error.Explanation!.En);
+        Assert.Equal("Falta uma versão de \"Heal\" que receba 1 argumento.", error.Explanation.Pt);
     }
 
     [Fact]
@@ -108,7 +108,7 @@ public class MethodErrorExplanationTests
         var error = Single(Errors("public static int Heal(int a, int b) => a + b;"), insidePlayerCode: false);
 
         Assert.Equal("Missing arguments in the call to method \"Heal\": no value for \"b\".", error.Explanation!.En);
-        Assert.Equal("Faltam argumentos na chamada ao método \"Heal\": falta o valor de \"b\".", error.Explanation.Pt);
+        Assert.Equal("Falta o valor de \"b\" na chamada ao método \"Heal\".", error.Explanation.Pt);
     }
 
     [Fact]
@@ -174,8 +174,7 @@ public class MethodErrorExplanationTests
     public void Namespace_InPlayerCode_RejectedWithOneClearMessage()
     {
         var outcome = _compiler.Compile(
-            new RunRequest(Template, "namespace Foo\n{\n" + Heal + "\n}", Validation("Spell.Heal(1)")),
-            Language.En);
+            new RunRequest(Template, "namespace Foo\n{\n" + Heal + "\n}", Validation("Spell.Heal(1)")));
 
         Assert.Equal(1, outcome.Rejected!.Line);
         Assert.Equal("Don't use a namespace here.", outcome.Rejected.Reason.En);
@@ -186,8 +185,7 @@ public class MethodErrorExplanationTests
     public void FileScopedNamespace_InPlayerCode_Rejected()
     {
         var outcome = _compiler.Compile(
-            new RunRequest(Template, "namespace Foo;\n" + Heal, Validation("Spell.Heal(1)")),
-            Language.En);
+            new RunRequest(Template, "namespace Foo;\n" + Heal, Validation("Spell.Heal(1)")));
 
         Assert.Equal("Don't use a namespace here.", outcome.Rejected!.Reason.En);
     }
@@ -208,8 +206,8 @@ public class MethodErrorExplanationTests
     {
         var error = Single(Errors("public static int Cast(string s) => s.Lenghtt();\n" + Heal), insidePlayerCode: true);
 
-        Assert.Equal("The method \"Lenghtt\" is missing.", error.Explanation!.En);
-        Assert.Equal("Falta o método \"Lenghtt\".", error.Explanation.Pt);
+        Assert.Equal("\"string\" has no method \"Lenghtt\". Check the name.", error.Explanation!.En);
+        Assert.Equal("\"string\" não tem nenhum método \"Lenghtt\". Verifica o nome.", error.Explanation.Pt);
     }
 
     [Fact]

@@ -44,6 +44,38 @@ internal static class PlayerMessages
         $"Falta o método \"{name}\".",
         $"The method \"{name}\" is missing.");
 
+    public static LocalizedText MissingMethodOnType(string type, string name) => new(
+        $"\"{type}\" não tem nenhum método \"{name}\". Verifica o nome.",
+        $"\"{type}\" has no method \"{name}\". Check the name.");
+
+    public static readonly LocalizedText CountNotLength = new(
+        "Numa lista usa Count, não Length.",
+        "On a list use Count, not Length.");
+
+    public static readonly LocalizedText LengthNotCount = new(
+        "Num array (ou texto) usa Length, não Count.",
+        "On an array (or text) use Length, not Count.");
+
+    public static readonly LocalizedText StatementsBelongInMethods = new(
+        "Aqui só podes escrever métodos: põe as instruções dentro de um método.",
+        "Only methods go here: put statements inside a method.");
+
+    public static LocalizedText MissingOverloadForType(string name, string type) => new(
+        $"Falta uma versão de \"{name}\" que receba {type}.",
+        $"There's no version of \"{name}\" that takes {type}.");
+
+    public static LocalizedText MissingOverloadForCount(string name, int count) => count == 1
+        ? new LocalizedText(
+            $"Falta uma versão de \"{name}\" que receba 1 argumento.",
+            $"There's no version of \"{name}\" that takes 1 argument.")
+        : new LocalizedText(
+            $"Falta uma versão de \"{name}\" que receba {count} argumentos.",
+            $"There's no version of \"{name}\" that takes {count} arguments.");
+
+    public static LocalizedText ReservedName(string name) => new(
+        $"O nome {name} está reservado; escolhe outro nome.",
+        $"The name {name} is reserved; pick another name.");
+
     public static LocalizedText WrongArgumentCount(string name, int count) => count == 1
         ? new LocalizedText(
             $"O método \"{name}\" não recebe 1 argumento.",
@@ -53,7 +85,7 @@ internal static class PlayerMessages
             $"The method \"{name}\" doesn't take {count} arguments.");
 
     public static LocalizedText MissingArguments(string name, string parameter) => new(
-        $"Faltam argumentos na chamada ao método \"{name}\": falta o valor de \"{parameter}\".",
+        $"Falta o valor de \"{parameter}\" na chamada ao método \"{name}\".",
         $"Missing arguments in the call to method \"{name}\": no value for \"{parameter}\".");
 
     public static LocalizedText DuplicateMethod(string name) => new(

@@ -6,7 +6,7 @@ namespace CodeQuest.Engine;
 
 public sealed class RoslynCodeRunner : ICodeRunner
 {
-    private const string ValidationTypeName = "Validation";
+    internal const string ValidationTypeName = "Validation";
     private const string ValidationMethodName = "Run";
 
     private static readonly TimeSpan WallClockLimit = TimeSpan.FromSeconds(3);
@@ -21,7 +21,7 @@ public sealed class RoslynCodeRunner : ICodeRunner
             return rejected;
         }
 
-        var outcome = _compiler.Compile(request, language);
+        var outcome = _compiler.Compile(request);
         if (outcome.Rejected is not null)
         {
             return outcome.Rejected;
@@ -80,7 +80,7 @@ public sealed class RoslynCodeRunner : ICodeRunner
             var cause = exception is TargetInvocationException { InnerException: { } inner }
                 ? inner
                 : exception;
-            return cause is TimeoutException
+            return cause.GetType().Name == LoopGuardRewriter.LimitExceptionName
                 ? new TimedOut()
                 : RuntimeErrorExplainer.Explain(cause, outcome.PlayerLineOffset, outcome.PlayerLineCount);
         }

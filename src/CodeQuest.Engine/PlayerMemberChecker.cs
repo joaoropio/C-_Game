@@ -11,8 +11,15 @@ namespace CodeQuest.Engine;
 // guarded body, so neither modifier is allowed anywhere in the player code.
 internal static class PlayerMemberChecker
 {
+    private const string InvalidTokenInMemberErrorId = "CS1519";
+
     public static CodeRejected? Check(SyntaxNode root, int playerLineOffset, int playerLineCount)
     {
+        if (FirstStatementOutsideAMethod(root, playerLineOffset, playerLineCount) is { } statementLine)
+        {
+            return new CodeRejected(PlayerMessages.StatementsBelongInMethods, statementLine);
+        }
+
         foreach (var node in root.DescendantNodes())
         {
             var line = node.GetLocation().GetLineSpan().StartLinePosition.Line;
@@ -31,9 +38,25 @@ internal static class PlayerMemberChecker
         return null;
     }
 
+    // A statement at class scope (`x++;`, `return 1;`, `if (...)`) is a syntax error inside a type, not inside a block.
+    private static int? FirstStatementOutsideAMethod(SyntaxNode root, int playerLineOffset, int playerLineCount) => root
+        .SyntaxTree.GetDiagnostics()
+        .Where(diagnostic => diagnostic.Id == InvalidTokenInMemberErrorId)
+        .Where(diagnostic => IsAtClassScope(root, diagnostic))
+        .Select(diagnostic => diagnostic.Location.GetLineSpan().StartLinePosition.Line + 1 - playerLineOffset)
+        .Where(playerLine => playerLine >= 1 && playerLine <= playerLineCount)
+        .Select(playerLine => (int?)playerLine)
+        .Min();
+
+    private static bool IsAtClassScope(SyntaxNode root, Diagnostic diagnostic) => root
+        .FindNode(diagnostic.Location.SourceSpan)
+        .AncestorsAndSelf()
+        .FirstOrDefault(node => node is BlockSyntax or BaseTypeDeclarationSyntax) is BaseTypeDeclarationSyntax;
+
     private static LocalizedText? ReasonToReject(SyntaxNode node, int playerLine) => node switch
     {
         BaseNamespaceDeclarationSyntax => PlayerMessages.NamespaceNotAllowed,
+        ConstructorDeclarationSyntax { Body: null, ExpressionBody: null } => PlayerMessages.StatementsBelongInMethods,
         BaseTypeDeclarationSyntax or DelegateDeclarationSyntax => PlayerMessages.TypesNotAllowed,
         BaseFieldDeclarationSyntax or BasePropertyDeclarationSyntax or ConstructorDeclarationSyntax
             or DestructorDeclarationSyntax => PlayerMessages.OnlyMethodsAllowed,

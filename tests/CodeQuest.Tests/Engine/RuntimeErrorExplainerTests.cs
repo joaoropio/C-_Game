@@ -50,8 +50,7 @@ public class RuntimeErrorExplainerTests
     {
         const string template = "public static class Spell\n{\n    public static int Cast()\n    {\n        //{{PLAYER_CODE}}\n        return 0;\n    }\n}";
         var outcome = new PlayerCompiler().Compile(
-            new RunRequest(template, "int a = 0;\nreturn 1 / a;", "public static class Checks { }"),
-            Language.En);
+            new RunRequest(template, "int a = 0;\nreturn 1 / a;", "public static class Checks { }"));
         var cast = System.Reflection.Assembly.Load(outcome.Assembly!, outcome.Pdb!).GetType("Spell")!.GetMethod("Cast")!;
         var thrown = Assert.Throws<System.Reflection.TargetInvocationException>(() => cast.Invoke(null, null));
 
