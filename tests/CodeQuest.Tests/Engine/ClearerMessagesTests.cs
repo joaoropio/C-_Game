@@ -146,6 +146,44 @@ public class ClearerMessagesTests
         Assert.Equal(line, rejected.Line);
     }
 
+    [Theory]
+    [InlineData("static Heal(int a) { return a; }")]
+    [InlineData("Heal(int a) => a;")]
+    [InlineData("static Heal() { }")]
+    [InlineData("public Heal(int a) { }")]
+    public void MethodWithoutReturnType_ExplainsTheMissingReturnType(string method)
+    {
+        var rejected = Rejected(PartialTemplate, Heal + "\n" + method);
+
+        Assert.Equal("The method \"Heal\" is missing its return type (for example int, or void if it returns nothing).", rejected.Reason.En);
+        Assert.Equal("Falta o tipo do resultado do método \"Heal\" (por exemplo int, ou void se não devolver nada).", rejected.Reason.Pt);
+        Assert.Equal(2, rejected.Line);
+    }
+
+    [Theory]
+    [InlineData("static Spell() { }")]
+    [InlineData("Spell() { }")]
+    public void RealConstructor_KeepsTheConstructorMessage(string constructor)
+    {
+        var rejected = Rejected(PartialTemplate, Heal + "\n" + constructor);
+
+        Assert.Equal("For now you can only write static methods, not fields, properties or constructors.", rejected.Reason.En);
+        Assert.Equal(2, rejected.Line);
+    }
+
+    [Fact]
+    public void Level7Starter_WithoutReturnType_ExplainsTheMissingReturnType()
+    {
+        var level = LevelRepository.Load(Path.Combine(AppContext.BaseDirectory, "content", "levels"))
+            .Single(l => l.Id == "07-methods");
+
+        var rejected = _compiler.Compile(
+            new RunRequest(level.Template, level.StarterCode.Replace("static int Heal", "static Heal"), level.ValidationSource)).Rejected!;
+
+        Assert.Equal("The method \"Heal\" is missing its return type (for example int, or void if it returns nothing).", rejected.Reason.En);
+        Assert.Equal(1, rejected.Line);
+    }
+
     [Fact]
     public void StatementsInAMethodBody_AreNotRejected()
     {
