@@ -120,6 +120,18 @@ internal static class PlayerMessages
         "Para já só podes escrever métodos static, sem campos, propriedades nem construtores.",
         "For now you can only write static methods, not fields, properties or constructors.");
 
+    public static LocalizedText NotYetInThisWorld(string pt, string en) => new(
+        $"Ainda não podes escrever {pt} aqui.",
+        $"You can't write {en} here yet.");
+
+    public static readonly LocalizedText OnlyTypesAtFileLevel = new(
+        "Aqui só podes escrever classes (e outros tipos): põe o código dentro de uma classe.",
+        "Only classes (and other types) go here: put your code inside a class.");
+
+    public static LocalizedText StaticConstructorFailed(string type) => new(
+        $"O construtor static de \"{type}\" (ou o valor inicial de um campo static) lançou um erro.",
+        $"The static constructor of \"{type}\" (or a static field's initial value) threw an error.");
+
     public static LocalizedText AsyncNotAllowed(int line) => new(
         $"Ainda não podes usar async nesta masmorra (linha {line}).",
         $"You can't use async in this dungeon yet (line {line}).");

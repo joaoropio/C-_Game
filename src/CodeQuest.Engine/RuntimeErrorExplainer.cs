@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Reflection;
 using CodeQuest.Core;
 using CodeQuest.Core.Running;
 
@@ -8,10 +9,52 @@ internal static class RuntimeErrorExplainer
 {
     private const string PlayerFileName = "player.cs";
 
-    public static RuntimeError Explain(Exception exception, int playerLineOffset, int playerLineCount) =>
-        new(ExplanationFor(exception), exception.Message, PlayerLine(exception, playerLineOffset, playerLineCount));
+    // What the validation threw is rarely what failed: Invoke and a type initializer wrap the real cause, and
+    // the library wraps an exception thrown by a player comparer. A tripped guard anywhere in the chain wins.
+    public static RunResult Classify(Exception thrown, int playerLineOffset, int playerLineCount)
+    {
+        var chain = ChainOf(thrown).ToList();
+        if (chain.Any(exception => exception.GetType().Name == LoopGuardRewriter.LimitExceptionName))
+        {
+            return new TimedOut();
+        }
 
-    private static LocalizedText ExplanationFor(Exception exception) => exception switch
+        var cause = chain.FirstOrDefault(exception => exception is InsufficientExecutionStackException)
+            ?? chain.FirstOrDefault(exception => exception is not (TargetInvocationException or TypeInitializationException))
+            ?? thrown;
+        var failedType = chain.OfType<TypeInitializationException>().FirstOrDefault()?.TypeName;
+        return Explain(cause, playerLineOffset, playerLineCount, failedType);
+    }
+
+    public static RuntimeError Explain(Exception exception, int playerLineOffset, int playerLineCount) =>
+        Explain(exception, playerLineOffset, playerLineCount, null);
+
+    private static RuntimeError Explain(Exception exception, int playerLineOffset, int playerLineCount, string? failedType) =>
+        new(ExplanationFor(exception, failedType), MessageOf(exception), PlayerLine(exception, playerLineOffset, playerLineCount));
+
+    private static IEnumerable<Exception> ChainOf(Exception exception)
+    {
+        for (var current = exception; current is not null; current = current.InnerException!)
+        {
+            yield return current;
+        }
+    }
+
+    // The message of an exception type written by the player is player code: it may recurse, loop or throw,
+    // and it runs here, outside the validation's own try block.
+    private static string MessageOf(Exception exception)
+    {
+        try
+        {
+            return exception.Message;
+        }
+        catch (Exception)
+        {
+            return exception.GetType().Name;
+        }
+    }
+
+    private static LocalizedText ExplanationFor(Exception exception, string? failedType) => exception switch
     {
         DivideByZeroException => PlayerMessages.DividedByZero,
         NullReferenceException => PlayerMessages.UsedNull,
@@ -19,6 +62,7 @@ internal static class RuntimeErrorExplainer
         KeyNotFoundException => PlayerMessages.KeyNotInDictionary,
         FormatException => PlayerMessages.UnexpectedFormat,
         InsufficientExecutionStackException => PlayerMessages.InfiniteRecursion,
+        _ when failedType is not null => PlayerMessages.StaticConstructorFailed(failedType),
         _ => PlayerMessages.SpellFailedWhileRunning,
     };
 
@@ -37,5 +81,5 @@ internal static class RuntimeErrorExplainer
     }
 
     private static bool IsGuardEntry(StackFrame frame) =>
-        frame.GetMethod() is { Name: "Enter", DeclaringType.Name: "__LoopGuard" };
+        frame.GetMethod() is { Name: "Enter" or "EnterValue", DeclaringType.Name: "__LoopGuard" };
 }

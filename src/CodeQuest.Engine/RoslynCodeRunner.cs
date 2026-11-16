@@ -33,7 +33,7 @@ public sealed class RoslynCodeRunner : ICodeRunner
         }
 
         var execution = Task.Factory.StartNew(
-            () => Execute(outcome, request.PlayerCode, PlayerScope.IsClassScope(request.Template)),
+            () => Execute(outcome, request.PlayerCode),
             CancellationToken.None,
             TaskCreationOptions.LongRunning,
             TaskScheduler.Default);
@@ -47,7 +47,7 @@ public sealed class RoslynCodeRunner : ICodeRunner
         }
     }
 
-    private static RunResult Execute(CompileOutcome outcome, string playerCode, bool atClassScope)
+    private static RunResult Execute(CompileOutcome outcome, string playerCode)
     {
         var context = new PlayerLoadContext();
         try
@@ -55,7 +55,7 @@ public sealed class RoslynCodeRunner : ICodeRunner
             using var assemblyStream = new MemoryStream(outcome.Assembly!);
             using var pdbStream = new MemoryStream(outcome.Pdb!);
             var run = FindValidationMethod(context.LoadFromStream(assemblyStream, pdbStream));
-            return RunValidation(run, outcome, playerCode, atClassScope);
+            return RunValidation(run, outcome, playerCode);
         }
         finally
         {
@@ -63,7 +63,7 @@ public sealed class RoslynCodeRunner : ICodeRunner
         }
     }
 
-    private static RunResult RunValidation(MethodInfo run, CompileOutcome outcome, string playerCode, bool atClassScope)
+    private static RunResult RunValidation(MethodInfo run, CompileOutcome outcome, string playerCode)
     {
         try
         {
@@ -73,18 +73,14 @@ public sealed class RoslynCodeRunner : ICodeRunner
                 .ToList();
             return checks.Any(check => !check.Passed)
                 ? new ChecksFailed(checks)
-                : new Passed(StatementCounter.Count(playerCode, atClassScope), checks);
+                : new Passed(StatementCounter.Count(playerCode, outcome.Scope), checks);
         }
         catch (Exception exception)
         {
-            var cause = exception is TargetInvocationException { InnerException: { } inner }
-                ? inner
-                : exception;
-            return cause.GetType().Name == LoopGuardRewriter.LimitExceptionName
-                ? new TimedOut()
-                : RuntimeErrorExplainer.Explain(cause, outcome.PlayerLineOffset, outcome.PlayerLineCount);
+            return RuntimeErrorExplainer.Classify(exception, outcome.PlayerLineOffset, outcome.PlayerLineCount);
         }
     }
+
     private static MethodInfo FindValidationMethod(Assembly assembly)
     {
         var validation = assembly.GetTypes().Where(type => type.Name == ValidationTypeName).ToList() is [var single]

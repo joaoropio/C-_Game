@@ -18,7 +18,8 @@ internal sealed record CompileOutcome(
     IReadOnlyList<CompilationError> Errors,
     int PlayerLineOffset,
     int PlayerLineCount,
-    CodeRejected? Rejected);
+    CodeRejected? Rejected,
+    PlayerScopeKind Scope);
 
 internal sealed partial class PlayerCompiler
 {
@@ -56,6 +57,7 @@ internal sealed partial class PlayerCompiler
     {
         var templateLines = request.Template.ReplaceLineEndings("\n").Split('\n');
         var markerIndex = Array.FindIndex(templateLines, PlayerCodeMarker.IsMarkerLine);
+        var scope = PlayerScope.Of(request.Template);
         var playerLineCount = request.PlayerCode.ReplaceLineEndings("\n").Split('\n').Length;
         var source = string.Join(
             "\n",
@@ -72,11 +74,11 @@ internal sealed partial class PlayerCompiler
         var writtenCompilation = CreateCompilation(otherTrees.Prepend(written));
         var writtenModel = writtenCompilation.GetSemanticModel(written);
 
-        var rejected = PlayerMemberChecker.Check(written.GetRoot(), markerIndex, playerLineCount)
+        var rejected = PlayerMemberChecker.Check(written.GetRoot(), markerIndex, playerLineCount, scope)
             ?? ForbiddenApiChecker.Check(writtenModel, written.GetRoot(), markerIndex, playerLineCount);
         if (rejected is not null)
         {
-            return new CompileOutcome(null, null, [], markerIndex, playerLineCount, rejected);
+            return new CompileOutcome(null, null, [], markerIndex, playerLineCount, rejected, scope);
         }
 
         var playerMethods = PlayerMethodNames(written, markerIndex, playerLineCount);
@@ -87,7 +89,7 @@ internal sealed partial class PlayerCompiler
         writtenErrors = DropErrorsWithoutLineWhenThePlayerHasOne(writtenErrors);
         if (writtenErrors.Count > 0)
         {
-            return new CompileOutcome(null, null, writtenErrors, markerIndex, playerLineCount, null);
+            return new CompileOutcome(null, null, writtenErrors, markerIndex, playerLineCount, null, scope);
         }
 
         var playerTree = GuardPlayerCode(written, writtenModel, markerIndex, playerLineCount);
@@ -106,8 +108,8 @@ internal sealed partial class PlayerCompiler
             .ToList();
 
         return emitResult.Success
-            ? new CompileOutcome(assembly.ToArray(), pdb.ToArray(), errors, markerIndex, playerLineCount, null)
-            : new CompileOutcome(null, null, errors, markerIndex, playerLineCount, null);
+            ? new CompileOutcome(assembly.ToArray(), pdb.ToArray(), errors, markerIndex, playerLineCount, null, scope)
+            : new CompileOutcome(null, null, errors, markerIndex, playerLineCount, null, scope);
     }
 
     // One mistake can surface in the player's code (with a line) and again in the hidden validation (without a

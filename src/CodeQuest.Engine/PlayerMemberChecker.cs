@@ -6,16 +6,18 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace CodeQuest.Engine;
 
-// At class scope the player may only write methods: no nested types and no other kind of member.
+// At class scope the player may only write methods: no nested types and no other kind of member. At file scope
+// (World 3) the player writes types: whatever has no guarded body or could kill the process is rejected.
 // An async void method throws on the thread pool and would kill the process, and extern methods have no
 // guarded body, so neither modifier is allowed anywhere in the player code.
 internal static class PlayerMemberChecker
 {
     private const string InvalidTokenInMemberErrorId = "CS1519";
 
-    public static CodeRejected? Check(SyntaxNode root, int playerLineOffset, int playerLineCount)
+    public static CodeRejected? Check(SyntaxNode root, int playerLineOffset, int playerLineCount, PlayerScopeKind scope)
     {
-        if (FirstStatementOutsideAMethod(root, playerLineOffset, playerLineCount) is { } statementLine)
+        if (scope != PlayerScopeKind.File
+            && FirstStatementOutsideAMethod(root, playerLineOffset, playerLineCount) is { } statementLine)
         {
             return new CodeRejected(PlayerMessages.StatementsBelongInMethods, statementLine);
         }
@@ -29,7 +31,7 @@ internal static class PlayerMemberChecker
             }
 
             var playerLine = line + 1 - playerLineOffset;
-            if (ReasonToReject(node, playerLine) is { } reason)
+            if ((scope == PlayerScopeKind.File ? FileReasonToReject(node, playerLine) : ReasonToReject(node, playerLine)) is { } reason)
             {
                 return new CodeRejected(reason, playerLine);
             }
@@ -67,6 +69,29 @@ internal static class PlayerMemberChecker
         _ => null,
     };
 
+    // Destructors run on the finalizer thread (an exception there ends the process), operators and conversions
+    // are not taught yet, and the name Validation (any depth) or a leading double underscore belongs to the engine.
+    private static LocalizedText? FileReasonToReject(SyntaxNode node, int playerLine) => node switch
+    {
+        BaseNamespaceDeclarationSyntax => PlayerMessages.NamespaceNotAllowed,
+        GlobalStatementSyntax => PlayerMessages.OnlyTypesAtFileLevel,
+        RecordDeclarationSyntax => PlayerMessages.NotYetInThisWorld("records", "records"),
+        DelegateDeclarationSyntax => PlayerMessages.NotYetInThisWorld("delegates", "delegates"),
+        DestructorDeclarationSyntax => PlayerMessages.NotYetInThisWorld("destrutores", "destructors"),
+        OperatorDeclarationSyntax => PlayerMessages.NotYetInThisWorld("operadores", "operators"),
+        ConversionOperatorDeclarationSyntax => PlayerMessages.NotYetInThisWorld("conversões", "conversions"),
+        EventDeclarationSyntax or EventFieldDeclarationSyntax => PlayerMessages.NotYetInThisWorld("eventos", "events"),
+        ConstructorDeclarationSyntax constructor when IsNotNamedAfterItsClass(constructor)
+            => PlayerMessages.MissingReturnType(constructor.Identifier.Text),
+        BaseTypeDeclarationSyntax type when IsReserved(type.Identifier.Text) => PlayerMessages.ReservedName(type.Identifier.Text),
+        _ when IsAsync(node) => PlayerMessages.AsyncNotAllowed(playerLine),
+        _ when IsExtern(node) => PlayerMessages.ExternNotAllowed(playerLine),
+        _ => null,
+    };
+
+    private static bool IsReserved(string typeName) =>
+        typeName == RoslynCodeRunner.ValidationTypeName || typeName.StartsWith("__", StringComparison.Ordinal);
+
     // `static Heal(int a) { ... }` has no return type, so Roslyn reads it as a constructor named Heal (CS1520).
     private static bool IsNotNamedAfterItsClass(ConstructorDeclarationSyntax constructor) =>
         constructor.Parent is BaseTypeDeclarationSyntax type && type.Identifier.Text != constructor.Identifier.Text;
@@ -81,7 +106,8 @@ internal static class PlayerMemberChecker
 
     private static bool IsExtern(SyntaxNode node) => node switch
     {
-        MethodDeclarationSyntax method => method.Modifiers.Any(SyntaxKind.ExternKeyword),
+        BaseMethodDeclarationSyntax member => member.Modifiers.Any(SyntaxKind.ExternKeyword),
+        BasePropertyDeclarationSyntax member => member.Modifiers.Any(SyntaxKind.ExternKeyword),
         LocalFunctionStatementSyntax function => function.Modifiers.Any(SyntaxKind.ExternKeyword),
         _ => false,
     };

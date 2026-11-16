@@ -9,10 +9,12 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan, SemanticModel mode
 {
     // The guard throws its own exception type so that a TimeoutException thrown by the player's code is not
     // mistaken for a tripped limit.
+    private int _guardFields;
+
     public const string LimitExceptionName = "__LimitExceededException";
 
     public const string GuardSource = $$"""
-        internal sealed class {{LimitExceptionName}} : System.Exception
+        internal sealed class {{LimitExceptionName}} : global::System.Exception
         {
         }
 
@@ -48,8 +50,14 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan, SemanticModel mode
                 if (!global::System.Runtime.CompilerServices.RuntimeHelpers.TryEnsureSufficientExecutionStack())
                 {
                     Trip();
-                    throw new System.InsufficientExecutionStackException();
+                    throw new global::System.InsufficientExecutionStackException();
                 }
+            }
+
+            public static bool EnterValue()
+            {
+                Enter();
+                return true;
             }
 
             private static void Trip() => Tripped = true;
@@ -156,7 +164,7 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan, SemanticModel mode
     {
         var visited = (LocalFunctionStatementSyntax)base.VisitLocalFunctionStatement(node)!;
         return guardedSpan.Contains(node.SpanStart)
-            && GuardedBody(visited.Body, visited.ExpressionBody, visited.SemicolonToken, visited.ReturnType) is { } body
+            && GuardedBody(visited.Body, visited.ExpressionBody, visited.SemicolonToken, ReturnsValue(visited.ReturnType)) is { } body
                 ? visited.WithExpressionBody(null).WithSemicolonToken(NoToken).WithBody(body)
                 : visited;
     }
@@ -167,22 +175,114 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan, SemanticModel mode
     {
         var visited = (MethodDeclarationSyntax)base.VisitMethodDeclaration(node)!;
         return guardedSpan.Contains(node.SpanStart)
-            && GuardedBody(visited.Body, visited.ExpressionBody, visited.SemicolonToken, visited.ReturnType) is { } body
+            && GuardedBody(visited.Body, visited.ExpressionBody, visited.SemicolonToken, ReturnsValue(visited.ReturnType)) is { } body
                 ? visited.WithExpressionBody(null).WithSemicolonToken(NoToken).WithBody(body)
                 : visited;
     }
+
+    public override SyntaxNode? VisitConstructorDeclaration(ConstructorDeclarationSyntax node)
+    {
+        var visited = (ConstructorDeclarationSyntax)base.VisitConstructorDeclaration(node)!;
+        return guardedSpan.Contains(node.SpanStart)
+            && GuardedBody(visited.Body, visited.ExpressionBody, visited.SemicolonToken, returnsValue: false) is { } body
+                ? visited.WithExpressionBody(null).WithSemicolonToken(NoToken).WithBody(body)
+                : visited;
+    }
+
+    public override SyntaxNode? VisitAccessorDeclaration(AccessorDeclarationSyntax node)
+    {
+        var visited = (AccessorDeclarationSyntax)base.VisitAccessorDeclaration(node)!;
+        var returnsValue = visited.IsKind(SyntaxKind.GetAccessorDeclaration);
+        return guardedSpan.Contains(node.SpanStart)
+            && GuardedBody(visited.Body, visited.ExpressionBody, visited.SemicolonToken, returnsValue) is { } body
+                ? visited.WithExpressionBody(null).WithSemicolonToken(NoToken).WithBody(body)
+                : visited;
+    }
+
+    // `int P => x;` has no accessor to enter through, so it becomes `int P { get { Enter(); return x; } }`.
+    public override SyntaxNode? VisitPropertyDeclaration(PropertyDeclarationSyntax node)
+    {
+        var visited = (PropertyDeclarationSyntax)base.VisitPropertyDeclaration(node)!;
+        return guardedSpan.Contains(node.SpanStart) && visited.ExpressionBody is { } arrow
+            ? visited.WithExpressionBody(null).WithSemicolonToken(NoToken).WithAccessorList(GetterOf(arrow, visited.SemicolonToken))
+            : visited;
+    }
+
+    public override SyntaxNode? VisitIndexerDeclaration(IndexerDeclarationSyntax node)
+    {
+        var visited = (IndexerDeclarationSyntax)base.VisitIndexerDeclaration(node)!;
+        return guardedSpan.Contains(node.SpanStart) && visited.ExpressionBody is { } arrow
+            ? visited.WithExpressionBody(null).WithSemicolonToken(NoToken).WithAccessorList(GetterOf(arrow, visited.SemicolonToken))
+            : visited;
+    }
+
+    private static AccessorListSyntax GetterOf(ArrowExpressionClauseSyntax arrow, SyntaxToken semicolon)
+    {
+        var block = GuardedBlock(arrow.ArrowToken, arrow.Expression, semicolon.WithTrailingTrivia(), returnsValue: true);
+        var getter = SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration, block)
+            .WithKeyword(SyntaxFactory.Token(SyntaxKind.GetKeyword).WithTrailingTrivia(SyntaxFactory.Space));
+        return SyntaxFactory.AccessorList(
+            SyntaxFactory.Token(SyntaxKind.OpenBraceToken).WithTrailingTrivia(SyntaxFactory.Space),
+            SyntaxFactory.SingletonList(getter),
+            SyntaxFactory.Token(SyntaxKind.CloseBraceToken)
+                .WithLeadingTrivia(SyntaxFactory.Space)
+                .WithTrailingTrivia(semicolon.TrailingTrivia));
+    }
+
+    // Field initializers run before any constructor body, and a type without a written constructor still runs them
+    // (`class A { A next = new A(); }` recurses through the implicit constructor). A guard field placed first
+    // runs before the player's own initializers (they execute in textual order on entry to each constructor,
+    // https://learn.microsoft.com/dotnet/csharp/language-reference/language-specification/classes#15113-instance-variable-initializers)
+    // and sits on the line of the opening brace, so no line moves. Static initializers need no guard of their
+    // own: they can only loop or recurse through guarded members.
+    public override SyntaxNode? VisitClassDeclaration(ClassDeclarationSyntax node) =>
+        WithInstanceGuard(node, (ClassDeclarationSyntax)base.VisitClassDeclaration(node)!);
+
+    public override SyntaxNode? VisitStructDeclaration(StructDeclarationSyntax node) =>
+        WithInstanceGuard(node, (StructDeclarationSyntax)base.VisitStructDeclaration(node)!);
+
+    private T WithInstanceGuard<T>(T original, T visited)
+        where T : TypeDeclarationSyntax
+    {
+        if (!guardedSpan.Contains(original.SpanStart)
+            || visited.OpenBraceToken.IsMissing
+            || !original.Members.Any(HasInstanceInitializer))
+        {
+            return visited;
+        }
+
+        var brace = visited.OpenBraceToken;
+        var field = SyntaxFactory
+            .ParseMemberDeclaration($"private readonly bool __guard{_guardFields++} = global::__LoopGuard.EnterValue();")!
+            .WithLeadingTrivia(SyntaxFactory.Space)
+            .WithTrailingTrivia(brace.TrailingTrivia);
+        return (T)visited
+            .WithOpenBraceToken(brace.WithTrailingTrivia())
+            .WithMembers(visited.Members.Insert(0, field));
+    }
+
+    private static bool HasInstanceInitializer(MemberDeclarationSyntax member) => member switch
+    {
+        FieldDeclarationSyntax field => !IsStaticOrConst(field.Modifiers)
+            && field.Declaration.Variables.Any(variable => variable.Initializer is not null),
+        PropertyDeclarationSyntax property => !IsStaticOrConst(property.Modifiers) && property.Initializer is not null,
+        _ => false,
+    };
+
+    private static bool IsStaticOrConst(SyntaxTokenList modifiers) =>
+        modifiers.Any(SyntaxKind.StaticKeyword) || modifiers.Any(SyntaxKind.ConstKeyword);
 
     // Returns the body with Enter in front, turning an expression body into a block; null when there is no body.
     private static BlockSyntax? GuardedBody(
         BlockSyntax? body,
         ArrowExpressionClauseSyntax? arrow,
         SyntaxToken semicolon,
-        TypeSyntax returnType) =>
+        bool returnsValue) =>
         body is not null
             ? WithEnterBefore(body, 0)
             : arrow is null
                 ? null
-                : GuardedBlock(arrow.ArrowToken, arrow.Expression, semicolon, ReturnsValue(returnType));
+                : GuardedBlock(arrow.ArrowToken, arrow.Expression, semicolon, returnsValue);
 
     public override SyntaxNode? VisitAnonymousMethodExpression(AnonymousMethodExpressionSyntax node)
     {
