@@ -5,9 +5,12 @@ public static partial class Spell
         public static IEnumerable<(string Case, string Expected, string Actual)> Run()
         {
             yield return ("Fireball(5)", "10", $"{Fireball(5)}");
-            yield return ("Fireball(5, 3)", "30", $"{Fireball(5, 3)}");
+            yield return ("Fireball(2)", "4", $"{Fireball(2)}");
+            yield return ("Fireball(\"goblin\")", "\"Fireball at goblin\"", Quote(Fireball("goblin")));
             yield return ("Shield(4)", "4", $"{Shield(4)}");
             yield return ("Shield(4, 3)", "12", $"{Shield(4, 3)}");
         }
+
+        private static string Quote(string? text) => text is null ? "null" : $"\"{text}\"";
     }
 }

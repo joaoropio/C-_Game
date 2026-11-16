@@ -4,8 +4,8 @@
   "number": 8,
   "title": { "pt": "Os Círculos de Fogo", "en": "The Fire Circles" },
   "story": {
-    "pt": "Na sala seguinte da Biblioteca, dois círculos de fogo ardem no chão: um grande e um pequeno. Cada um responde ao mesmo nome de feitiço, mas de maneira diferente. Escreve dois métodos Fireball: Fireball(int power) devolve power * 2, e Fireball(int power, int targets) devolve power * 2 * targets, porque a bola de fogo atinge vários alvos. Escreve também Shield(int strength, int turns = 1), que devolve strength * turns; se ninguém disser quantos turnos, é 1. Por exemplo, Fireball(5) devolve 10, Fireball(5, 3) devolve 30, Shield(4) devolve 4 e Shield(4, 3) devolve 12.",
-    "en": "In the next room of the Library, two fire circles burn on the floor: a big one and a small one. Each answers to the same spell name, but in a different way. Write two Fireball methods: Fireball(int power) returns power * 2, and Fireball(int power, int targets) returns power * 2 * targets, because the fireball hits several targets. Also write Shield(int strength, int turns = 1), which returns strength * turns; if nobody says how many turns, it is 1. For example, Fireball(5) returns 10, Fireball(5, 3) returns 30, Shield(4) returns 4 and Shield(4, 3) returns 12."
+    "pt": "Na sala seguinte da Biblioteca, dois círculos de fogo ardem no chão: um grande e um pequeno. Cada um responde ao mesmo nome de feitiço, mas de maneira diferente. Escreve dois métodos Fireball: Fireball(int power) devolve power * 2 e Fireball(string target) devolve o texto \"Fireball at \" seguido do alvo, por exemplo \"Fireball at goblin\". Escreve também Shield(int strength, int turns = 1), que devolve strength * turns; se ninguém disser quantos turnos, é 1. Por exemplo, Fireball(5) devolve 10, Shield(4) devolve 4 e Shield(4, 3) devolve 12.",
+    "en": "In the next room of the Library, two fire circles burn on the floor: a big one and a small one. Each answers to the same spell name, but in a different way. Write two Fireball methods: Fireball(int power) returns power * 2 and Fireball(string target) returns the text \"Fireball at \" followed by the target, for example \"Fireball at goblin\". Also write Shield(int strength, int turns = 1), which returns strength * turns; if nobody says how many turns, it is 1. For example, Fireball(5) returns 10, Shield(4) returns 4 and Shield(4, 3) returns 12."
   },
   "concept": {
     "pt": "Podes ter vários métodos com o mesmo nome, desde que os parâmetros sejam diferentes (no número ou nos tipos). Chama-se sobrecarga: o C# escolhe o método pelos argumentos que usas na chamada. Exemplo: static int Gold(int coins) => coins; static int Gold(int coins, int bags) => coins * bags; Gold(5) usa o primeiro e Gold(5, 3) usa o segundo. Se dois métodos tiverem o mesmo nome e os mesmos parâmetros, é um erro. Um parâmetro opcional tem um valor por omissão, escrito depois do nome: static int Rest(int hours, int beds = 1) => hours * beds; Rest(8) é o mesmo que Rest(8, 1). Os opcionais ficam sempre no fim da lista de parâmetros.",
@@ -13,12 +13,12 @@
   },
   "hints": [
     {
-      "pt": "Fireball aparece duas vezes, uma com um parâmetro e outra com dois. Para Shield, dá ao segundo parâmetro um valor por omissão: int turns = 1.",
-      "en": "Fireball appears twice, once with one parameter and once with two. For Shield, give the second parameter a default value: int turns = 1."
+      "pt": "Fireball aparece duas vezes: uma recebe um int e a outra recebe uma string. O C# escolhe pelo tipo do argumento. Para Shield, dá ao segundo parâmetro um valor por omissão: int turns = 1.",
+      "en": "Fireball appears twice: one takes an int and the other takes a string. C# picks by the type of the argument. For Shield, give the second parameter a default value: int turns = 1."
     },
     {
-      "pt": "Escreve: static int Fireball(int power) => power * 2; static int Fireball(int power, int targets) => power * 2 * targets; static int Shield(int strength, int turns = 1) => strength * turns;",
-      "en": "Write: static int Fireball(int power) => power * 2; static int Fireball(int power, int targets) => power * 2 * targets; static int Shield(int strength, int turns = 1) => strength * turns;"
+      "pt": "Escreve: static int Fireball(int power) => power * 2; static string Fireball(string target) => \"Fireball at \" + target; static int Shield(int strength, int turns = 1) => strength * turns;",
+      "en": "Write: static int Fireball(int power) => power * 2; static string Fireball(string target) => \"Fireball at \" + target; static int Shield(int strength, int turns = 1) => strength * turns;"
     }
   ],
   "maxStatementsForThreeStars": 3,

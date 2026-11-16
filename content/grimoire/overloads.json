@@ -17,8 +17,8 @@
       "en": "Writing two methods with the same name and the same parameters: changing only the parameter names isn't enough, the number or the types must differ."
     },
     {
-      "pt": "Esquecer o valor por omissão (= 1): sem ele, o parâmetro é obrigatório e a chamada com menos argumentos falha.",
-      "en": "Forgetting the default value (= 1): without it the parameter is required and a call with fewer arguments fails."
+      "pt": "Esquecer o valor por omissão (= valor): sem ele, o parâmetro é obrigatório e a chamada com menos argumentos falha.",
+      "en": "Forgetting the default value (= value): without it the parameter is required and a call with fewer arguments fails."
     },
     {
       "pt": "Pôr um parâmetro opcional antes de um obrigatório: os opcionais têm de ficar no fim.",

@@ -80,7 +80,7 @@ internal sealed partial class PlayerCompiler
             .Where(d => d.Severity == DiagnosticSeverity.Error)
             .Select(d => ToCompilationError(d, written, markerIndex, playerLineCount, culture))
             .ToList();
-        writtenErrors = DropRepeatsWithoutLine(writtenErrors);
+        writtenErrors = DropErrorsWithoutLineWhenThePlayerHasOne(writtenErrors);
         if (writtenErrors.Count > 0)
         {
             return new CompileOutcome(null, null, writtenErrors, markerIndex, playerLineCount, null);
@@ -106,12 +106,10 @@ internal sealed partial class PlayerCompiler
             : new CompileOutcome(null, null, errors, markerIndex, playerLineCount, null);
     }
 
-    // One mistake can surface twice: at the declaration (with the player line) and at a call in the validation
-    // (without a line, naming internals). Only the first one helps the player.
-    private static List<CompilationError> DropRepeatsWithoutLine(List<CompilationError> errors) => errors
-        .Where(error => error.Line is not null
-            || !errors.Any(other => other.Line is not null && other.Explanation == error.Explanation))
-        .ToList();
+    // One mistake can surface in the player's code (with a line) and again in the hidden validation (without a
+    // line, naming internals). When the player has a line to look at, the line-less errors only add noise.
+    private static List<CompilationError> DropErrorsWithoutLineWhenThePlayerHasOne(List<CompilationError> errors) =>
+        errors.Any(error => error.Line is not null) ? errors.Where(error => error.Line is not null).ToList() : errors;
 
     private static CSharpCompilation CreateCompilation(IEnumerable<SyntaxTree> trees) => CSharpCompilation.Create(
         "PlayerAssembly_" + Guid.NewGuid().ToString("N"),

@@ -176,6 +176,7 @@ public sealed class HomeTests : BunitContext
         Assert.Equal(2, worlds.Count);
         Assert.Single(worlds[0].QuerySelectorAll("path.trail"));
         Assert.Empty(worlds[1].QuerySelectorAll("path.trail"));
+        Assert.NotEmpty(worlds[1].QuerySelectorAll("li.room"));
         Assert.Equal(worlds[1].QuerySelectorAll("li.room").Length, worlds[1].QuerySelectorAll("li.room.locked").Length);
     }
 
@@ -237,6 +238,7 @@ public sealed class HomeTests : BunitContext
         var cut = await RenderTwoWorldsAsync(progress);
 
         var second = cut.FindAll("section.world")[1];
+        Assert.NotEmpty(second.QuerySelectorAll("li.room"));
         Assert.Equal(second.QuerySelectorAll("li.room").Length, second.QuerySelectorAll("li.room.locked").Length);
         Assert.Empty(second.QuerySelectorAll("li.room a"));
     }
