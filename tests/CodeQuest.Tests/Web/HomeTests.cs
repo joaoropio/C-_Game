@@ -11,6 +11,8 @@ public sealed class HomeTests : BunitContext
 {
     private readonly GameContent Content = TestContextExtensions.LoadContent();
 
+    private int WorldOneRooms => Content.Levels.Count(level => level.World == 1);
+
     private async Task<IRenderedComponent<Home>> RenderHomeAsync(PlayerProgress? progress = null)
     {
         this.AddGameServices(savedProgress: progress?.ToJson());
@@ -165,7 +167,7 @@ public sealed class HomeTests : BunitContext
     public async Task Home_LaterWorldWithAllRoomsLocked_HasNoTrail()
     {
         var progress = new PlayerProgress();
-        foreach (var level in Content.Levels.Take(3))
+        foreach (var level in Content.Levels.Take(WorldOneRooms - 1))
         {
             progress.RecordPass(level.Id, stars: 3);
         }
@@ -184,7 +186,7 @@ public sealed class HomeTests : BunitContext
     public async Task Home_LaterWorldFirstRoomCurrent_HasNoTrailYet()
     {
         var progress = new PlayerProgress();
-        foreach (var level in Content.Levels.Take(4))
+        foreach (var level in Content.Levels.Take(WorldOneRooms))
         {
             progress.RecordPass(level.Id, stars: 3);
         }
@@ -198,19 +200,23 @@ public sealed class HomeTests : BunitContext
 
     private async Task<IRenderedComponent<Home>> RenderTwoWorldsAsync(PlayerProgress progress, Language language = Language.Pt)
     {
-        var directory = Path.Combine(Path.GetTempPath(), "cq-two-worlds-" + Guid.NewGuid().ToString("N"));
-        CopyDirectory(Path.Combine(AppContext.BaseDirectory, "content"), directory);
-        foreach (var id in new[] { "05-arrays", "06-strings" })
-        {
-            var file = Path.Combine(directory, "levels", id, "level.json");
-            File.WriteAllText(file, File.ReadAllText(file).Replace("\"world\": 1", "\"world\": 2"));
-        }
-
         this.AddGameServices(savedProgress: progress.ToJson());
-        Services.AddSingleton(new GameContent(directory));
         await Services.GetRequiredService<ProgressStore>().LoadAsync();
         await Services.GetRequiredService<UiText>().SetLanguageAsync(language);
         return Render<Home>();
+    }
+
+    [Fact]
+    public async Task Home_RoomNumbers_RestartInEachWorld()
+    {
+        var cut = await RenderTwoWorldsAsync(new PlayerProgress());
+
+        var worlds = cut.FindAll("section.world");
+        Assert.Equal(6, worlds[0].QuerySelectorAll("li.room").Length);
+        Assert.Equal(5, worlds[1].QuerySelectorAll("li.room").Length);
+        Assert.StartsWith("1-1", worlds[0].QuerySelectorAll(".room-number")[0].TextContent);
+        Assert.StartsWith("2-1", worlds[1].QuerySelectorAll(".room-number")[0].TextContent);
+        Assert.StartsWith("2-5", worlds[1].QuerySelectorAll(".room-number")[4].TextContent);
     }
 
     [Fact]
@@ -230,7 +236,7 @@ public sealed class HomeTests : BunitContext
     public async Task Home_SecondFloorRooms_AreAllLockedUntilWorldOneIsDone()
     {
         var progress = new PlayerProgress();
-        foreach (var level in Content.Levels.Take(3))
+        foreach (var level in Content.Levels.Take(WorldOneRooms - 1))
         {
             progress.RecordPass(level.Id, stars: 3);
         }
@@ -247,7 +253,7 @@ public sealed class HomeTests : BunitContext
     public async Task Home_WorldOneDone_FirstRoomOfSecondFloorIsCurrent()
     {
         var progress = new PlayerProgress();
-        foreach (var level in Content.Levels.Take(4))
+        foreach (var level in Content.Levels.Take(WorldOneRooms))
         {
             progress.RecordPass(level.Id, stars: 3);
         }
@@ -275,8 +281,8 @@ public sealed class HomeTests : BunitContext
         var cut = await RenderTwoWorldsAsync(progress);
 
         var totals = cut.FindAll(".world-stars").Select(element => element.TextContent.Trim()).ToArray();
-        var secondWorldLevels = Content.Levels.Count(level => level.World == 2) + 2;
-        Assert.Equal(["7 de 12 estrelas", $"0 de {secondWorldLevels * 3} estrelas"], totals);
+        var secondWorldLevels = Content.Levels.Count(level => level.World == 2);
+        Assert.Equal([$"7 de {WorldOneRooms * 3} estrelas", $"0 de {secondWorldLevels * 3} estrelas"], totals);
     }
 
     [Fact]
@@ -299,20 +305,6 @@ public sealed class HomeTests : BunitContext
         Assert.Equal("World 2 · Second floor", worlds[1].QuerySelector(".world-floor")!.TextContent);
         Assert.Equal("The Arcane Library", worlds[1].QuerySelector("h2.world-name")!.TextContent);
         Assert.Contains("World 3 · Classes and objects — coming soon", worlds[1].QuerySelector(".next-world")!.TextContent);
-    }
-
-    private static void CopyDirectory(string source, string target)
-    {
-        Directory.CreateDirectory(target);
-        foreach (var file in Directory.GetFiles(source))
-        {
-            File.Copy(file, Path.Combine(target, Path.GetFileName(file)));
-        }
-
-        foreach (var directory in Directory.GetDirectories(source))
-        {
-            CopyDirectory(directory, Path.Combine(target, Path.GetFileName(directory)));
-        }
     }
 
     [Fact]

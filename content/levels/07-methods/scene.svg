@@ -11,6 +11,6 @@
 <path d="M340 138L270 130L270 172L340 180Z" fill="#dccaa2" stroke="#8a6a3e" stroke-width="2" stroke-linejoin="round"/>
 <path d="M270 130V172" stroke="#8a6a3e" stroke-width="2"/>
 <path d="M212 148L258 142M212 158L258 152M212 168L258 162M282 142L328 148M282 152L328 158M282 162L328 168" stroke="#b39a6b" stroke-width="2" stroke-linecap="round"/>
-<path d="M270 84l5 14 14 5-14 5-5 14-5-14-14-5 14-5z" fill="#f4c06a"/>
-<path d="M214 104v12M208 110h12M326 100v14M319 107h14M240 88v8M236 92h8" stroke="#f4c06a" stroke-width="2" stroke-linecap="round"/>
+<path d="M270 46l5 14 14 5-14 5-5 14-5-14-14-5 14-5z" fill="#f4c06a"/>
+<path d="M214 104v12M208 110h12M326 106v14M319 113h14M240 88v8M236 92h8" stroke="#f4c06a" stroke-width="2" stroke-linecap="round"/>
 </svg>

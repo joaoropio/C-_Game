@@ -669,16 +669,16 @@ public class LevelSolutionTests
     }
 
     [Fact]
-    public async Task Level11_Solution_RunsTheThreeDictionaryChecksWithinTheStarLimit()
+    public async Task Level11_Solution_RunsTheFourDictionaryChecksWithinTheStarLimit()
     {
         var level = Find("11-dictionaries");
 
         var result = Assert.IsType<Passed>(await Run(level, level.Solution));
 
         Assert.Equal(
-            ["CountPotions({ \"heal\", \"mana\", \"heal\" })", "CountPotions({ })", "CountPotions({ \"fire\" })"],
+            ["CountPotions({ \"heal\", \"mana\", \"heal\" })", "CountPotions({ })", "CountPotions({ \"fire\" })", "CountPotions({ \"mana\", \"fire\", \"mana\", \"mana\" })"],
             result.Checks.Select(check => check.Case));
-        Assert.Equal(["{ [\"heal\"] = 2, [\"mana\"] = 1 }", "{ }", "{ [\"fire\"] = 1 }"], result.Checks.Select(check => check.Expected));
+        Assert.Equal(["{ [\"heal\"] = 2, [\"mana\"] = 1 }", "{ }", "{ [\"fire\"] = 1 }", "{ [\"fire\"] = 1, [\"mana\"] = 3 }"], result.Checks.Select(check => check.Expected));
         Assert.Equal(6, level.MaxStatementsForThreeStars);
         Assert.True(result.StatementCount <= level.MaxStatementsForThreeStars);
     }
@@ -727,7 +727,7 @@ public class LevelSolutionTests
             level,
             "static Dictionary<string, int> CountPotions(string[] potions)\n{\n    var counts = new Dictionary<string, int>();\n    foreach (var potion in potions)\n    {\n        counts.TryGetValue(potion, out var seen);\n        counts[potion] = seen + 1;\n    }\n\n    return counts;\n}"));
 
-        Assert.True(result.StatementCount <= 6);
+        Assert.True(result.StatementCount <= level.MaxStatementsForThreeStars);
     }
 
     [Theory]

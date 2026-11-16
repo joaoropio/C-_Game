@@ -9,6 +9,7 @@ public static partial class Spell
                 (new[] { "heal", "mana", "heal" }, new() { ["heal"] = 2, ["mana"] = 1 }),
                 (new string[] { }, new()),
                 (new[] { "fire" }, new() { ["fire"] = 1 }),
+                (new[] { "mana", "fire", "mana", "mana" }, new() { ["fire"] = 1, ["mana"] = 3 }),
             })
             {
                 object actual = CountPotions((string[])potions.Clone());
@@ -25,12 +26,12 @@ public static partial class Spell
 
         private static string Format(global::System.Collections.Generic.Dictionary<string, int> counts)
         {
-            var keys = new global::System.Collections.Generic.List<string>(counts.Keys);
-            keys.Sort(global::System.StringComparer.Ordinal);
+            var pairs = new global::System.Collections.Generic.List<global::System.Collections.Generic.KeyValuePair<string, int>>(counts);
+            pairs.Sort((left, right) => global::System.String.CompareOrdinal(left.Key, right.Key));
             var entries = new global::System.Collections.Generic.List<string>();
-            foreach (var key in keys)
+            foreach (var pair in pairs)
             {
-                entries.Add($"[\"{key}\"] = {counts[key].ToString(global::System.Globalization.CultureInfo.InvariantCulture)}");
+                entries.Add($"[\"{pair.Key}\"] = {pair.Value.ToString(global::System.Globalization.CultureInfo.InvariantCulture)}");
             }
 
             return entries.Count == 0 ? "{ }" : "{ " + global::System.String.Join(", ", entries) + " }";
@@ -41,7 +42,7 @@ public static partial class Spell
             var quoted = new global::System.Collections.Generic.List<string>();
             foreach (var item in items)
             {
-                quoted.Add("\"" + item + "\"");
+                quoted.Add(item is null ? "null" : "\"" + item + "\"");
             }
 
             return quoted.Count == 0 ? "{ }" : "{ " + global::System.String.Join(", ", quoted) + " }";

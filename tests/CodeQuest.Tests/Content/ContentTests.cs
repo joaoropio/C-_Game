@@ -87,13 +87,21 @@ public class ContentTests
     private static HashSet<string> DeclaredNames(string code) =>
         Regex.Matches(code, @"\b(?:string|int|double|bool|var)\s+(\w+)\s*[=;]")
             .Select(match => match.Groups[1].Value)
+            .Concat(MethodNames(code))
+            .Concat(ParameterNames(code))
             .ToHashSet();
 
-    private static HashSet<string> ParameterNames(string template) =>
-        Regex.Matches(template, @"public static \w+ \w+\(([^)]*)\)")
-            .SelectMany(match => match.Groups[1].Value.Split(',', StringSplitOptions.RemoveEmptyEntries))
+    private static HashSet<string> ParameterNames(string code) =>
+        MethodSignatures(code)
+            .SelectMany(signature => signature.Groups[2].Value.Split(',', StringSplitOptions.RemoveEmptyEntries))
             .Select(parameter => parameter.Trim().Split(' ').Last())
             .ToHashSet();
+
+    private static HashSet<string> MethodNames(string code) =>
+        MethodSignatures(code).Select(signature => signature.Groups[1].Value).ToHashSet();
+
+    private static MatchCollection MethodSignatures(string code) =>
+        Regex.Matches(code, @"static\s+[^(=]+?\s(\w+)\s*\(([^)]*)\)");
 
     [Fact]
     public void EveryLevelWorld_HasAMapWorldNameAndFloorInBothLanguages()

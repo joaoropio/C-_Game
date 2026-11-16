@@ -14,5 +14,7 @@ public sealed class GameContent(string contentDirectory)
 
     public Level? FindLevel(string id) => Levels.FirstOrDefault(level => level.Id == id);
 
+    public int RoomInWorld(Level level) => Levels.Count(candidate => candidate.World == level.World && candidate.Number <= level.Number);
+
     public GrimoirePage? FindPage(string id) => Pages.FirstOrDefault(page => page.Id == id);
 }

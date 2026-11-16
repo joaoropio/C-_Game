@@ -25,5 +25,5 @@
       "en": "Counting with Length: the number of pairs in a dictionary is Count."
     }
   ],
-  "learnUrl": "https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2"
+  "learnUrl": "https://learn.microsoft.com/dotnet/csharp/fundamentals/statements/collections"
 }

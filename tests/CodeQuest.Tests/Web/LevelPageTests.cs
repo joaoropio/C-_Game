@@ -665,7 +665,18 @@ public sealed class LevelPageTests : BunitContext
         var cut = await RenderLevelAsync(First);
 
         var worldRooms = content.Levels.Count(level => level.World == First.World);
-        Assert.Equal($"Mundo {First.World} · Sala {First.Number} de {worldRooms}", cut.Find(".crumb").TextContent);
+        Assert.Equal($"Mundo {First.World} · Sala 1 de {worldRooms}", cut.Find(".crumb").TextContent);
+    }
+
+    [Fact]
+    public async Task Header_SecondWorldRoomsAreNumberedWithinTheirWorld()
+    {
+        var firstOfWorldTwo = content.Levels.First(level => level.World == 2);
+        CompleteAllBefore(firstOfWorldTwo);
+
+        var cut = await RenderLevelAsync(firstOfWorldTwo);
+
+        Assert.Equal("Mundo 2 · Sala 1 de 5", cut.Find(".crumb").TextContent);
     }
 
     [Fact]
