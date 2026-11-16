@@ -362,4 +362,15 @@ public class RoslynCodeRunnerTests
         Assert.IsType<Passed>(await Run("return x * 2;"));
         Assert.IsType<Passed>(await Run("return x + x;"));
     }
+
+    [Theory]
+    [InlineData("async void Boom() { throw new Exception(\"boom\"); }\nBoom();\nreturn x * 2;")]
+    [InlineData("Action a = async () => { throw new Exception(\"boom\"); };\na();\nreturn x * 2;")]
+    public async Task Run_AsyncInPlayerCode_CodeRejected(string playerCode)
+    {
+        var result = Assert.IsType<CodeRejected>(await Run(playerCode));
+
+        Assert.Equal(1, result.Line);
+        Assert.Contains("async", result.Reason.En);
+    }
 }

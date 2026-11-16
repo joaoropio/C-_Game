@@ -164,24 +164,6 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan, SemanticModel mode
                 : visited;
     }
 
-    public override SyntaxNode? VisitOperatorDeclaration(OperatorDeclarationSyntax node)
-    {
-        var visited = (OperatorDeclarationSyntax)base.VisitOperatorDeclaration(node)!;
-        return guardedSpan.Contains(node.SpanStart)
-            && GuardedBody(visited.Body, visited.ExpressionBody, visited.SemicolonToken, visited.ReturnType) is { } body
-                ? visited.WithExpressionBody(null).WithSemicolonToken(NoToken).WithBody(body)
-                : visited;
-    }
-
-    public override SyntaxNode? VisitConversionOperatorDeclaration(ConversionOperatorDeclarationSyntax node)
-    {
-        var visited = (ConversionOperatorDeclarationSyntax)base.VisitConversionOperatorDeclaration(node)!;
-        return guardedSpan.Contains(node.SpanStart)
-            && GuardedBody(visited.Body, visited.ExpressionBody, visited.SemicolonToken, visited.Type) is { } body
-                ? visited.WithExpressionBody(null).WithSemicolonToken(NoToken).WithBody(body)
-                : visited;
-    }
-
     // Returns the body with Enter in front, turning an expression body into a block; null when there is no body.
     private static BlockSyntax? GuardedBody(
         BlockSyntax? body,

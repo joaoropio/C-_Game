@@ -139,4 +139,29 @@ public class ClassScopeRunnerTests
     [Fact]
     public async Task Run_InstanceMethod_CompilationFailed() =>
         Assert.IsType<CompilationFailed>(await Run("int Twice(int x) => x * 2;"));
+
+    [Theory]
+    [InlineData("static async void Boom() { throw new Exception(\"boom\"); }")]
+    [InlineData("static async int Boom() => 1;")]
+    [InlineData("static extern int Boom();")]
+    [InlineData("static void Boom() { Action a = async () => { throw new Exception(\"boom\"); }; a(); }")]
+    [InlineData("static void Boom() { Action a = async delegate { throw new Exception(\"boom\"); }; a(); }")]
+    [InlineData("static void Boom() { Func<int, int> a = async x => x; }")]
+    public async Task Run_AsyncOrExtern_CodeRejected(string playerCode)
+    {
+        var result = Assert.IsType<CodeRejected>(await Run(GoodTwice + "\n" + playerCode));
+
+        Assert.Equal(5, result.Line);
+        Assert.Matches(@"You can't use (async|extern) in this dungeon yet \(line 5\)\.", result.Reason.En);
+        Assert.Contains("(linha 5)", result.Reason.Pt);
+    }
+
+    [Fact]
+    public async Task Run_PlayerMethodNamedLikeTheGuard_DoesNotShadowIt()
+    {
+        var result = Assert.IsType<RuntimeError>(await Run(
+            "static void __LoopGuard() { }\nstatic int Twice(int x) => Twice(x);"));
+
+        Assert.Equal("The spell keeps calling itself and never stops (infinite recursion).", result.Explanation.En);
+    }
 }

@@ -56,6 +56,14 @@ internal static class PlayerMessages
         "Para já só podes escrever métodos static, sem campos, propriedades nem construtores.",
         "For now you can only write static methods, not fields, properties or constructors.");
 
+    public static LocalizedText AsyncNotAllowed(int line) => new(
+        $"Ainda não podes usar async nesta masmorra (linha {line}).",
+        $"You can't use async in this dungeon yet (line {line}).");
+
+    public static LocalizedText ExternNotAllowed(int line) => new(
+        $"Ainda não podes usar extern nesta masmorra (linha {line}).",
+        $"You can't use extern in this dungeon yet (line {line}).");
+
     public static readonly LocalizedText DividedByZero = new(
         "Dividiste por zero.",
         "You divided by zero.");
