@@ -22,6 +22,18 @@ internal static class PlayerMemberChecker
             return new CodeRejected(PlayerMessages.StatementsBelongInMethods, statementLine);
         }
 
+        var byNode = FirstRejectedNode(root, playerLineOffset, playerLineCount, scope);
+        if (scope != PlayerScopeKind.File)
+        {
+            return byNode;
+        }
+
+        var byName = FirstReservedIdentifier(root, playerLineOffset, playerLineCount);
+        return byName is not null && (byNode is null || byName.Line < byNode.Line) ? byName : byNode;
+    }
+
+    private static CodeRejected? FirstRejectedNode(SyntaxNode root, int playerLineOffset, int playerLineCount, PlayerScopeKind scope)
+    {
         foreach (var node in root.DescendantNodes())
         {
             var line = node.GetLocation().GetLineSpan().StartLinePosition.Line;
@@ -34,6 +46,23 @@ internal static class PlayerMemberChecker
             if ((scope == PlayerScopeKind.File ? FileReasonToReject(node, playerLine) : ReasonToReject(node, playerLine)) is { } reason)
             {
                 return new CodeRejected(reason, playerLine);
+            }
+        }
+
+        return null;
+    }
+
+    // Everything starting with a double underscore belongs to the engine (__LoopGuard, __LimitExceededException,
+    // the guard fields): the player may neither declare nor mention it, or could call the guard or throw its exception.
+    private static CodeRejected? FirstReservedIdentifier(SyntaxNode root, int playerLineOffset, int playerLineCount)
+    {
+        foreach (var token in root.DescendantTokens().Where(token => token.IsKind(SyntaxKind.IdentifierToken)))
+        {
+            var line = token.GetLocation().GetLineSpan().StartLinePosition.Line;
+            if (line >= playerLineOffset && line < playerLineOffset + playerLineCount
+                && token.ValueText.StartsWith("__", StringComparison.Ordinal))
+            {
+                return new CodeRejected(PlayerMessages.ReservedName(token.ValueText), line + 1 - playerLineOffset);
             }
         }
 
@@ -70,7 +99,8 @@ internal static class PlayerMemberChecker
     };
 
     // Destructors run on the finalizer thread (an exception there ends the process), operators and conversions
-    // are not taught yet, and the name Validation (any depth) or a leading double underscore belongs to the engine.
+    // are not taught yet, a `this(...)` initializer cannot enter the guard through ref arguments, and the type names
+    // Validation (any depth) and System (it would hide the library for the injected code) belong to the engine.
     private static LocalizedText? FileReasonToReject(SyntaxNode node, int playerLine) => node switch
     {
         BaseNamespaceDeclarationSyntax => PlayerMessages.NamespaceNotAllowed,
@@ -83,6 +113,9 @@ internal static class PlayerMemberChecker
         EventDeclarationSyntax or EventFieldDeclarationSyntax => PlayerMessages.NotYetInThisWorld("eventos", "events"),
         ConstructorDeclarationSyntax constructor when IsNotNamedAfterItsClass(constructor)
             => PlayerMessages.MissingReturnType(constructor.Identifier.Text),
+        ConstructorInitializerSyntax { RawKind: (int)SyntaxKind.ThisConstructorInitializer } initializer
+            when initializer.ArgumentList.Arguments.Any(argument => !argument.RefKindKeyword.IsKind(SyntaxKind.None))
+            => PlayerMessages.NotYetInThisWorld("ref, out ou in", "ref, out or in"),
         BaseTypeDeclarationSyntax type when IsReserved(type.Identifier.Text) => PlayerMessages.ReservedName(type.Identifier.Text),
         _ when IsAsync(node) => PlayerMessages.AsyncNotAllowed(playerLine),
         _ when IsExtern(node) => PlayerMessages.ExternNotAllowed(playerLine),
@@ -90,7 +123,7 @@ internal static class PlayerMemberChecker
     };
 
     private static bool IsReserved(string typeName) =>
-        typeName == RoslynCodeRunner.ValidationTypeName || typeName.StartsWith("__", StringComparison.Ordinal);
+        typeName is RoslynCodeRunner.ValidationTypeName or "System";
 
     // `static Heal(int a) { ... }` has no return type, so Roslyn reads it as a constructor named Heal (CS1520).
     private static bool IsNotNamedAfterItsClass(ConstructorDeclarationSyntax constructor) =>

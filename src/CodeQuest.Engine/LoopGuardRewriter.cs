@@ -7,34 +7,51 @@ namespace CodeQuest.Engine;
 
 internal sealed class LoopGuardRewriter(TextSpan guardedSpan, SemanticModel model) : CSharpSyntaxRewriter
 {
-    // The guard throws its own exception type so that a TimeoutException thrown by the player's code is not
-    // mistaken for a tripped limit.
     private int _guardFields;
 
+    // The guard throws its own exception type so that a TimeoutException thrown by the player's code is not
+    // mistaken for a tripped limit.
     public const string LimitExceptionName = "__LimitExceededException";
+
+    // Why the guard tripped, so the runner can report it even when a Validation swallowed the exception
+    // (the same values as the constants inside GuardSource).
+    public const int LimitTrip = 1;
+    public const int StackTrip = 2;
+
+    public const string GuardTypeName = "__LoopGuard";
+    public const string TripKindName = "TripKind";
 
     public const string GuardSource = $$"""
         internal sealed class {{LimitExceptionName}} : global::System.Exception
         {
         }
 
-        internal static class __LoopGuard
+        // The type of the injected guard fields: empty, so a struct's equality and hash code are not affected.
+        internal readonly struct __Entered
+        {
+        }
+
+        internal static class {{GuardTypeName}}
         {
             public const int Limit = 1_000_000;
             public const int CallLimit = 10_000_000;
+            public const int LimitTrip = 1;
+            public const int StackTrip = 2;
 
             private static int _ticks;
             private static int _calls;
 
-            // Once either limit or the stack is exhausted this stays true; the rewriter makes
-            // the player's catch and finally blocks inert from then on, so nothing swallows the failure.
-            public static bool Tripped { get; private set; }
+            // Set once, by the first limit or stack exhaustion; the rewriter makes the player's catch and
+            // finally blocks inert from then on, so nothing swallows the failure.
+            public static int {{TripKindName}} { get; private set; }
+
+            public static bool Tripped => {{TripKindName}} != 0;
 
             public static void Tick()
             {
                 if (Tripped || ++_ticks > Limit)
                 {
-                    Trip();
+                    Trip(LimitTrip);
                     throw new {{LimitExceptionName}}();
                 }
             }
@@ -43,24 +60,38 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan, SemanticModel mode
             {
                 if (Tripped || ++_calls > CallLimit)
                 {
-                    Trip();
+                    Trip(LimitTrip);
                     throw new {{LimitExceptionName}}();
                 }
 
                 if (!global::System.Runtime.CompilerServices.RuntimeHelpers.TryEnsureSufficientExecutionStack())
                 {
-                    Trip();
+                    Trip(StackTrip);
                     throw new global::System.InsufficientExecutionStackException();
                 }
             }
 
-            public static bool EnterValue()
+            // For the guard fields, which run before the constructor body and the static constructor.
+            public static __Entered EnterValue()
+            {
+                Enter();
+                return default;
+            }
+
+            // For the first argument of `this(...)`, which is evaluated before the constructor body.
+            public static bool Entering()
             {
                 Enter();
                 return true;
             }
 
-            private static void Trip() => Tripped = true;
+            private static void Trip(int kind)
+            {
+                if ({{TripKindName}} == 0)
+                {
+                    {{TripKindName}} = kind;
+                }
+            }
         }
         """;
 
@@ -229,48 +260,104 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan, SemanticModel mode
                 .WithTrailingTrivia(semicolon.TrailingTrivia));
     }
 
-    // Field initializers run before any constructor body, and a type without a written constructor still runs them
-    // (`class A { A next = new A(); }` recurses through the implicit constructor). A guard field placed first
-    // runs before the player's own initializers (they execute in textual order on entry to each constructor,
-    // https://learn.microsoft.com/dotnet/csharp/language-reference/language-specification/classes#15113-instance-variable-initializers)
-    // and sits on the line of the opening brace, so no line moves. Static initializers need no guard of their
-    // own: they can only loop or recurse through guarded members.
+    // Initializers and constructor-initializer arguments run before any constructor body, and a type without a
+    // written constructor still runs them (`class A { A next = new A(); }` recurses through the implicit
+    // constructor), so a guard field placed first runs before them: instance field initializers execute in
+    // textual order on entry to each constructor, before the base call and its arguments
+    // (https://learn.microsoft.com/dotnet/csharp/language-reference/language-specification/classes#15113-instance-variable-initializers),
+    // and static ones in textual order when the type is initialized. The fields sit on the line of the
+    // opening brace, so no line moves; the static one also stops `C<T>.S = C<C<T>>.S`, which recurses through
+    // type initializers of ever new generic instantiations without running a single member.
     public override SyntaxNode? VisitClassDeclaration(ClassDeclarationSyntax node) =>
-        WithInstanceGuard(node, (ClassDeclarationSyntax)base.VisitClassDeclaration(node)!);
+        WithGuardFields(node, (ClassDeclarationSyntax)base.VisitClassDeclaration(node)!);
 
     public override SyntaxNode? VisitStructDeclaration(StructDeclarationSyntax node) =>
-        WithInstanceGuard(node, (StructDeclarationSyntax)base.VisitStructDeclaration(node)!);
+        WithGuardFields(node, (StructDeclarationSyntax)base.VisitStructDeclaration(node)!);
 
-    private T WithInstanceGuard<T>(T original, T visited)
+    public override SyntaxNode? VisitInterfaceDeclaration(InterfaceDeclarationSyntax node) =>
+        WithGuardFields(node, (InterfaceDeclarationSyntax)base.VisitInterfaceDeclaration(node)!);
+
+    private T WithGuardFields<T>(T original, T visited)
         where T : TypeDeclarationSyntax
     {
-        if (!guardedSpan.Contains(original.SpanStart)
-            || visited.OpenBraceToken.IsMissing
-            || !original.Members.Any(HasInstanceInitializer))
+        if (!guardedSpan.Contains(original.SpanStart) || visited.OpenBraceToken.IsMissing)
+        {
+            return visited;
+        }
+
+        var fields = new List<MemberDeclarationSyntax>();
+        if (original.Members.Any(HasStaticInitializer))
+        {
+            fields.Add(GuardField("private static readonly", "__sguard"));
+        }
+
+        if (HasInstanceConstructor(original))
+        {
+            fields.Add(GuardField("private readonly", "__guard"));
+        }
+
+        if (fields.Count == 0)
         {
             return visited;
         }
 
         var brace = visited.OpenBraceToken;
-        var field = SyntaxFactory
-            .ParseMemberDeclaration($"private readonly bool __guard{_guardFields++} = global::__LoopGuard.EnterValue();")!
-            .WithLeadingTrivia(SyntaxFactory.Space)
-            .WithTrailingTrivia(brace.TrailingTrivia);
+        fields[0] = fields[0].WithLeadingTrivia(SyntaxFactory.Space);
+        fields[^1] = fields[^1].WithTrailingTrivia(brace.TrailingTrivia);
         return (T)visited
             .WithOpenBraceToken(brace.WithTrailingTrivia())
-            .WithMembers(visited.Members.Insert(0, field));
+            .WithMembers(visited.Members.InsertRange(0, fields));
     }
 
-    private static bool HasInstanceInitializer(MemberDeclarationSyntax member) => member switch
+    private MemberDeclarationSyntax GuardField(string modifiers, string name) => SyntaxFactory
+        .ParseMemberDeclaration(
+            $"[global::System.Runtime.CompilerServices.CompilerGenerated] {modifiers} global::__Entered {name}{_guardFields++} = global::{GuardTypeName}.EnterValue();")!
+        .WithTrailingTrivia(SyntaxFactory.Space);
+
+    // A class always has a constructor (written or implicit) unless it is static; a struct only runs field
+    // initializers through a written or primary constructor (and may not declare them otherwise).
+    private static bool HasInstanceConstructor(TypeDeclarationSyntax type) => type switch
     {
-        FieldDeclarationSyntax field => !IsStaticOrConst(field.Modifiers)
-            && field.Declaration.Variables.Any(variable => variable.Initializer is not null),
-        PropertyDeclarationSyntax property => !IsStaticOrConst(property.Modifiers) && property.Initializer is not null,
+        ClassDeclarationSyntax => !type.Modifiers.Any(SyntaxKind.StaticKeyword),
+        StructDeclarationSyntax => type.ParameterList is not null
+            || type.Members.OfType<ConstructorDeclarationSyntax>().Any(constructor => !constructor.Modifiers.Any(SyntaxKind.StaticKeyword)),
         _ => false,
     };
 
-    private static bool IsStaticOrConst(SyntaxTokenList modifiers) =>
-        modifiers.Any(SyntaxKind.StaticKeyword) || modifiers.Any(SyntaxKind.ConstKeyword);
+    private static bool HasStaticInitializer(MemberDeclarationSyntax member) => member switch
+    {
+        FieldDeclarationSyntax field => field.Modifiers.Any(SyntaxKind.StaticKeyword)
+            && field.Declaration.Variables.Any(variable => variable.Initializer is not null),
+        PropertyDeclarationSyntax property => property.Modifiers.Any(SyntaxKind.StaticKeyword) && property.Initializer is not null,
+        _ => false,
+    };
+
+    // The arguments of `this(...)` run before the body, and no field initializer runs on that path, so the
+    // first argument is entered through the guard: `this(Entering() ? (arg) : default, ...)`. Arguments are
+    // evaluated left to right, so nothing of the player's runs before the guard.
+    public override SyntaxNode? VisitConstructorInitializer(ConstructorInitializerSyntax node)
+    {
+        var visited = (ConstructorInitializerSyntax)base.VisitConstructorInitializer(node)!;
+        if (!guardedSpan.Contains(node.SpanStart)
+            || !node.IsKind(SyntaxKind.ThisConstructorInitializer)
+            || visited.ArgumentList.Arguments is not [var first, ..])
+        {
+            return visited;
+        }
+
+        var value = first.Expression;
+        var entered = SyntaxFactory.ConditionalExpression(
+            SyntaxFactory.ParseExpression($"global::{GuardTypeName}.Entering()")
+                .WithLeadingTrivia(value.GetLeadingTrivia())
+                .WithTrailingTrivia(SyntaxFactory.Space),
+            SyntaxFactory.Token(SyntaxKind.QuestionToken).WithTrailingTrivia(SyntaxFactory.Space),
+            SyntaxFactory.ParenthesizedExpression(value.WithoutTrivia()),
+            SyntaxFactory.Token(SyntaxKind.ColonToken).WithLeadingTrivia(SyntaxFactory.Space).WithTrailingTrivia(SyntaxFactory.Space),
+            SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression, SyntaxFactory.Token(SyntaxKind.DefaultKeyword)))
+            .WithTrailingTrivia(value.GetTrailingTrivia());
+        var arguments = visited.ArgumentList.Arguments.Replace(first, first.WithExpression(entered));
+        return visited.WithArgumentList(visited.ArgumentList.WithArguments(arguments));
+    }
 
     // Returns the body with Enter in front, turning an expression body into a block; null when there is no body.
     private static BlockSyntax? GuardedBody(

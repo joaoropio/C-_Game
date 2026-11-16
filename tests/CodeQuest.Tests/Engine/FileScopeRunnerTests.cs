@@ -282,4 +282,147 @@ public class FileScopeRunnerTests
             "class Hero { public int Hp = 1; }",
             "return string.Join(\",\", typeof(Hero).GetFields(global::System.Reflection.BindingFlags.Instance | global::System.Reflection.BindingFlags.NonPublic | global::System.Reflection.BindingFlags.Public).Where(f => !f.Name.StartsWith(\"__\")).Select(f => f.Name));",
             "Hp"));
+
+    // Probes from the review of Task 1: every one of these crashed the host with a stack overflow.
+    [Theory]
+    [InlineData("class B { public B(object o) { } }\nclass A : B { public A() : base(new A()) { } }", "return new A();")]
+    [InlineData("class A { public A() : this(new A(), 0) { } public A(A a, int i) { } }", "return new A();")]
+    [InlineData("class B { public B(object o) { } }\nclass A(int x) : B(new A(x)) { }", "return new A(1);")]
+    [InlineData("struct S { public S() : this(new S(), 1) { } public S(S s, int i) { } }", "return new S();")]
+    [InlineData("struct S(int a) { public S() : this(new S().A) { } public int A = a; }", "return new S();")]
+    [InlineData("class A { public A() : this(Make()) { } public A(A a) { } static A Make() => new A(); }", "return new A();")]
+    [InlineData("class C<T> { public static object S = C<C<T>>.S; }", "return C<int>.S ?? 1;")]
+    [InlineData("class C<T> { static C() { } public static object S = C<C<T>>.S; }", "return C<int>.S ?? 1;")]
+    [InlineData("interface I<T> { static object S = I<I<T>>.S; }", "return I<int>.S ?? 1;")]
+    [InlineData("struct C<T> { public static object S = C<C<T>>.S; }", "return C<int>.S ?? 1;")]
+    [InlineData("class A { static A() { F(); } static void F() => F(); public static int X; }", "return A.X;")]
+    [InlineData("class A { public A() { try { } finally { new A(); } } }", "return new A();")]
+    [InlineData("partial class A { int x = 1; }\npartial class A { A n = new A(); }", "return new A();")]
+    [InlineData("class O { public struct S { public object o = new O(); public S() { } } S s = new S(); }", "return new O();")]
+    [InlineData("class A<T> { public A() { } public object M() => new A<A<T>>().M(); }", "return new A<int>().M();")]
+    [InlineData("class A { public System.Collections.Generic.IEnumerable<int> P { get { yield return P.First(); } } }", "return new A().P.First();")]
+    [InlineData("interface I { int F() => F(); }\nclass A : I { }", "return ((I)new A()).F();")]
+    [InlineData("interface I { int F(); }\nclass A : I { int I.F() => ((I)this).F(); }", "return ((I)new A()).F();")]
+    [InlineData("class A(int n) { public int F() => new A(n).F(); }", "return new A(1).F();")]
+    [InlineData("class A { static int Y = 1; static int X = Y; static int Z = X + F(); static int F() => F(); public static int G => Z; }", "return A.G;")]
+    [InlineData("class A { public int this[int i] { get => this[i]; } }", "return new A()[0];")]
+    [InlineData("class A { public A() { int F() => F(); F(); } }", "return new A();")]
+    public async Task Run_ReviewedRecursionPrograms_RuntimeErrorAndNextRunPasses(string playerCode, string probe)
+    {
+        var result = Assert.IsType<RuntimeError>(await Run(playerCode, probe));
+
+        Assert.Equal(Recursion, result.Explanation.En);
+        Assert.IsType<Passed>(await Run(GoodHero, "return new Hero(\"Ana\").Greet();", "Hi Ana"));
+    }
+
+    [Theory]
+    [InlineData("class A { public A() : this(null) { } public A(string s) { V = 1; } public int V; }")]
+    [InlineData("class A { public A() : this(x => x + 1) { } public A(System.Func<int, int> f) { V = f(0); } public int V; }")]
+    [InlineData("class A { public A() : this(default) { } public A(string s) { V = 1; } public int V; }")]
+    [InlineData("class A { public A() : this(Inc) { } public A(System.Func<int, int> f) { V = f(0); } static int Inc(int x) => x + 1; public int V; }")]
+    [InlineData("class A { public A() : this(new()) { } public A(System.Text.StringBuilder s) { V = 1; } public int V; }")]
+    [InlineData("class A { public A() : this(b: 0, a: 1) { } public A(int a, int b) { V = a; } public int V; }")]
+    [InlineData("class A { public A() : this(1, 2, 3) { } public A(params int[] xs) { V = xs.Length - 2; } public int V; }")]
+    [InlineData("class A { public A() : this(\n        1) { } public A(int x) { V = x; } public int V; }")]
+    [InlineData("struct A { public A() : this(1) { } public A(int x) { V = x; } public int V; }")]
+    [InlineData("class A { public A() : this(1, new A(2)) { } public A(int x, A? other = null) { V = x; } public int V; }")]
+    public async Task Run_ThisInitializerArguments_StillWorkWhenGuarded(string playerCode) =>
+        Assert.IsType<Passed>(await Run(playerCode, "return new A().V;", "1"));
+
+    [Theory]
+    [InlineData("class A { public A(int x) : this(ref x, 1) { } public A(ref int x, int y) { } }")]
+    [InlineData("class A { public A() : this(out var x) { } public A(out int x) { x = 1; } }")]
+    [InlineData("class A { public A() : this(in 1) { } public A(in int x) { } }")]
+    public async Task Run_RefOutOrInInAThisInitializer_CodeRejected(string playerCode)
+    {
+        var result = Assert.IsType<CodeRejected>(await Run("class Hero { }\n\n" + playerCode));
+
+        Assert.Equal(3, result.Line);
+        Assert.Equal("You can't write ref, out or in here yet.", result.Reason.En);
+    }
+
+    [Fact]
+    public async Task Run_ValidationThatCatchesEverything_CannotSwallowATrippedGuard()
+    {
+        var result = await Run(
+            "class A { public int F() => F(); }",
+            "try { return new A().F(); } catch (global::System.Exception) { return 1; }");
+
+        Assert.IsNotType<Passed>(result);
+    }
+
+    [Fact]
+    public async Task Run_ValidationThatCatchesALimit_StillTimedOut() =>
+        Assert.IsType<TimedOut>(await Run(
+            "class A { public int F() { while (true) { } } }",
+            "try { return new A().F(); } catch (global::System.Exception) { return 1; }"));
+
+    [Theory]
+    [InlineData("class System { }", "System")]
+    [InlineData("class A { public A() { __LoopGuard.Enter(); } }", "__LoopGuard")]
+    [InlineData("class A { public A() { throw new __LimitExceededException(); } }", "__LimitExceededException")]
+    [InlineData("class A { public int __x; }", "__x")]
+    [InlineData("class A { public void F() { int __y = 1; } }", "__y")]
+    [InlineData("class A { public void F(int __p) { } }", "__p")]
+    [InlineData("class A { public void F() { int @__z = 1; } }", "__z")]
+    public async Task Run_ReservedNames_CodeRejectedOnTheirLine(string playerCode, string name)
+    {
+        var result = Assert.IsType<CodeRejected>(await Run("class Hero { }\n\n" + playerCode));
+
+        Assert.Equal(3, result.Line);
+        Assert.Equal($"The name {name} is reserved; pick another name.", result.Reason.En);
+    }
+
+    [Fact]
+    public async Task Run_CompilerGeneratedAttributeWrittenByThePlayer_CodeRejected() =>
+        Assert.IsType<CodeRejected>(await Run("[System.Runtime.CompilerServices.CompilerGenerated] class A { }"));
+
+    [Fact]
+    public async Task Run_InjectedGuardsDoNotTripTheForbiddenApiCheck() =>
+        Assert.IsType<Passed>(await Run(
+            "class A { static int S = 1; int i = 2; public int V => S + i; }\nstruct P { int j = 1; public P() { } }\ninterface I { static int T = 1; }",
+            "return new A().V;",
+            "3"));
+
+    [Fact]
+    public async Task Run_StructWithAConstructor_KeepsValueEquality() =>
+        Assert.IsType<Passed>(await Run(
+            "struct S { public int X; public S(int x) { X = x; } }",
+            "return default(S).Equals(new S(0)) && default(S).GetHashCode() == new S(0).GetHashCode();",
+            "True"));
+
+    [Theory]
+    [InlineData("class A\n{\n    int x = 1;\n    public int F() { int z = 0; return x / z; }\n}", "return new A().F();", 4)]
+    [InlineData("class A\n{\n    static int s = 1;\n    public static int F() { int z = 0; return s / z; }\n}", "return A.F();", 4)]
+    [InlineData("class A { // note\n    int x = 1;\n    public A() { throw new InvalidOperationException(); }\n}", "return new A();", 3)]
+    [InlineData("class A\n{\n    public A() : this(\n        1)\n    { throw new InvalidOperationException(); }\n    public A(int x) { }\n}", "return new A();", 5)]
+    [InlineData("class A\n{\n    public int P => throw new InvalidOperationException(\"x\");\n}", "return new A().P;", 3)]
+    public async Task Run_LinesStayWhereThePlayerWroteThemAfterEveryInjection(string playerCode, string probe, int line)
+    {
+        var result = Assert.IsType<RuntimeError>(await Run(playerCode, probe));
+
+        Assert.Equal(line, result.Line);
+    }
+
+    [Fact]
+    public async Task Run_ColumnsStayWhereThePlayerWroteThemAfterAnInjection()
+    {
+        const string code = "class A { int x = 1; public int F() { return y; } }";
+        var result = Assert.IsType<CompilationFailed>(await Run(code));
+
+        Assert.Equal(code.IndexOf("y;", StringComparison.Ordinal) + 1, Assert.Single(result.Errors).Column);
+    }
+
+    [Fact]
+    public async Task Run_RefReturningExpressionBodiedProperty_StillWorks() =>
+        Assert.IsType<Passed>(await Run("class A { int x = 1; public ref int P => ref x; }", "return new A().P;", "1"));
+
+    [Fact]
+    public async Task Run_StaticInitializerThatFailsOnFirstUse_RuntimeErrorExplainingTheCause()
+    {
+        var result = Assert.IsType<RuntimeError>(await Run(
+            "class A { static int X = 1 / int.Parse(\"0\"); public static int Y => X; }", "return A.Y;"));
+
+        Assert.Equal(PlayerMessages.DividedByZero, result.Explanation);
+    }
 }

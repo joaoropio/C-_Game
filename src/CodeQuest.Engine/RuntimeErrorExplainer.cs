@@ -10,21 +10,38 @@ internal static class RuntimeErrorExplainer
     private const string PlayerFileName = "player.cs";
 
     // What the validation threw is rarely what failed: Invoke and a type initializer wrap the real cause, and
-    // the library wraps an exception thrown by a player comparer. A tripped guard anywhere in the chain wins.
-    public static RunResult Classify(Exception thrown, int playerLineOffset, int playerLineCount)
+    // the library wraps an exception thrown by a player comparer. The guard knows best why it tripped (a
+    // limit means TimedOut, the stack means recursion), even when the exception did not reach us.
+    public static RunResult Classify(Exception thrown, int playerLineOffset, int playerLineCount, int trip)
     {
-        var chain = ChainOf(thrown).ToList();
-        if (chain.Any(exception => exception.GetType().Name == LoopGuardRewriter.LimitExceptionName))
+        if (trip == LoopGuardRewriter.LimitTrip)
         {
             return new TimedOut();
         }
 
+        var chain = ChainOf(thrown).ToList();
         var cause = chain.FirstOrDefault(exception => exception is InsufficientExecutionStackException)
             ?? chain.FirstOrDefault(exception => exception is not (TargetInvocationException or TypeInitializationException))
             ?? thrown;
+        if (trip == LoopGuardRewriter.StackTrip && cause is not InsufficientExecutionStackException)
+        {
+            return AfterTrip(trip)!;
+        }
+
         var failedType = chain.OfType<TypeInitializationException>().FirstOrDefault()?.TypeName;
         return Explain(cause, playerLineOffset, playerLineCount, failedType);
     }
+
+    // The result when the guard tripped but the validation carried on (it caught the exception), else null.
+    public static RunResult? AfterTrip(int trip) => trip switch
+    {
+        LoopGuardRewriter.LimitTrip => new TimedOut(),
+        LoopGuardRewriter.StackTrip => new RuntimeError(
+            PlayerMessages.InfiniteRecursion,
+            new InsufficientExecutionStackException().Message,
+            null),
+        _ => null,
+    };
 
     public static RuntimeError Explain(Exception exception, int playerLineOffset, int playerLineCount) =>
         Explain(exception, playerLineOffset, playerLineCount, null);

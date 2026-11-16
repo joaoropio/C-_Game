@@ -71,15 +71,23 @@ public sealed class RoslynCodeRunner : ICodeRunner
             var checks = results
                 .Select(result => new CheckOutcome(result.Case, result.Expected, result.Actual))
                 .ToList();
-            return checks.Any(check => !check.Passed)
-                ? new ChecksFailed(checks)
-                : new Passed(StatementCounter.Count(playerCode, outcome.Scope), checks);
+
+            // A validation that caught the guard's exception must not turn the failure into a pass.
+            return RuntimeErrorExplainer.AfterTrip(TripKind(run))
+                ?? (checks.Any(check => !check.Passed)
+                    ? new ChecksFailed(checks)
+                    : new Passed(StatementCounter.Count(playerCode, outcome.Scope), checks));
         }
         catch (Exception exception)
         {
-            return RuntimeErrorExplainer.Classify(exception, outcome.PlayerLineOffset, outcome.PlayerLineCount);
+            return RuntimeErrorExplainer.Classify(exception, outcome.PlayerLineOffset, outcome.PlayerLineCount, TripKind(run));
         }
     }
+
+    private static int TripKind(MethodInfo run) => (int)run.DeclaringType!.Assembly
+        .GetType(LoopGuardRewriter.GuardTypeName)!
+        .GetProperty(LoopGuardRewriter.TripKindName, BindingFlags.Public | BindingFlags.Static)!
+        .GetValue(null)!;
 
     private static MethodInfo FindValidationMethod(Assembly assembly)
     {
