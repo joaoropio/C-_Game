@@ -52,9 +52,9 @@ internal static class PlayerMessages
             $"O método \"{name}\" não recebe {count} argumentos.",
             $"The method \"{name}\" doesn't take {count} arguments.");
 
-    public static LocalizedText MissingArguments(string name) => new(
-        $"Faltam argumentos na chamada ao método \"{name}\".",
-        $"The call to the method \"{name}\" is missing arguments.");
+    public static LocalizedText MissingArguments(string name, string parameter) => new(
+        $"Faltam argumentos na chamada ao método \"{name}\": falta o valor de \"{parameter}\".",
+        $"Missing arguments in the call to method \"{name}\": no value for \"{parameter}\".");
 
     public static LocalizedText DuplicateMethod(string name) => new(
         $"Já existe um método \"{name}\" com estes mesmos parâmetros.",
@@ -62,11 +62,11 @@ internal static class PlayerMessages
 
     public static LocalizedText MissingStatic(string name) => new(
         $"Falta static no método \"{name}\".",
-        $"The method \"{name}\" needs static.");
+        $"The method \"{name}\" needs to be static.");
 
     public static readonly LocalizedText NamespaceNotAllowed = new(
-        "Não uses namespace: escreve só os métodos static, sem mais nada à volta.",
-        "Don't use a namespace: write only the static methods, with nothing around them.");
+        "Não uses namespace aqui.",
+        "Don't use a namespace here.");
 
     public static LocalizedText ForbiddenSpell(string symbol, int line) => new(
         $"Esse feitiço é proibido nesta masmorra: \"{symbol}\" (linha {line}).",

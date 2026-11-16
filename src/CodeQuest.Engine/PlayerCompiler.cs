@@ -163,18 +163,30 @@ internal sealed partial class PlayerCompiler
     };
 
     // An unknown name that is being called is a missing method, not a missing variable.
-    private static LocalizedText ExplainMissingName(Diagnostic diagnostic)
-    {
-        var name = SpanText(diagnostic);
-        var node = diagnostic.Location.SourceTree!.GetRoot().FindNode(diagnostic.Location.SourceSpan);
-        return node.Parent is InvocationExpressionSyntax invocation && invocation.Expression == node
-            ? PlayerMessages.MissingMethod(name)
-            : PlayerMessages.MissingVariable(name);
-    }
+    private static LocalizedText ExplainMissingName(Diagnostic diagnostic) =>
+        InvokedName(diagnostic) is { } method
+            ? PlayerMessages.MissingMethod(method)
+            : PlayerMessages.MissingVariable(SpanText(diagnostic));
 
-    // The type is the first quoted name of the English message and the missing member the second.
+    // A missing member is only a missing method when the player is calling it (`x.Heal()`);
+    // `s.Lenght` or `Math.Pii` fall back to the generic explanation.
     private static LocalizedText? ExplainMissingMethod(Diagnostic diagnostic) =>
-        QuotedNames(diagnostic) is [_, var member, ..] ? PlayerMessages.MissingMethod(member) : null;
+        InvokedName(diagnostic) is { } method ? PlayerMessages.MissingMethod(method) : null;
+
+    // The name at the diagnostic when it is the target of an invocation, without type arguments.
+    private static string? InvokedName(Diagnostic diagnostic)
+    {
+        var node = diagnostic.Location.SourceTree!.GetRoot().FindNode(diagnostic.Location.SourceSpan);
+        if (node is not SimpleNameSyntax name)
+        {
+            return null;
+        }
+
+        SyntaxNode target = name.Parent is MemberAccessExpressionSyntax access && access.Name == name ? access : name;
+        return target.Parent is InvocationExpressionSyntax invocation && invocation.Expression == target
+            ? name.Identifier.Text
+            : null;
+    }
 
     private static LocalizedText? ExplainWrongArgumentCount(Diagnostic diagnostic)
     {
@@ -184,19 +196,21 @@ internal sealed partial class PlayerCompiler
             : null;
     }
 
-    // "...required parameter 'b' of 'Spell.Heal(int, int)'": the method is the name before the parenthesis.
+    // "...required parameter 'b' of 'Spell.Heal<T>(T, T)'": the method is the name before the parenthesis.
     private static LocalizedText? ExplainMissingArguments(Diagnostic diagnostic) =>
-        QuotedNames(diagnostic) is [_, var signature, ..] && signature.Split('(')[0].Split('.')[^1] is { Length: > 0 } method
-            ? PlayerMessages.MissingArguments(method)
+        QuotedNames(diagnostic) is [var parameter, var signature, ..]
+            && signature.Split('(')[0].Split('<')[0].Split('.')[^1] is { Length: > 0 } method
+            ? PlayerMessages.MissingArguments(method, parameter)
             : null;
 
     // "Type 'Spell' already defines a member called 'Heal' with the same parameter types".
     private static LocalizedText? ExplainDuplicateMethod(Diagnostic diagnostic) =>
         QuotedNames(diagnostic) is [_, var method, ..] ? PlayerMessages.DuplicateMethod(method) : null;
 
+    // The span is `Heal` or, for a call like `Spell.Heal(1)`, the whole `Spell.Heal`.
     private static LocalizedText? ExplainMissingStatic(Diagnostic diagnostic)
     {
-        var name = SpanText(diagnostic);
+        var name = SpanText(diagnostic).Split('.')[^1];
         return IsIdentifier(name) ? PlayerMessages.MissingStatic(name) : null;
     }
 

@@ -107,8 +107,8 @@ public class MethodErrorExplanationTests
     {
         var error = Single(Errors("public static int Heal(int a, int b) => a + b;"), insidePlayerCode: false);
 
-        Assert.Equal("The call to the method \"Heal\" is missing arguments.", error.Explanation!.En);
-        Assert.Equal("Faltam argumentos na chamada ao método \"Heal\".", error.Explanation.Pt);
+        Assert.Equal("Missing arguments in the call to method \"Heal\": no value for \"b\".", error.Explanation!.En);
+        Assert.Equal("Faltam argumentos na chamada ao método \"Heal\": falta o valor de \"b\".", error.Explanation.Pt);
     }
 
     [Fact]
@@ -118,6 +118,7 @@ public class MethodErrorExplanationTests
 
         Assert.Equal(2, error.Line);
         Assert.Equal("The method \"Heal\" doesn't take 3 arguments.", error.Explanation!.En);
+        Assert.Equal("O método \"Heal\" não recebe 3 argumentos.", error.Explanation.Pt);
     }
 
     [Fact]
@@ -137,7 +138,7 @@ public class MethodErrorExplanationTests
 
         var errors = Errors(Heal, template: template);
 
-        Assert.Contains(errors, e => e.Explanation!.En == "There is already a method \"Heal\" with these same parameters.");
+        Assert.Contains(errors, e => e.Explanation?.En == "There is already a method \"Heal\" with these same parameters.");
     }
 
     [Fact]
@@ -146,7 +147,7 @@ public class MethodErrorExplanationTests
         var error = Assert.Single(Errors("public int Heal(int amount) => amount;", "Spell.Heal(1)"), e => e.Line is not null);
 
         Assert.Equal(1, error.Line);
-        Assert.Equal("The method \"Heal\" needs static.", error.Explanation!.En);
+        Assert.Equal("The method \"Heal\" needs to be static.", error.Explanation!.En);
         Assert.Equal("Falta static no método \"Heal\".", error.Explanation.Pt);
     }
 
@@ -158,7 +159,7 @@ public class MethodErrorExplanationTests
         var errors = Errors("int Heal(int a) => a;\npublic static int Cast() => Heal(1);", "Spell.Cast()", template);
 
         var error = Assert.Single(errors, e => e.Line == 2);
-        Assert.Equal("The method \"Heal\" needs static.", error.Explanation!.En);
+        Assert.Equal("The method \"Heal\" needs to be static.", error.Explanation!.En);
     }
 
     [Fact]
@@ -169,7 +170,77 @@ public class MethodErrorExplanationTests
             Language.En);
 
         Assert.Equal(1, outcome.Rejected!.Line);
-        Assert.Equal("Don't use a namespace: write only the static methods, with nothing around them.", outcome.Rejected.Reason.En);
-        Assert.StartsWith("Não uses namespace", outcome.Rejected.Reason.Pt);
+        Assert.Equal("Don't use a namespace here.", outcome.Rejected.Reason.En);
+        Assert.Equal("Não uses namespace aqui.", outcome.Rejected.Reason.Pt);
+    }
+
+    [Fact]
+    public void FileScopedNamespace_InPlayerCode_Rejected()
+    {
+        var outcome = _compiler.Compile(
+            new RunRequest(Template, "namespace Foo;\n" + Heal, Validation("Spell.Heal(1)")),
+            Language.En);
+
+        Assert.Equal("Don't use a namespace here.", outcome.Rejected!.Reason.En);
+    }
+
+    [Theory]
+    [InlineData("public static int Cast(string s) => s.Lenght;")]
+    [InlineData("public static double Cast() => Math.Pii;")]
+    [InlineData("public static int Cast() => int.MaxValu;")]
+    public void MissingNonMethodMember_IsNotCalledAMissingMethod(string playerCode)
+    {
+        var error = Single(Errors(playerCode + "\n" + Heal), insidePlayerCode: true);
+
+        Assert.Null(error.Explanation);
+    }
+
+    [Fact]
+    public void MissingMethodCalledOnAnObject_StillExplained()
+    {
+        var error = Single(Errors("public static int Cast(string s) => s.Lenghtt();\n" + Heal), insidePlayerCode: true);
+
+        Assert.Equal("The method \"Lenghtt\" is missing.", error.Explanation!.En);
+        Assert.Equal("Falta o método \"Lenghtt\".", error.Explanation.Pt);
+    }
+
+    [Fact]
+    public void MissingGenericMethod_NameKeepsNoTypeArguments()
+    {
+        var error = Single(Errors("public static int Cast() => Heal<int>(2);"), insidePlayerCode: true);
+
+        Assert.Equal("The method \"Heal\" is missing.", error.Explanation!.En);
+    }
+
+    [Fact]
+    public void MissingArgumentsOfGenericMethod_NameKeepsNoTypeParameters()
+    {
+        var error = Single(
+            Errors("public static T Heal<T>(T a, T b) => a;"),
+            insidePlayerCode: false);
+
+        Assert.Contains("\"Heal\"", error.Explanation!.En);
+        Assert.DoesNotContain("<", error.Explanation.En);
+    }
+
+    [Fact]
+    public void InstanceMethodCalledByValidation_Explained()
+    {
+        const string template = "public class Spell\n{\n    // {{PLAYER_CODE}}\n}";
+
+        var error = Single(Errors("public int Heal(int a) => a;", template: template), insidePlayerCode: false);
+
+        Assert.Equal("The method \"Heal\" needs to be static.", error.Explanation!.En);
+        Assert.Equal("Falta static no método \"Heal\".", error.Explanation.Pt);
+    }
+
+    [Fact]
+    public void MissingVariableInTemplate_StillSaysVariable()
+    {
+        const string template = "public static class Spell\n{\n    // {{PLAYER_CODE}}\n    public static int Cast() => health;\n}";
+
+        var error = Single(Errors(Heal, "Spell.Cast()", template), insidePlayerCode: false);
+
+        Assert.Equal("You still need to declare the variable \"health\".", error.Explanation!.En);
     }
 }
