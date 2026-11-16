@@ -30,6 +30,26 @@ public class ContentTests
         }
         """;
 
+    private const string ClassScopeTemplate = """
+        public static partial class Sandbox
+        {
+            // {{PLAYER_CODE}}
+        }
+        """;
+
+    private const string NestedEmptyValidation = """
+        public static partial class Sandbox
+        {
+            public static class Validation
+            {
+                public static System.Collections.Generic.IEnumerable<(string Case, string Expected, string Actual)> Run()
+                {
+                    yield break;
+                }
+            }
+        }
+        """;
+
     private static readonly string ContentDirectory = Path.Combine(AppContext.BaseDirectory, "content");
 
     private static readonly IReadOnlyList<GrimoirePage> Pages =
@@ -146,7 +166,10 @@ public class ContentTests
     [MemberData(nameof(PageIds))]
     public async Task EveryPage_ExampleCompiles(string id)
     {
-        var request = new RunRequest(NeutralTemplate, Find(id).Example, EmptyValidation);
+        var page = Find(id);
+        var request = page.World >= 2
+            ? new RunRequest(ClassScopeTemplate, page.Example, NestedEmptyValidation)
+            : new RunRequest(NeutralTemplate, page.Example, EmptyValidation);
 
         var result = await new RoslynCodeRunner().RunAsync(request, Language.En, CancellationToken.None);
 

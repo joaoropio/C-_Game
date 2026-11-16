@@ -357,7 +357,7 @@ public class LevelSolutionTests
     {
         var level = Find("07-methods");
 
-        var result = Assert.IsType<ChecksFailed>(await Run(level, "public static int Heal(int health, int potion) => health + potion;"));
+        var result = Assert.IsType<ChecksFailed>(await Run(level, "static int Heal(int health, int potion) => health + potion;"));
 
         Assert.Contains(new CheckOutcome("Heal(90, 30)", "100", "120"), result.Checks);
     }
@@ -367,9 +367,9 @@ public class LevelSolutionTests
     {
         var level = Find("07-methods");
 
-        var result = Assert.IsType<CompilationFailed>(await Run(level, "public int Heal(int health, int potion) => Math.Min(health + potion, 100);"));
+        var result = Assert.IsType<CompilationFailed>(await Run(level, "int Heal(int health, int potion) => Math.Min(health + potion, 100);"));
 
-        Assert.All(result.Errors, error => Assert.Equal("The method \"Heal\" needs to be static.", error.Explanation!.En));
+        Assert.Equal("The method \"Heal\" needs to be static.", Assert.Single(result.Errors).Explanation!.En);
     }
 
     [Fact]
@@ -377,7 +377,7 @@ public class LevelSolutionTests
     {
         var level = Find("07-methods");
 
-        var result = Assert.IsType<CompilationFailed>(await Run(level, "public static int Cure(int health, int potion) => Math.Min(health + potion, 100);"));
+        var result = Assert.IsType<CompilationFailed>(await Run(level, "static int Cure(int health, int potion) => Math.Min(health + potion, 100);"));
 
         Assert.Equal("The method \"Heal\" is missing.", Assert.Single(result.Errors).Explanation!.En);
     }
@@ -389,7 +389,7 @@ public class LevelSolutionTests
 
         var result = Assert.IsType<Passed>(await Run(
             level,
-            "public static int Heal(int health, int potion)\n{\n    int total = health + potion;\n    return Math.Min(total, 100);\n}"));
+            "static int Heal(int health, int potion)\n{\n    int total = health + potion;\n    return Math.Min(total, 100);\n}"));
 
         Assert.True(result.StatementCount <= level.MaxStatementsForThreeStars);
     }

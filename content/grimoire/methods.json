@@ -3,18 +3,18 @@
   "world": 2,
   "title": { "pt": "Métodos", "en": "Methods" },
   "whatItIs": {
-    "pt": "Um método é um bloco de código com nome, que podes usar quantas vezes quiseres. Tem um tipo de resultado, um nome e parâmetros entre parênteses. Quem o chama passa os argumentos e recebe o resultado com return. Se não devolve nada, o tipo é void. Por agora escreve public static antes do tipo: public deixa o resto do código usá-lo e static dispensa criar um objeto.",
-    "en": "A method is a named block of code that you can use as many times as you like. It has a result type, a name and parameters in parentheses. Whoever calls it passes the arguments and gets the result back with return. If it returns nothing, the type is void. For now write public static before the type: public lets the rest of the code use it and static means no object is needed."
+    "pt": "Um método é um bloco de código com nome, que podes usar quantas vezes quiseres. Tem um tipo de resultado, um nome e parâmetros entre parênteses. Quem o chama passa os argumentos e recebe o valor que o método devolve com return. Se não devolve nada, o tipo é void. Por agora escreve static antes do tipo: static dispensa criar um objeto para usar o método.",
+    "en": "A method is a named block of code that you can use as many times as you like. It has a result type, a name and parameters in parentheses. Whoever calls it passes the arguments and gets back the value the method returns with return. If it returns nothing, the type is void. For now write static before the type: static means no object is needed to use the method."
   },
   "syntax": {
-    "pt": "public static tipo Nome(tipo parametro)\n{\n    return valor;\n}\n\npublic static tipo Nome(tipo parametro) => valor;   // só uma expressão\n\nNome(argumento)   // chamar o método\n\npublic static void Nome()   // void: não devolve nada",
-    "en": "public static type Name(type parameter)\n{\n    return value;\n}\n\npublic static type Name(type parameter) => value;   // a single expression\n\nName(argument)   // call the method\n\npublic static void Name()   // void: returns nothing"
+    "pt": "static tipo Nome(tipo parametro)\n{\n    return valor;\n}\n\nstatic tipo Nome(tipo parametro) => valor;   // só uma expressão\n\nNome(argumento)   // chamar o método\n\nstatic void Nome()   // void: não devolve nada",
+    "en": "static type Name(type parameter)\n{\n    return value;\n}\n\nstatic type Name(type parameter) => value;   // a single expression\n\nName(argument)   // call the method\n\nstatic void Name()   // void: returns nothing"
   },
-  "example": "static int Triple(int gold) => gold * 3;\n\nstatic string Greet(string wizard) => \"Hello, \" + wizard;\n\nint loot = Triple(4);\nstring message = Greet(\"Merlin\");",
+  "example": "static int Triple(int gold) => gold * 3;\n\nstatic string Greet(string wizard) => \"Hello, \" + wizard;\n\nstatic int Loot() => Triple(4);",
   "commonMistakes": [
     {
-      "pt": "Esquecer public ou static: neste jogo os métodos escrevem-se com public static antes do tipo.",
-      "en": "Forgetting public or static: in this game methods are written with public static before the type."
+      "pt": "Esquecer o static: neste jogo os métodos escrevem-se com static antes do tipo.",
+      "en": "Forgetting static: in this game methods are written with static before the type."
     },
     {
       "pt": "Chamar o método com o nome errado ou com o número errado de argumentos: tem de coincidir com o que foi declarado.",

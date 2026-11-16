@@ -1,16 +1,19 @@
-public static class Validation
+public static partial class Spell
 {
-    public static IEnumerable<(string Case, string Expected, string Actual)> Run()
+    public static class Validation
     {
-        foreach (var (health, potion, expected) in new[]
+        public static IEnumerable<(string Case, string Expected, string Actual)> Run()
         {
-            (50, 30, 80),
-            (90, 30, 100),
-            (100, 0, 100),
-            (0, 25, 25),
-        })
-        {
-            yield return ($"Heal({health}, {potion})", $"{expected}", $"{Spell.Heal(health, potion)}");
+            foreach (var (health, potion, expected) in new[]
+            {
+                (50, 30, 80),
+                (90, 30, 100),
+                (100, 0, 100),
+                (0, 25, 25),
+            })
+            {
+                yield return ($"Heal({health}, {potion})", $"{expected}", $"{Heal(health, potion)}");
+            }
         }
     }
 }
