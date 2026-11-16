@@ -643,4 +643,28 @@ public class LevelSolutionTests
 
         Assert.Equal(1, result.StatementCount);
     }
+
+    [Theory]
+    [InlineData("static string[] PackBag(string[] loot) => Array.FindAll(loot, item => item != \"stone\");")]
+    [InlineData("static IEnumerable<string> PackBag(string[] loot)\n{\n    foreach (var item in loot)\n    {\n        if (item != \"stone\")\n        {\n            yield return item;\n        }\n    }\n}")]
+    public async Task Level10_ArrayInsteadOfList_IsRejected(string playerCode)
+    {
+        var level = Find("10-lists");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, playerCode));
+
+        Assert.All(result.Checks, check => Assert.Equal("not a List<string>", check.Actual));
+    }
+
+    [Fact]
+    public async Task Level10_NullItem_IsShownAsNull()
+    {
+        var level = Find("10-lists");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(
+            level,
+            "static List<string> PackBag(string[] loot)\n{\n    return new List<string> { null };\n}"));
+
+        Assert.Equal("{ null }", result.Checks.First().Actual);
+    }
 }

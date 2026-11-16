@@ -10,7 +10,7 @@
     "pt": "var nomes = new List<string>();\nnomes.Add(\"valor\");\nnomes.Remove(\"valor\");\nvar primeiro = nomes[0];\nvar quantos = nomes.Count;",
     "en": "var names = new List<string>();\nnames.Add(\"value\");\nnames.Remove(\"value\");\nvar first = names[0];\nvar howMany = names.Count;"
   },
-  "example": "static List<int> BigNumbers(int[] numbers)\n{\n    var big = new List<int>();\n    foreach (var number in numbers)\n    {\n        if (number >= 100)\n        {\n            big.Add(number);\n        }\n    }\n\n    return big;\n}",
+  "example": "static List<int> Doubled(int[] numbers)\n{\n    var doubled = new List<int>();\n    foreach (var number in numbers)\n    {\n        doubled.Add(number * 2);\n    }\n\n    return doubled;\n}",
   "commonMistakes": [
     {
       "pt": "Esquecer o new: List<string> bag; não cria nada e usar bag.Add(...) falha.",
@@ -25,5 +25,5 @@
       "en": "Changing a list inside a foreach that walks it: create a new list for the result."
     }
   ],
-  "learnUrl": "https://learn.microsoft.com/dotnet/api/system.collections.generic.list-1"
+  "learnUrl": "https://learn.microsoft.com/dotnet/csharp/tour-of-csharp/tutorials/list-collection"
 }
