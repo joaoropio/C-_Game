@@ -10,7 +10,7 @@
     "pt": "throw new TipoDeExceção(\"mensagem\");\n\ntry\n{\n    // código arriscado\n}\ncatch (TipoDeExceção)\n{\n    // o que fazer se falhar\n}",
     "en": "throw new ExceptionType(\"message\");\n\ntry\n{\n    // risky code\n}\ncatch (ExceptionType)\n{\n    // what to do if it fails\n}"
   },
-  "example": "static int Pack(int bags)\n{\n    if (bags < 0)\n    {\n        throw new ArgumentException(\"bags cannot be negative\");\n    }\n\n    return bags * 2;\n}\n\nstatic int SafePack(int bags)\n{\n    try\n    {\n        return Pack(bags);\n    }\n    catch (ArgumentException)\n    {\n        return -1;\n    }\n}",
+  "example": "static int Ration(int days)\n{\n    if (days < 1)\n    {\n        throw new InvalidOperationException(\"no days\");\n    }\n\n    return 30 / days;\n}\n\nstatic string Plan(int days)\n{\n    string report = \"ready\";\n\n    try\n    {\n        Ration(days);\n    }\n    catch (InvalidOperationException)\n    {\n        report = \"no rations\";\n    }\n\n    return report;\n}",
   "commonMistakes": [
     {
       "pt": "Esquecer o throw e deixar o erro acontecer sozinho: dividir por zero lança DivideByZeroException, não a exceção que querias.",

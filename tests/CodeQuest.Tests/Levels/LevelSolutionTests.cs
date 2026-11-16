@@ -461,6 +461,9 @@ public class LevelSolutionTests
     private const string SplitManaThatThrows =
         "static int SplitMana(int mana, int wizards)\n{\n    if (wizards <= 0)\n    {\n        throw new ArgumentException(\"no wizards\");\n    }\n\n    return mana / wizards;\n}\n";
 
+    private const string SafeSplitWithRealCatch =
+        "static int SafeSplit(int mana, int wizards)\n{\n    try { return SplitMana(mana, wizards); }\n    catch (ArgumentException) { return 0; }\n}";
+
     [Fact]
     public async Task Level9_Solution_RunsTheFiveExceptionChecksWithinTheStarLimit()
     {
@@ -471,9 +474,22 @@ public class LevelSolutionTests
         Assert.Equal(
             ["SplitMana(10, 2)", "SplitMana(10, 0)", "SplitMana(10, -1)", "SafeSplit(10, 0)", "SafeSplit(9, 3)"],
             result.Checks.Select(check => check.Case));
-        Assert.Equal(["returns 5", "throws ArgumentException", "throws ArgumentException", "returns 0", "returns 3"],
+        Assert.Equal(
+            ["returns 5", "throws ArgumentException", "throws ArgumentException", "catches ArgumentException, returns 0", "returns 3"],
             result.Checks.Select(check => check.Expected));
         Assert.Equal(6, level.MaxStatementsForThreeStars);
+        Assert.True(result.StatementCount <= level.MaxStatementsForThreeStars);
+    }
+
+    [Fact]
+    public async Task Level9_CompactThrowExpressionSolution_FitsTheStarLimit()
+    {
+        var level = Find("09-exceptions");
+
+        var result = Assert.IsType<Passed>(await Run(
+            level,
+            "static int SplitMana(int mana, int wizards) => wizards <= 0 ? throw new ArgumentException(\"no wizards\") : mana / wizards;\n" + SafeSplitWithRealCatch));
+
         Assert.True(result.StatementCount <= level.MaxStatementsForThreeStars);
     }
 
@@ -490,28 +506,70 @@ public class LevelSolutionTests
         Assert.Contains(new CheckOutcome("SplitMana(10, -1)", "throws ArgumentException", "returns -10"), result.Checks);
     }
 
-    [Fact]
-    public async Task Level9_UncaughtException_IsRuntimeErrorNotCrash()
+    [Theory]
+    [InlineData("static int SafeSplit(int mana, int wizards)\n{\n    if (wizards <= 0)\n    {\n        return 0;\n    }\n\n    return SplitMana(mana, wizards);\n}")]
+    [InlineData("static int SafeSplit(int mana, int wizards) => wizards <= 0 ? 0 : SplitMana(mana, wizards);")]
+    public async Task Level9_IfInsteadOfCatch_IsRejected(string safeSplit)
     {
         var level = Find("09-exceptions");
 
-        var result = Assert.IsType<RuntimeError>(await Run(
-            level,
-            SplitManaThatThrows + "static int SafeSplit(int mana, int wizards) => SplitMana(mana, wizards);"));
+        var result = Assert.IsType<ChecksFailed>(await Run(level, SplitManaThatThrows + safeSplit));
 
-        Assert.Equal("no wizards", result.Message);
-        Assert.IsType<Passed>(await Run(level, level.Solution));
+        Assert.Contains(
+            new CheckOutcome("SafeSplit(10, 0)", "catches ArgumentException, returns 0", "returns 0 without catching anything"),
+            result.Checks);
     }
 
     [Fact]
-    public async Task Level9_CatchAll_StillCannotSwallowGuard()
+    public async Task Level9_CatchingTheWrongType_ReportsTheExceptionThatEscaped()
+    {
+        var level = Find("09-exceptions");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(
+            level,
+            SplitManaThatThrows +
+            "static int SafeSplit(int mana, int wizards)\n{\n    try { return SplitMana(mana, wizards); }\n    catch (DivideByZeroException) { return 0; }\n}"));
+
+        Assert.Contains(
+            new CheckOutcome("SafeSplit(10, 0)", "catches ArgumentException, returns 0", "throws ArgumentException"),
+            result.Checks);
+    }
+
+    [Fact]
+    public async Task Level9_UncaughtException_IsReportedPerCaseNotACrash()
+    {
+        var level = Find("09-exceptions");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(
+            level,
+            SplitManaThatThrows + "static int SafeSplit(int mana, int wizards) => SplitMana(mana, wizards);"));
+
+        Assert.Contains(
+            new CheckOutcome("SafeSplit(10, 0)", "catches ArgumentException, returns 0", "throws ArgumentException"),
+            result.Checks);
+        Assert.Contains(new CheckOutcome("SafeSplit(9, 3)", "returns 3", "returns 3"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level9_ConsecutiveRuns_EachWatchTheirOwnCatch()
+    {
+        var level = Find("09-exceptions");
+        var ifVersion = SplitManaThatThrows + "static int SafeSplit(int mana, int wizards) => wizards <= 0 ? 0 : SplitMana(mana, wizards);";
+
+        Assert.IsType<Passed>(await Run(level, level.Solution));
+        Assert.IsType<ChecksFailed>(await Run(level, ifVersion));
+        Assert.IsType<Passed>(await Run(level, level.Solution));
+        Assert.IsType<ChecksFailed>(await Run(level, ifVersion));
+    }
+
+    [Fact]
+    public async Task Level9_GuardTripInsideAChecked_StaysARuntimeErrorBecauseOfTheValidationFilter()
     {
         var level = Find("09-exceptions");
 
         var result = Assert.IsType<RuntimeError>(await Run(
             level,
-            "static int SplitMana(int mana, int wizards) => SplitMana(mana, wizards);\n" +
-            "static int SafeSplit(int mana, int wizards)\n{\n    try { return SplitMana(mana, wizards); }\n    catch (Exception) { return 0; }\n}"));
+            "static int SplitMana(int mana, int wizards) => SplitMana(mana, wizards);\n" + SafeSplitWithRealCatch));
 
         Assert.Equal("The spell keeps calling itself and never stops (infinite recursion).", result.Explanation.En);
     }
