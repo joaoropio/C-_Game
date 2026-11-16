@@ -393,4 +393,52 @@ public class LevelSolutionTests
 
         Assert.True(result.StatementCount <= level.MaxStatementsForThreeStars);
     }
+
+    [Fact]
+    public async Task Level8_Solution_RunsTheFourOverloadChecksWithinTheStarLimit()
+    {
+        var level = Find("08-overloads");
+
+        var result = Assert.IsType<Passed>(await Run(level, level.Solution));
+
+        Assert.Equal(["Fireball(5)", "Fireball(5, 3)", "Shield(4)", "Shield(4, 3)"], result.Checks.Select(check => check.Case));
+        Assert.Equal(3, level.MaxStatementsForThreeStars);
+        Assert.True(result.StatementCount <= level.MaxStatementsForThreeStars);
+    }
+
+    [Fact]
+    public async Task Level8_WrongTargets_ReportsExpectedAndObtained()
+    {
+        var level = Find("08-overloads");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(
+            level,
+            "static int Fireball(int power) => power * 2;\nstatic int Fireball(int power, int targets) => power * targets;\nstatic int Shield(int strength, int turns = 1) => strength * turns;"));
+
+        Assert.Contains(new CheckOutcome("Fireball(5, 3)", "30", "15"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level8_SameSignatureTwice_Explains()
+    {
+        var level = Find("08-overloads");
+
+        var result = Assert.IsType<CompilationFailed>(await Run(
+            level,
+            "static int Fireball(int power) => power * 2;\nstatic int Fireball(int targets) => targets * 2;\nstatic int Shield(int strength, int turns = 1) => strength * turns;"));
+
+        Assert.Equal("There is already a method \"Fireball\" with these same parameters.", result.Errors[0].Explanation!.En);
+    }
+
+    [Fact]
+    public async Task Level8_MissingOptional_ExplainsArguments()
+    {
+        var level = Find("08-overloads");
+
+        var result = Assert.IsType<CompilationFailed>(await Run(
+            level,
+            "static int Fireball(int power) => power * 2;\nstatic int Fireball(int power, int targets) => power * 2 * targets;\nstatic int Shield(int strength, int turns) => strength * turns;"));
+
+        Assert.Equal("Missing arguments in the call to method \"Shield\": no value for \"turns\".", result.Errors[0].Explanation!.En);
+    }
 }

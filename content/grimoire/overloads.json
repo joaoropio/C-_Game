@@ -1,0 +1,29 @@
+{
+  "id": "overloads",
+  "world": 2,
+  "title": { "pt": "Sobrecarga e parâmetros opcionais", "en": "Overloads and optional parameters" },
+  "whatItIs": {
+    "pt": "Sobrecarga é ter vários métodos com o mesmo nome e parâmetros diferentes, no número ou nos tipos. O C# escolhe qual usar pelos argumentos da chamada. Dois métodos com o mesmo nome e os mesmos parâmetros dão erro. Um parâmetro opcional tem um valor por omissão: se a chamada não o der, usa-se esse valor. Os opcionais ficam sempre no fim da lista de parâmetros.",
+    "en": "Overloading means having several methods with the same name and different parameters, in number or in types. C# picks which one to use from the arguments of the call. Two methods with the same name and the same parameters are an error. An optional parameter has a default value: if the call doesn't give one, that value is used. Optional parameters always go at the end of the parameter list."
+  },
+  "syntax": {
+    "pt": "static tipo Nome(tipo a) { ... }\nstatic tipo Nome(tipo a, tipo b) { ... }   // sobrecarga: parâmetros diferentes\n\nstatic tipo Nome(tipo a, tipo b = valor) { ... }   // b é opcional\n\nNome(x)      // usa o primeiro, ou b = valor\nNome(x, y)   // usa o segundo",
+    "en": "static type Name(type a) { ... }\nstatic type Name(type a, type b) { ... }   // overload: different parameters\n\nstatic type Name(type a, type b = value) { ... }   // b is optional\n\nName(x)      // uses the first, or b = value\nName(x, y)   // uses the second"
+  },
+  "example": "static int Arrows(int bows) => bows * 10;\n\nstatic int Arrows(int bows, int volleys) => bows * 10 * volleys;\n\nstatic int Camp(int tents, int nights = 2) => tents * nights;\n\nstatic int Supplies() => Arrows(3) + Arrows(3, 2) + Camp(4) + Camp(4, 5);",
+  "commonMistakes": [
+    {
+      "pt": "Escrever dois métodos com o mesmo nome e os mesmos parâmetros: mudar só os nomes dos parâmetros não chega, têm de mudar o número ou os tipos.",
+      "en": "Writing two methods with the same name and the same parameters: changing only the parameter names isn't enough, the number or the types must differ."
+    },
+    {
+      "pt": "Esquecer o valor por omissão (= 1): sem ele, o parâmetro é obrigatório e a chamada com menos argumentos falha.",
+      "en": "Forgetting the default value (= 1): without it the parameter is required and a call with fewer arguments fails."
+    },
+    {
+      "pt": "Pôr um parâmetro opcional antes de um obrigatório: os opcionais têm de ficar no fim.",
+      "en": "Putting an optional parameter before a required one: optional parameters must come last."
+    }
+  ],
+  "learnUrl": "https://learn.microsoft.com/dotnet/csharp/programming-guide/classes-and-structs/named-and-optional-arguments"
+}

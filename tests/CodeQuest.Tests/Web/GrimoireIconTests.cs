@@ -13,6 +13,7 @@ public sealed class GrimoireIconTests : BunitContext
     [InlineData("arrays", "shelf")]
     [InlineData("strings", "quill")]
     [InlineData("methods", "tome")]
+    [InlineData("overloads", "fireballs")]
     [InlineData("something-new", "book")]
     public void Icon_IsChosenByPageIdWithABookFallback(string pageId, string expectedKind)
     {
