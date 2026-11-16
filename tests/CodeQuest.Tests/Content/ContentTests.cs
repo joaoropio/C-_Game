@@ -30,6 +30,26 @@ public class ContentTests
         }
         """;
 
+    private const string ClassScopeTemplate = """
+        public static partial class Sandbox
+        {
+            // {{PLAYER_CODE}}
+        }
+        """;
+
+    private const string NestedEmptyValidation = """
+        public static partial class Sandbox
+        {
+            public static class Validation
+            {
+                public static System.Collections.Generic.IEnumerable<(string Case, string Expected, string Actual)> Run()
+                {
+                    yield break;
+                }
+            }
+        }
+        """;
+
     private static readonly string ContentDirectory = Path.Combine(AppContext.BaseDirectory, "content");
 
     private static readonly IReadOnlyList<GrimoirePage> Pages =
@@ -67,19 +87,31 @@ public class ContentTests
     private static HashSet<string> DeclaredNames(string code) =>
         Regex.Matches(code, @"\b(?:string|int|double|bool|var)\s+(\w+)\s*[=;]")
             .Select(match => match.Groups[1].Value)
+            .Concat(MethodNames(code))
+            .Concat(ParameterNames(code))
             .ToHashSet();
 
-    private static HashSet<string> ParameterNames(string template) =>
-        Regex.Matches(template, @"public static \w+ \w+\(([^)]*)\)")
-            .SelectMany(match => match.Groups[1].Value.Split(',', StringSplitOptions.RemoveEmptyEntries))
+    private static HashSet<string> ParameterNames(string code) =>
+        MethodSignatures(code)
+            .SelectMany(signature => signature.Groups[2].Value.Split(',', StringSplitOptions.RemoveEmptyEntries))
             .Select(parameter => parameter.Trim().Split(' ').Last())
             .ToHashSet();
 
+    private static HashSet<string> MethodNames(string code) =>
+        MethodSignatures(code).Select(signature => signature.Groups[1].Value).ToHashSet();
+
+    private static MatchCollection MethodSignatures(string code) =>
+        Regex.Matches(code, @"static\s+[^(=]+?\s(\w+)\s*\(([^)]*)\)");
+
     [Fact]
-    public void EveryLevelWorld_HasAMapWorldName()
+    public void EveryLevelWorld_HasAMapWorldNameAndFloorInBothLanguages()
     {
         Assert.All(Levels.Select(level => level.World).Distinct(), world =>
-            Assert.False(string.IsNullOrWhiteSpace(Ui.Get($"map.world.{world}", Language.Pt))));
+            Assert.All(new[] { Language.Pt, Language.En }, language =>
+            {
+                Assert.False(string.IsNullOrWhiteSpace(Ui.Get($"map.world.{world}", language)));
+                Assert.False(string.IsNullOrWhiteSpace(Ui.Get($"map.floor.{world}", language)));
+            }));
     }
 
     [Fact]
@@ -142,7 +174,10 @@ public class ContentTests
     [MemberData(nameof(PageIds))]
     public async Task EveryPage_ExampleCompiles(string id)
     {
-        var request = new RunRequest(NeutralTemplate, Find(id).Example, EmptyValidation);
+        var page = Find(id);
+        var request = page.World >= 2
+            ? new RunRequest(ClassScopeTemplate, page.Example, NestedEmptyValidation)
+            : new RunRequest(NeutralTemplate, page.Example, EmptyValidation);
 
         var result = await new RoslynCodeRunner().RunAsync(request, Language.En, CancellationToken.None);
 

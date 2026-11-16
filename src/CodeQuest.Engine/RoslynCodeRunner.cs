@@ -6,7 +6,7 @@ namespace CodeQuest.Engine;
 
 public sealed class RoslynCodeRunner : ICodeRunner
 {
-    private const string ValidationTypeName = "Validation";
+    internal const string ValidationTypeName = "Validation";
     private const string ValidationMethodName = "Run";
 
     private static readonly TimeSpan WallClockLimit = TimeSpan.FromSeconds(3);
@@ -21,7 +21,7 @@ public sealed class RoslynCodeRunner : ICodeRunner
             return rejected;
         }
 
-        var outcome = _compiler.Compile(request, language);
+        var outcome = _compiler.Compile(request);
         if (outcome.Rejected is not null)
         {
             return outcome.Rejected;
@@ -33,7 +33,7 @@ public sealed class RoslynCodeRunner : ICodeRunner
         }
 
         var execution = Task.Factory.StartNew(
-            () => Execute(outcome, request.PlayerCode),
+            () => Execute(outcome, request.PlayerCode, PlayerScope.IsClassScope(request.Template)),
             CancellationToken.None,
             TaskCreationOptions.LongRunning,
             TaskScheduler.Default);
@@ -47,7 +47,7 @@ public sealed class RoslynCodeRunner : ICodeRunner
         }
     }
 
-    private static RunResult Execute(CompileOutcome outcome, string playerCode)
+    private static RunResult Execute(CompileOutcome outcome, string playerCode, bool atClassScope)
     {
         var context = new PlayerLoadContext();
         try
@@ -55,7 +55,7 @@ public sealed class RoslynCodeRunner : ICodeRunner
             using var assemblyStream = new MemoryStream(outcome.Assembly!);
             using var pdbStream = new MemoryStream(outcome.Pdb!);
             var run = FindValidationMethod(context.LoadFromStream(assemblyStream, pdbStream));
-            return RunValidation(run, outcome, playerCode);
+            return RunValidation(run, outcome, playerCode, atClassScope);
         }
         finally
         {
@@ -63,7 +63,7 @@ public sealed class RoslynCodeRunner : ICodeRunner
         }
     }
 
-    private static RunResult RunValidation(MethodInfo run, CompileOutcome outcome, string playerCode)
+    private static RunResult RunValidation(MethodInfo run, CompileOutcome outcome, string playerCode, bool atClassScope)
     {
         try
         {
@@ -73,22 +73,23 @@ public sealed class RoslynCodeRunner : ICodeRunner
                 .ToList();
             return checks.Any(check => !check.Passed)
                 ? new ChecksFailed(checks)
-                : new Passed(StatementCounter.Count(playerCode), checks);
+                : new Passed(StatementCounter.Count(playerCode, atClassScope), checks);
         }
         catch (Exception exception)
         {
             var cause = exception is TargetInvocationException { InnerException: { } inner }
                 ? inner
                 : exception;
-            return cause is TimeoutException
+            return cause.GetType().Name == LoopGuardRewriter.LimitExceptionName
                 ? new TimedOut()
                 : RuntimeErrorExplainer.Explain(cause, outcome.PlayerLineOffset, outcome.PlayerLineCount);
         }
     }
     private static MethodInfo FindValidationMethod(Assembly assembly)
     {
-        var validation = assembly.GetType(ValidationTypeName)
-            ?? throw new InvalidOperationException($"The validation source declares no type named '{ValidationTypeName}'.");
+        var validation = assembly.GetTypes().Where(type => type.Name == ValidationTypeName).ToList() is [var single]
+            ? single
+            : throw new InvalidOperationException($"The validation source must declare exactly one type named '{ValidationTypeName}'.");
         var run = validation.GetMethod(ValidationMethodName, BindingFlags.Public | BindingFlags.Static, Type.EmptyTypes)
             ?? throw new InvalidOperationException(
                 $"'{ValidationTypeName}' has no public static parameterless method named '{ValidationMethodName}'.");

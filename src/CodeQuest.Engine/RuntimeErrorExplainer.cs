@@ -16,6 +16,7 @@ internal static class RuntimeErrorExplainer
         DivideByZeroException => PlayerMessages.DividedByZero,
         NullReferenceException => PlayerMessages.UsedNull,
         IndexOutOfRangeException or ArgumentOutOfRangeException => PlayerMessages.PositionDoesNotExist,
+        KeyNotFoundException => PlayerMessages.KeyNotInDictionary,
         FormatException => PlayerMessages.UnexpectedFormat,
         InsufficientExecutionStackException => PlayerMessages.InfiniteRecursion,
         _ => PlayerMessages.SpellFailedWhileRunning,

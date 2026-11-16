@@ -1,0 +1,29 @@
+{
+  "id": "lists",
+  "world": 2,
+  "title": { "pt": "Listas: List<T>", "en": "Lists: List<T>" },
+  "whatItIs": {
+    "pt": "Uma List<T> guarda vários valores do mesmo tipo, mas, ao contrário de um array, o tamanho muda: cresce com Add e encolhe com Remove. Cria-a com new List<T>() e consulta o número de elementos com Count. Podes ler e percorrer uma lista como um array, com [índice] e foreach. Para devolver uma lista de um método, cria-a lá dentro e devolve-a no fim.",
+    "en": "A List<T> holds several values of the same type but, unlike an array, its size changes: it grows with Add and shrinks with Remove. Create it with new List<T>() and read the number of elements with Count. You can read and walk a list like an array, with [index] and foreach. To return a list from a method, create it inside and return it at the end."
+  },
+  "syntax": {
+    "pt": "var nomes = new List<string>();\nnomes.Add(\"valor\");\nnomes.Remove(\"valor\");\nvar primeiro = nomes[0];\nvar quantos = nomes.Count;",
+    "en": "var names = new List<string>();\nnames.Add(\"value\");\nnames.Remove(\"value\");\nvar first = names[0];\nvar howMany = names.Count;"
+  },
+  "example": "static List<int> Doubled(int[] numbers)\n{\n    var doubled = new List<int>();\n    foreach (var number in numbers)\n    {\n        doubled.Add(number * 2);\n    }\n\n    return doubled;\n}",
+  "commonMistakes": [
+    {
+      "pt": "Esquecer o new: List<string> bag; não cria nada e usar bag.Add(...) falha.",
+      "en": "Forgetting new: List<string> bag; creates nothing and using bag.Add(...) fails."
+    },
+    {
+      "pt": "Usar Length em vez de Count: o tamanho de uma lista é Count; Length é dos arrays.",
+      "en": "Using Length instead of Count: the size of a list is Count; Length belongs to arrays."
+    },
+    {
+      "pt": "Alterar a lista dentro de um foreach que a percorre: cria uma lista nova para o resultado.",
+      "en": "Changing a list inside a foreach that walks it: create a new list for the result."
+    }
+  ],
+  "learnUrl": "https://learn.microsoft.com/dotnet/csharp/tour-of-csharp/tutorials/list-collection"
+}

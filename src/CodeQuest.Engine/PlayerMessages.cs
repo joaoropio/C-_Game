@@ -40,6 +40,66 @@ internal static class PlayerMessages
         "Há um erro no feitiço que a porta não consegue ler. Verifica tipos e nomes.",
         "There is an error in the spell that the door can't read. Check types and names.");
 
+    public static LocalizedText MissingMethod(string name) => new(
+        $"Falta o método \"{name}\".",
+        $"The method \"{name}\" is missing.");
+
+    public static LocalizedText MissingMethodOnType(string type, string name) => new(
+        $"\"{type}\" não tem nenhum método \"{name}\". Verifica o nome.",
+        $"\"{type}\" has no method \"{name}\". Check the name.");
+
+    public static readonly LocalizedText CountNotLength = new(
+        "Numa lista usa Count, não Length.",
+        "On a list use Count, not Length.");
+
+    public static readonly LocalizedText LengthNotCount = new(
+        "Num array (ou texto) usa Length, não Count.",
+        "On an array (or text) use Length, not Count.");
+
+    public static readonly LocalizedText StatementsBelongInMethods = new(
+        "Aqui só podes escrever métodos: põe as instruções dentro de um método.",
+        "Only methods go here: put statements inside a method.");
+
+    public static LocalizedText MissingOverloadForType(string name, string type) => new(
+        $"Falta uma versão de \"{name}\" que receba {type}.",
+        $"There's no version of \"{name}\" that takes {type}.");
+
+    public static LocalizedText MissingOverloadForCount(string name, int count) => count == 1
+        ? new LocalizedText(
+            $"Falta uma versão de \"{name}\" que receba 1 argumento.",
+            $"There's no version of \"{name}\" that takes 1 argument.")
+        : new LocalizedText(
+            $"Falta uma versão de \"{name}\" que receba {count} argumentos.",
+            $"There's no version of \"{name}\" that takes {count} arguments.");
+
+    public static LocalizedText ReservedName(string name) => new(
+        $"O nome {name} está reservado; escolhe outro nome.",
+        $"The name {name} is reserved; pick another name.");
+
+    public static LocalizedText WrongArgumentCount(string name, int count) => count == 1
+        ? new LocalizedText(
+            $"O método \"{name}\" não recebe 1 argumento.",
+            $"The method \"{name}\" doesn't take 1 argument.")
+        : new LocalizedText(
+            $"O método \"{name}\" não recebe {count} argumentos.",
+            $"The method \"{name}\" doesn't take {count} arguments.");
+
+    public static LocalizedText MissingArguments(string name, string parameter) => new(
+        $"Falta o valor de \"{parameter}\" na chamada ao método \"{name}\".",
+        $"Missing arguments in the call to method \"{name}\": no value for \"{parameter}\".");
+
+    public static LocalizedText DuplicateMethod(string name) => new(
+        $"Já existe um método \"{name}\" com estes mesmos parâmetros.",
+        $"There is already a method \"{name}\" with these same parameters.");
+
+    public static LocalizedText MissingStatic(string name) => new(
+        $"Falta static no método \"{name}\".",
+        $"The method \"{name}\" needs to be static.");
+
+    public static readonly LocalizedText NamespaceNotAllowed = new(
+        "Não uses namespace aqui.",
+        "Don't use a namespace here.");
+
     public static LocalizedText ForbiddenSpell(string symbol, int line) => new(
         $"Esse feitiço é proibido nesta masmorra: \"{symbol}\" (linha {line}).",
         $"That spell is forbidden in this dungeon: \"{symbol}\" (line {line}).");
@@ -47,6 +107,22 @@ internal static class PlayerMessages
     public static LocalizedText StackallocNotAllowed(int line) => new(
         $"stackalloc não é permitido nesta masmorra (linha {line}).",
         $"stackalloc is not allowed in this dungeon (line {line}).");
+
+    public static readonly LocalizedText TypesNotAllowed = new(
+        "Ainda não podes criar tipos: escreve só métodos static.",
+        "You can't create types yet: write only static methods.");
+
+    public static readonly LocalizedText OnlyMethodsAllowed = new(
+        "Para já só podes escrever métodos static, sem campos, propriedades nem construtores.",
+        "For now you can only write static methods, not fields, properties or constructors.");
+
+    public static LocalizedText AsyncNotAllowed(int line) => new(
+        $"Ainda não podes usar async nesta masmorra (linha {line}).",
+        $"You can't use async in this dungeon yet (line {line}).");
+
+    public static LocalizedText ExternNotAllowed(int line) => new(
+        $"Ainda não podes usar extern nesta masmorra (linha {line}).",
+        $"You can't use extern in this dungeon yet (line {line}).");
 
     public static readonly LocalizedText DividedByZero = new(
         "Dividiste por zero.",
@@ -59,6 +135,10 @@ internal static class PlayerMessages
     public static readonly LocalizedText PositionDoesNotExist = new(
         "Tentaste usar uma posição que não existe.",
         "You tried to use a position that doesn't exist.");
+
+    public static readonly LocalizedText KeyNotInDictionary = new(
+        "Pediste uma chave que o dicionário não tem. Verifica com ContainsKey ou TryGetValue antes de a ler.",
+        "You asked for a key the dictionary does not have. Check with ContainsKey or TryGetValue before reading it.");
 
     public static readonly LocalizedText UnexpectedFormat = new(
         "O texto não tem o formato esperado.",

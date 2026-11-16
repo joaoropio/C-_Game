@@ -2,7 +2,7 @@
 
 Jogo web onde o jogador é um mago e a magia é código C#. Cada sala da masmorra é um desafio: o código escrito no editor é compilado com Roslyn, validado por testes escondidos e, se passar, a porta abre. Pensado para aprender C# do zero, com interface em PT-PT e EN, Grimório (documentação dentro do jogo) e progresso guardado no `localStorage`.
 
-Estado atual: Mundo 1, níveis 1 a 6 (variáveis, operadores, condições, ciclos, arrays, strings).
+Estado atual: Mundo 1, níveis 1 a 6 (variáveis, operadores, condições, ciclos, arrays, strings); Mundo 2, níveis 7 a 11 (métodos, sobrecarga e parâmetros opcionais, exceções, List, Dictionary).
 
 ## Requisitos
 
@@ -60,7 +60,7 @@ content/
 
 Não é preciso mexer no motor, na interface nem nos `.csproj`: os níveis são descobertos a partir das pastas de `content/levels/`.
 
-1. Cria a pasta `content/levels/<NN-nome>/` (por exemplo `07-lists`).
+1. Cria a pasta `content/levels/<NN-nome>/` (por exemplo `12-...`).
 2. `level.json`, com estes campos:
    - `id` (igual ao nome da pasta, por convenção: nada o verifica), `world`, `number`;
    - `title`, `story` e `concept`, cada um com `pt` e `en`;
@@ -68,10 +68,10 @@ Não é preciso mexer no motor, na interface nem nos `.csproj`: os níveis são 
    - `maxStatementsForThreeStars`: nº máximo de instruções (contadas pelo Roslyn) da solução para ter 3 estrelas;
    - `grimoirePageId`: `id` da página do Grimório deste nível;
    - `sceneLabel`: `{ pt, en }` com a descrição curta da vinheta (é o nome acessível da imagem).
-3. `Template.cs`: o código C# à volta do código do jogador. Tem de ter exatamente uma linha `// {{PLAYER_CODE}}`, sozinha na linha (os espaços à volta ignoram-se). É aí que o código do jogador é inserido. O jogador só escreve o corpo de um método já dado.
+3. `Template.cs`: o código C# à volta do código do jogador. Tem de ter exatamente uma linha `// {{PLAYER_CODE}}`, sozinha na linha (os espaços à volta ignoram-se). É aí que o código do jogador é inserido. No Mundo 1 o jogador só escreve o corpo de um método já dado. No Mundo 2 o marcador fica diretamente dentro de `public static partial class Spell` e o jogador escreve métodos `static`.
 4. `Starter.cs`: o código inicial que aparece no editor. Tem de **não** passar na validação.
 5. `Solution.cs`: uma solução que passa na validação e cabe em `maxStatementsForThreeStars`.
-6. `Validation.cs`: os testes escondidos, compilados juntamente com o `Template.cs` e o código do jogador. Define `public static class Validation` com `public static IEnumerable<(string Case, string Expected, string Actual)> Run()`. Cada `yield return (caso, esperado, obtido)` é **um caso testado**, passe ou falhe: devolve-se sempre todos. `Case` é a entrada em texto (`attack = 10, defense = 3`) ou o nome da variável a verificar; `Expected` e `Actual` são os valores escritos como literais C# (`6`, `"M6"`, `true`, `{ 2, 3, 5 }`, `{ }`; números com `InvariantCulture`), por isso não têm idioma. O motor compara `Expected` e `Actual` como texto: o caso passa se forem iguais, e o nível passa se todos passarem. Exemplo:
+6. `Validation.cs`: os testes escondidos, compilados juntamente com o `Template.cs` e o código do jogador. Define `public static class Validation` (no Mundo 2, dentro de `public static partial class Spell`, para ver os métodos privados do jogador) com `public static IEnumerable<(string Case, string Expected, string Actual)> Run()`. Cada `yield return (caso, esperado, obtido)` é **um caso testado**, passe ou falhe: devolve-se sempre todos. `Case` é a entrada em texto (`attack = 10, defense = 3`) ou o nome da variável a verificar; `Expected` e `Actual` são os valores escritos como literais C# (`6`, `"M6"`, `true`, `{ 2, 3, 5 }`, `{ }`; números com `InvariantCulture`) ou descrições curtas em inglês de um resultado que não é um valor (`throws ArgumentException`, `not a List<string>`), por isso não têm idioma. Numa `Validation` aninhada em `Spell`, os tipos da BCL escrevem-se totalmente qualificados (`global::System.…`) para não colidirem com os nomes do jogador. O motor compara `Expected` e `Actual` como texto: o caso passa se forem iguais, e o nível passa se todos passarem. Exemplo:
 
    ```csharp
    public static class Validation

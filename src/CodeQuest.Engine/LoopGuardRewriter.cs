@@ -7,7 +7,15 @@ namespace CodeQuest.Engine;
 
 internal sealed class LoopGuardRewriter(TextSpan guardedSpan, SemanticModel model) : CSharpSyntaxRewriter
 {
-    public const string GuardSource = """
+    // The guard throws its own exception type so that a TimeoutException thrown by the player's code is not
+    // mistaken for a tripped limit.
+    public const string LimitExceptionName = "__LimitExceededException";
+
+    public const string GuardSource = $$"""
+        internal sealed class {{LimitExceptionName}} : System.Exception
+        {
+        }
+
         internal static class __LoopGuard
         {
             public const int Limit = 1_000_000;
@@ -25,7 +33,7 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan, SemanticModel mode
                 if (Tripped || ++_ticks > Limit)
                 {
                     Trip();
-                    throw new System.TimeoutException();
+                    throw new {{LimitExceptionName}}();
                 }
             }
 
@@ -34,7 +42,7 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan, SemanticModel mode
                 if (Tripped || ++_calls > CallLimit)
                 {
                     Trip();
-                    throw new System.TimeoutException();
+                    throw new {{LimitExceptionName}}();
                 }
 
                 if (!global::System.Runtime.CompilerServices.RuntimeHelpers.TryEnsureSufficientExecutionStack())
@@ -51,6 +59,8 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan, SemanticModel mode
     private static readonly ExpressionStatementSyntax TickStatement = (ExpressionStatementSyntax)SyntaxFactory
         .ParseStatement("global::__LoopGuard.Tick();")
         .WithTrailingTrivia(SyntaxFactory.Space);
+
+    private static readonly SyntaxToken NoToken = SyntaxFactory.Token(SyntaxKind.None);
 
     private static readonly ExpressionStatementSyntax EnterStatement = (ExpressionStatementSyntax)SyntaxFactory
         .ParseStatement("global::__LoopGuard.Enter();");
@@ -145,23 +155,34 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan, SemanticModel mode
     public override SyntaxNode? VisitLocalFunctionStatement(LocalFunctionStatementSyntax node)
     {
         var visited = (LocalFunctionStatementSyntax)base.VisitLocalFunctionStatement(node)!;
-        if (!guardedSpan.Contains(node.SpanStart))
-        {
-            return visited;
-        }
-
-        if (visited.Body is { } body)
-        {
-            return visited.WithBody(WithEnterBefore(body, 0));
-        }
-
-        var arrow = visited.ExpressionBody!;
-        var block = GuardedBlock(arrow.ArrowToken, arrow.Expression, visited.SemicolonToken, ReturnsValue(visited));
-        return visited
-            .WithExpressionBody(null)
-            .WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.None))
-            .WithBody(block);
+        return guardedSpan.Contains(node.SpanStart)
+            && GuardedBody(visited.Body, visited.ExpressionBody, visited.SemicolonToken, visited.ReturnType) is { } body
+                ? visited.WithExpressionBody(null).WithSemicolonToken(NoToken).WithBody(body)
+                : visited;
     }
+
+    // When the template lets the player write whole members, no template method encloses the player
+    // code, so each member body is entered through its own guard.
+    public override SyntaxNode? VisitMethodDeclaration(MethodDeclarationSyntax node)
+    {
+        var visited = (MethodDeclarationSyntax)base.VisitMethodDeclaration(node)!;
+        return guardedSpan.Contains(node.SpanStart)
+            && GuardedBody(visited.Body, visited.ExpressionBody, visited.SemicolonToken, visited.ReturnType) is { } body
+                ? visited.WithExpressionBody(null).WithSemicolonToken(NoToken).WithBody(body)
+                : visited;
+    }
+
+    // Returns the body with Enter in front, turning an expression body into a block; null when there is no body.
+    private static BlockSyntax? GuardedBody(
+        BlockSyntax? body,
+        ArrowExpressionClauseSyntax? arrow,
+        SyntaxToken semicolon,
+        TypeSyntax returnType) =>
+        body is not null
+            ? WithEnterBefore(body, 0)
+            : arrow is null
+                ? null
+                : GuardedBlock(arrow.ArrowToken, arrow.Expression, semicolon, ReturnsValue(returnType));
 
     public override SyntaxNode? VisitAnonymousMethodExpression(AnonymousMethodExpressionSyntax node)
     {
@@ -204,8 +225,8 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan, SemanticModel mode
         && model.GetTypeInfo(lambda).ConvertedType?.OriginalDefinition.ToDisplayString()
             == "System.Linq.Expressions.Expression<TDelegate>";
 
-    private static bool ReturnsValue(LocalFunctionStatementSyntax function) =>
-        function.ReturnType is not PredefinedTypeSyntax { Keyword.RawKind: (int)SyntaxKind.VoidKeyword };
+    private static bool ReturnsValue(TypeSyntax returnType) =>
+        returnType is not PredefinedTypeSyntax { Keyword.RawKind: (int)SyntaxKind.VoidKeyword };
 
     private static BlockSyntax GuardedBlock(
         SyntaxToken arrow,

@@ -147,6 +147,14 @@ public class RoslynCodeRunnerTests
     }
 
     [Fact]
+    public async Task Run_TimeoutExceptionThrownByThePlayer_IsARuntimeErrorNotATimeout()
+    {
+        var result = await Run("throw new TimeoutException();");
+
+        Assert.IsType<RuntimeError>(result);
+    }
+
+    [Fact]
     public async Task Run_BlockedOutsidePlayerCode_TimedOutByWallClock()
     {
         const string blockingValidation = """
@@ -361,5 +369,26 @@ public class RoslynCodeRunnerTests
     {
         Assert.IsType<Passed>(await Run("return x * 2;"));
         Assert.IsType<Passed>(await Run("return x + x;"));
+    }
+
+    [Theory]
+    [InlineData("async void Boom() { throw new Exception(\"boom\"); }\nBoom();\nreturn x * 2;")]
+    [InlineData("Action a = async () => { throw new Exception(\"boom\"); };\na();\nreturn x * 2;")]
+    public async Task Run_AsyncInPlayerCode_CodeRejected(string playerCode)
+    {
+        var result = Assert.IsType<CodeRejected>(await Run(playerCode));
+
+        Assert.Equal(1, result.Line);
+        Assert.Contains("async", result.Reason.En);
+    }
+
+    [Fact]
+    public async Task Run_ProgressCallback_CodeRejected()
+    {
+        var result = Assert.IsType<CodeRejected>(await Run(
+            "IProgress<int> p = new Progress<int>(v => throw new Exception(\"boom\"));\np.Report(1);\nreturn x * 2;"));
+
+        Assert.Equal(1, result.Line);
+        Assert.Contains("Progress", result.Reason.En);
     }
 }

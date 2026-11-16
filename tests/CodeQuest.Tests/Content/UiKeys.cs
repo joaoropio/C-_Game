@@ -6,8 +6,10 @@ public static class UiKeys
     [
         "app.title",
         "map.title",
-        "map.floor",
+        "map.floor.1",
+        "map.floor.2",
         "map.world.1",
+        "map.world.2",
         "map.stars",
         "map.currentRoom",
         "map.lockedRoom",

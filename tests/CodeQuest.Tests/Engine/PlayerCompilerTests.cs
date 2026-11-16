@@ -27,7 +27,7 @@ public class PlayerCompilerTests
     [Fact]
     public void Compile_ValidCode_ReturnsAssemblyAndPdb()
     {
-        var outcome = _compiler.Compile(Request("int a = 1;"), Language.En);
+        var outcome = _compiler.Compile(Request("int a = 1;"));
 
         Assert.NotNull(outcome.Assembly);
         Assert.NotNull(outcome.Pdb);
@@ -38,7 +38,7 @@ public class PlayerCompilerTests
     [Fact]
     public void Compile_SyntaxErrorOnPlayerLine2_ReportsLine2()
     {
-        var outcome = _compiler.Compile(Request("int a = 1;\nint b = ;"), Language.En);
+        var outcome = _compiler.Compile(Request("int a = 1;\nint b = ;"));
 
         Assert.Null(outcome.Assembly);
         var error = Assert.Single(outcome.Errors);
@@ -49,7 +49,7 @@ public class PlayerCompilerTests
     [Fact]
     public void Compile_ErrorOutsidePlayerCode_ReportsNullLine()
     {
-        var outcome = _compiler.Compile(Request("int a = 1;", Template.Replace("return 0;", "return \"x\";")), Language.En);
+        var outcome = _compiler.Compile(Request("int a = 1;", Template.Replace("return 0;", "return \"x\";")));
 
         var error = Assert.Single(outcome.Errors);
         Assert.Null(error.Line);
@@ -61,7 +61,7 @@ public class PlayerCompilerTests
     {
         var request = new RunRequest(Template, "int a = 1;", "public static class Checks { static int X = nope; }");
 
-        var error = Assert.Single(_compiler.Compile(request, Language.En).Errors);
+        var error = Assert.Single(_compiler.Compile(request).Errors);
 
         Assert.Null(error.Line);
     }
@@ -71,7 +71,7 @@ public class PlayerCompilerTests
     {
         var template = Template.Replace("return 0;", "return health;");
 
-        var error = Assert.Single(_compiler.Compile(Request("int a = 1;", template), Language.Pt).Errors);
+        var error = Assert.Single(_compiler.Compile(Request("int a = 1;", template)).Errors);
 
         Assert.Contains("health", error.Explanation!.Pt);
         Assert.Contains("health", error.Explanation.En);
@@ -80,7 +80,7 @@ public class PlayerCompilerTests
     [Fact]
     public void Compile_DoubleAssignedToInt_ExplainsTypeMismatch()
     {
-        var error = Assert.Single(_compiler.Compile(Request("int health = 50.5;"), Language.En).Errors);
+        var error = Assert.Single(_compiler.Compile(Request("int health = 50.5;")).Errors);
 
         foreach (var text in new[] { error.Explanation!.Pt, error.Explanation.En })
         {
@@ -95,7 +95,7 @@ public class PlayerCompilerTests
     [Fact]
     public void Compile_DoubleAssignedToExistingInt_NamesTheVariable()
     {
-        var error = Assert.Single(_compiler.Compile(Request("int health = 1;\nhealth = 50.5;"), Language.En).Errors);
+        var error = Assert.Single(_compiler.Compile(Request("int health = 1;\nhealth = 50.5;")).Errors);
 
         Assert.Contains("\"health\"", error.Explanation!.En);
     }
@@ -105,27 +105,16 @@ public class PlayerCompilerTests
     {
         var template = Template.Replace("return 0;", "return 0; int;");
 
-        var errors = _compiler.Compile(Request("int a = 1;", template), Language.En).Errors;
+        var errors = _compiler.Compile(Request("int a = 1;", template)).Errors;
 
         Assert.All(errors.Where(error => error.Line is null), error => Assert.NotNull(error.Explanation));
         Assert.Contains(errors, error => error.Explanation!.En.StartsWith("There is an error in the spell"));
     }
 
     [Fact]
-    public void Compile_Portuguese_UsesLocalizedMessage()
-    {
-        var request = Request("int a = ;");
-
-        var pt = Assert.Single(_compiler.Compile(request, Language.Pt).Errors).Message;
-        var en = Assert.Single(_compiler.Compile(request, Language.En).Errors).Message;
-
-        Assert.NotEqual(en, pt);
-    }
-
-    [Fact]
     public void Compile_ForbiddenApi_ReturnsRejectionAndNoAssembly()
     {
-        var outcome = _compiler.Compile(Request("int a = 1;\nSystem.Environment.Exit(a);"), Language.En);
+        var outcome = _compiler.Compile(Request("int a = 1;\nSystem.Environment.Exit(a);"));
 
         Assert.Null(outcome.Assembly);
         Assert.Empty(outcome.Errors);
@@ -136,11 +125,11 @@ public class PlayerCompilerTests
     [Fact]
     public void Compile_InfiniteLoop_ThrowsTimeoutWhenRun()
     {
-        var outcome = _compiler.Compile(Request("while (true) { }"), Language.En);
+        var outcome = _compiler.Compile(Request("while (true) { }"));
 
         var cast = System.Reflection.Assembly.Load(outcome.Assembly!).GetType("Spell")!.GetMethod("Cast")!;
         var thrown = Assert.Throws<System.Reflection.TargetInvocationException>(() => cast.Invoke(null, null));
-        Assert.IsType<TimeoutException>(thrown.InnerException);
+        Assert.Equal(LoopGuardRewriter.LimitExceptionName, thrown.InnerException!.GetType().Name);
     }
 
     private static Exception? RunCast(CompileOutcome outcome)
@@ -154,23 +143,23 @@ public class PlayerCompilerTests
     [Fact]
     public void Compile_GotoLoop_ThrowsTimeoutWhenRun()
     {
-        var outcome = _compiler.Compile(Request("a: goto a;"), Language.En);
+        var outcome = _compiler.Compile(Request("a: goto a;"));
 
-        Assert.IsType<TimeoutException>(RunCast(outcome));
+        Assert.Equal(LoopGuardRewriter.LimitExceptionName, RunCast(outcome)!.GetType().Name);
     }
 
     [Fact]
     public void Compile_GotoCaseLoop_ThrowsTimeoutWhenRun()
     {
-        var outcome = _compiler.Compile(Request("switch (1) { case 1: goto case 1; }"), Language.En);
+        var outcome = _compiler.Compile(Request("switch (1) { case 1: goto case 1; }"));
 
-        Assert.IsType<TimeoutException>(RunCast(outcome));
+        Assert.Equal(LoopGuardRewriter.LimitExceptionName, RunCast(outcome)!.GetType().Name);
     }
 
     [Fact]
     public void Compile_LabeledDeclaration_StillCompiles()
     {
-        var outcome = _compiler.Compile(Request("a: int x = 1;\nreturn x;"), Language.En);
+        var outcome = _compiler.Compile(Request("a: int x = 1;\nreturn x;"));
 
         Assert.Empty(outcome.Errors);
         Assert.NotNull(outcome.Assembly);
@@ -179,13 +168,13 @@ public class PlayerCompilerTests
     [Fact]
     public void Compile_CatchAllInsideGotoLoop_StillTimesOut()
     {
-        var outcome = _compiler.Compile(Request("a: try { while (true) { } } catch { } goto a;"), Language.En);
+        var outcome = _compiler.Compile(Request("a: try { while (true) { } } catch { } goto a;"));
 
-        Assert.IsType<TimeoutException>(RunCast(outcome));
+        Assert.Equal(LoopGuardRewriter.LimitExceptionName, RunCast(outcome)!.GetType().Name);
     }
 
     [Fact]
-    public void Compile_PlayerDeclaredLoopGuardClass_DoesNotShadowTheGuard()
+    public void Compile_PlayerDeclaredLoopGuardClass_IsRejectedBeforeItCanShadowTheGuard()
     {
         const string code = """
             while (true) { }
@@ -196,15 +185,16 @@ public class PlayerCompilerTests
             {
             """;
 
-        var outcome = _compiler.Compile(Request(code), Language.En);
+        var outcome = _compiler.Compile(Request(code));
 
-        Assert.IsType<TimeoutException>(RunCast(outcome));
+        Assert.NotNull(outcome.Rejected);
+        Assert.Null(outcome.Assembly);
     }
 
     [Fact]
     public void Compile_ErrorOnFirstPlayerLine_KeepsLineAndColumn()
     {
-        var error = Assert.Single(_compiler.Compile(Request("int b = ;"), Language.En).Errors);
+        var error = Assert.Single(_compiler.Compile(Request("int b = ;")).Errors);
 
         Assert.Equal(1, error.Line);
         Assert.Equal(9, error.Column);
@@ -219,7 +209,7 @@ public class PlayerCompilerTests
     [InlineData("try { return 1; } catch (Exception e) { int a = undefined; }", 1, 49)]
     public void Compile_ErrorsInsideGuardedConstructs_KeepOriginalLineAndColumn(string playerCode, int line, int column)
     {
-        var error = Assert.Single(_compiler.Compile(Request(playerCode), Language.En).Errors);
+        var error = Assert.Single(_compiler.Compile(Request(playerCode)).Errors);
 
         Assert.Equal(line, error.Line);
         Assert.Equal(column, error.Column);
@@ -232,7 +222,7 @@ public class PlayerCompilerTests
     [InlineData("Func<int, int> f = null;\nf = n => { return f(n); };\nreturn f(1);")]
     public void Compile_RecursionInPlayerFunctions_ThrowsInsufficientStackWhenRun(string playerCode)
     {
-        var outcome = _compiler.Compile(Request(playerCode), Language.En);
+        var outcome = _compiler.Compile(Request(playerCode));
 
         Assert.Null(outcome.Rejected);
         Assert.IsType<InsufficientExecutionStackException>(RunCast(outcome));
@@ -241,7 +231,7 @@ public class PlayerCompilerTests
     [Fact]
     public void Compile_EnclosingMethodRecursion_ThrowsInsufficientStackWhenRun()
     {
-        var outcome = _compiler.Compile(Request("return Cast();"), Language.En);
+        var outcome = _compiler.Compile(Request("return Cast();"));
 
         Assert.IsType<InsufficientExecutionStackException>(RunCast(outcome));
     }
@@ -250,8 +240,7 @@ public class PlayerCompilerTests
     public void Compile_RecursionGuardCalls_AreNotRejectedAsForbiddenApis()
     {
         var outcome = _compiler.Compile(
-            Request("Func<int, int> f = n => n + 1;\nint G(int n) => n;\nreturn f(G(1));"),
-            Language.En);
+            Request("Func<int, int> f = n => n + 1;\nint G(int n) => n;\nreturn f(G(1));"));
 
         Assert.Null(outcome.Rejected);
         Assert.NotNull(outcome.Assembly);
@@ -261,8 +250,7 @@ public class PlayerCompilerTests
     public void Compile_ForbiddenApiInsideLambdaBody_StillRejectedOnItsLine()
     {
         var outcome = _compiler.Compile(
-            Request("int a = 1;\nFunc<int> f = () => Environment.TickCount;\nreturn f();"),
-            Language.En);
+            Request("int a = 1;\nFunc<int> f = () => Environment.TickCount;\nreturn f();"));
 
         Assert.NotNull(outcome.Rejected);
         Assert.Equal(2, outcome.Rejected.Line);
@@ -271,7 +259,7 @@ public class PlayerCompilerTests
     [Fact]
     public void Compile_OnlyErrorsAreReported()
     {
-        var outcome = _compiler.Compile(Request("int unused = 1;"), Language.En);
+        var outcome = _compiler.Compile(Request("int unused = 1;"));
 
         Assert.NotNull(outcome.Assembly);
         Assert.Empty(outcome.Errors);

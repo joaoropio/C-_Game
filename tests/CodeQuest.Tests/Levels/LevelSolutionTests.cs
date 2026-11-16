@@ -351,4 +351,408 @@ public class LevelSolutionTests
 
         Assert.Contains(result.Errors, error => error.Explanation?.En.Contains("health") == true);
     }
+
+    [Fact]
+    public async Task Level7_WrongCap_ReportsExpectedAndObtained()
+    {
+        var level = Find("07-methods");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, "static int Heal(int health, int potion) => health + potion;"));
+
+        Assert.Contains(new CheckOutcome("Heal(90, 30)", "100", "120"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level7_MissingStatic_Explains()
+    {
+        var level = Find("07-methods");
+
+        var result = Assert.IsType<CompilationFailed>(await Run(level, "int Heal(int health, int potion) => Math.Min(health + potion, 100);"));
+
+        Assert.Equal("The method \"Heal\" needs to be static.", Assert.Single(result.Errors).Explanation!.En);
+    }
+
+    [Fact]
+    public async Task Level7_WrongName_ExplainsMissingMethod()
+    {
+        var level = Find("07-methods");
+
+        var result = Assert.IsType<CompilationFailed>(await Run(level, "static int Cure(int health, int potion) => Math.Min(health + potion, 100);"));
+
+        Assert.Equal("The method \"Heal\" is missing.", Assert.Single(result.Errors).Explanation!.En);
+    }
+
+    [Fact]
+    public async Task Level7_TwoStatementSolution_Passes()
+    {
+        var level = Find("07-methods");
+
+        var result = Assert.IsType<Passed>(await Run(
+            level,
+            "static int Heal(int health, int potion)\n{\n    int total = health + potion;\n    return Math.Min(total, 100);\n}"));
+
+        Assert.True(result.StatementCount <= level.MaxStatementsForThreeStars);
+    }
+
+    private const string Level8Shield = "static int Shield(int strength, int turns = 1) => strength * turns;";
+
+    [Fact]
+    public async Task Level8_Solution_RunsTheFiveOverloadChecksWithinTheStarLimit()
+    {
+        var level = Find("08-overloads");
+
+        var result = Assert.IsType<Passed>(await Run(level, level.Solution));
+
+        Assert.Equal(["Fireball(5)", "Fireball(2)", "Fireball(\"goblin\")", "Shield(4)", "Shield(4, 3)"], result.Checks.Select(check => check.Case));
+        Assert.Equal(3, level.MaxStatementsForThreeStars);
+        Assert.True(result.StatementCount <= level.MaxStatementsForThreeStars);
+    }
+
+    [Fact]
+    public async Task Level8_WrongText_ReportsExpectedAndObtained()
+    {
+        var level = Find("08-overloads");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(
+            level,
+            "static int Fireball(int power) => power * 2;\nstatic string Fireball(string target) => \"Fireball \" + target;\n" + Level8Shield));
+
+        Assert.Contains(new CheckOutcome("Fireball(\"goblin\")", "\"Fireball at goblin\"", "\"Fireball goblin\""), result.Checks);
+    }
+
+    [Theory]
+    [InlineData("static int Fireball(int power, int targets = 1) => power * 2 * targets;\n" + Level8Shield)]
+    [InlineData("static int Fireball(int power) => power * 2;\n" + Level8Shield)]
+    public async Task Level8_WithoutTheTextOverload_DoesNotPass(string playerCode)
+    {
+        var level = Find("08-overloads");
+
+        var result = await Run(level, playerCode);
+
+        Assert.IsType<CompilationFailed>(result);
+    }
+
+    [Fact]
+    public async Task Level8_SameSignatureTwice_Explains()
+    {
+        var level = Find("08-overloads");
+
+        var result = Assert.IsType<CompilationFailed>(await Run(
+            level,
+            "static int Fireball(int power) => power * 2;\nstatic int Fireball(int energy) => energy * 2;\nstatic string Fireball(string target) => \"Fireball at \" + target;\n" + Level8Shield));
+
+        var error = Assert.Single(result.Errors);
+        Assert.Equal(2, error.Line);
+        Assert.Equal("There is already a method \"Fireball\" with these same parameters.", error.Explanation!.En);
+    }
+
+    [Fact]
+    public async Task Level8_MissingOptional_ExplainsArguments()
+    {
+        var level = Find("08-overloads");
+
+        var result = Assert.IsType<CompilationFailed>(await Run(
+            level,
+            "static int Fireball(int power) => power * 2;\nstatic string Fireball(string target) => \"Fireball at \" + target;\nstatic int Shield(int strength, int turns) => strength * turns;"));
+
+        Assert.Equal("Missing arguments in the call to method \"Shield\": no value for \"turns\".", result.Errors[0].Explanation!.En);
+    }
+
+    private const string SplitManaThatThrows =
+        "static int SplitMana(int mana, int wizards)\n{\n    if (wizards <= 0)\n    {\n        throw new ArgumentException(\"no wizards\");\n    }\n\n    return mana / wizards;\n}\n";
+
+    private const string SafeSplitWithRealCatch =
+        "static int SafeSplit(int mana, int wizards)\n{\n    try { return SplitMana(mana, wizards); }\n    catch (ArgumentException) { return 0; }\n}";
+
+    [Fact]
+    public async Task Level9_Solution_RunsTheFiveExceptionChecksWithinTheStarLimit()
+    {
+        var level = Find("09-exceptions");
+
+        var result = Assert.IsType<Passed>(await Run(level, level.Solution));
+
+        Assert.Equal(
+            ["SplitMana(10, 2)", "SplitMana(10, 0)", "SplitMana(10, -1)", "SafeSplit(10, 0)", "SafeSplit(9, 3)"],
+            result.Checks.Select(check => check.Case));
+        Assert.Equal(
+            ["returns 5", "throws ArgumentException", "throws ArgumentException", "catches ArgumentException, returns 0", "returns 3"],
+            result.Checks.Select(check => check.Expected));
+        Assert.Equal(6, level.MaxStatementsForThreeStars);
+        Assert.True(result.StatementCount <= level.MaxStatementsForThreeStars);
+    }
+
+    [Fact]
+    public async Task Level9_CompactThrowExpressionSolution_FitsTheStarLimit()
+    {
+        var level = Find("09-exceptions");
+
+        var result = Assert.IsType<Passed>(await Run(
+            level,
+            "static int SplitMana(int mana, int wizards) => wizards <= 0 ? throw new ArgumentException(\"no wizards\") : mana / wizards;\n" + SafeSplitWithRealCatch));
+
+        Assert.True(result.StatementCount <= level.MaxStatementsForThreeStars);
+    }
+
+    [Fact]
+    public async Task Level9_NoGuardClause_ReportsWhichExceptionWasThrownInstead()
+    {
+        var level = Find("09-exceptions");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(
+            level,
+            "static int SplitMana(int mana, int wizards) => mana / wizards;\nstatic int SafeSplit(int mana, int wizards) => 0;"));
+
+        Assert.Contains(new CheckOutcome("SplitMana(10, 0)", "throws ArgumentException", "throws DivideByZeroException"), result.Checks);
+        Assert.Contains(new CheckOutcome("SplitMana(10, -1)", "throws ArgumentException", "returns -10"), result.Checks);
+    }
+
+    [Theory]
+    [InlineData("static int SafeSplit(int mana, int wizards)\n{\n    if (wizards <= 0)\n    {\n        return 0;\n    }\n\n    return SplitMana(mana, wizards);\n}")]
+    [InlineData("static int SafeSplit(int mana, int wizards) => wizards <= 0 ? 0 : SplitMana(mana, wizards);")]
+    public async Task Level9_IfInsteadOfCatch_IsRejected(string safeSplit)
+    {
+        var level = Find("09-exceptions");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, SplitManaThatThrows + safeSplit));
+
+        Assert.Contains(
+            new CheckOutcome("SafeSplit(10, 0)", "catches ArgumentException, returns 0", "returns 0 without catching anything"),
+            result.Checks);
+    }
+
+    [Fact]
+    public async Task Level9_CatchingTheWrongType_ReportsTheExceptionThatEscaped()
+    {
+        var level = Find("09-exceptions");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(
+            level,
+            SplitManaThatThrows +
+            "static int SafeSplit(int mana, int wizards)\n{\n    try { return SplitMana(mana, wizards); }\n    catch (DivideByZeroException) { return 0; }\n}"));
+
+        Assert.Contains(
+            new CheckOutcome("SafeSplit(10, 0)", "catches ArgumentException, returns 0", "throws ArgumentException"),
+            result.Checks);
+    }
+
+    [Fact]
+    public async Task Level9_UncaughtException_IsReportedPerCaseNotACrash()
+    {
+        var level = Find("09-exceptions");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(
+            level,
+            SplitManaThatThrows + "static int SafeSplit(int mana, int wizards) => SplitMana(mana, wizards);"));
+
+        Assert.Contains(
+            new CheckOutcome("SafeSplit(10, 0)", "catches ArgumentException, returns 0", "throws ArgumentException"),
+            result.Checks);
+        Assert.Contains(new CheckOutcome("SafeSplit(9, 3)", "returns 3", "returns 3"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level9_ConsecutiveRuns_EachWatchTheirOwnCatch()
+    {
+        var level = Find("09-exceptions");
+        var ifVersion = SplitManaThatThrows + "static int SafeSplit(int mana, int wizards) => wizards <= 0 ? 0 : SplitMana(mana, wizards);";
+
+        Assert.IsType<Passed>(await Run(level, level.Solution));
+        Assert.IsType<ChecksFailed>(await Run(level, ifVersion));
+        Assert.IsType<Passed>(await Run(level, level.Solution));
+        Assert.IsType<ChecksFailed>(await Run(level, ifVersion));
+    }
+
+    [Fact]
+    public async Task Level9_GuardTripInsideAChecked_StaysARuntimeErrorBecauseOfTheValidationFilter()
+    {
+        var level = Find("09-exceptions");
+
+        var result = Assert.IsType<RuntimeError>(await Run(
+            level,
+            "static int SplitMana(int mana, int wizards) => SplitMana(mana, wizards);\n" + SafeSplitWithRealCatch));
+
+        Assert.Equal("The spell keeps calling itself and never stops (infinite recursion).", result.Explanation.En);
+    }
+
+    [Fact]
+    public async Task Level9_InfiniteLoopInCheckedSpell_IsTimedOutNotAThrowsText()
+    {
+        var level = Find("09-exceptions");
+
+        Assert.IsType<TimedOut>(await Run(
+            level,
+            "static int SplitMana(int mana, int wizards)\n{\n    while (true) { }\n}\nstatic int SafeSplit(int mana, int wizards) => 0;"));
+    }
+
+    [Fact]
+    public async Task Level10_Solution_RunsTheFourListChecksWithinTheStarLimit()
+    {
+        var level = Find("10-lists");
+
+        var result = Assert.IsType<Passed>(await Run(level, level.Solution));
+
+        Assert.Equal(
+            ["PackBag({ \"ruby\", \"stone\", \"key\" })", "PackBag({ \"stone\" })", "PackBag({ })", "PackBag({ \"key\", \"key\" })"],
+            result.Checks.Select(check => check.Case));
+        Assert.Equal(["{ \"ruby\", \"key\" }", "{ }", "{ }", "{ \"key\", \"key\" }"], result.Checks.Select(check => check.Expected));
+        Assert.Equal(5, level.MaxStatementsForThreeStars);
+        Assert.True(result.StatementCount <= level.MaxStatementsForThreeStars);
+    }
+
+    [Fact]
+    public async Task Level10_ReturnsNull_ShowsNull()
+    {
+        var level = Find("10-lists");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, "static List<string> PackBag(string[] loot)\n{\n    return null;\n}"));
+
+        Assert.Equal("null", result.Checks.First().Actual);
+    }
+
+    [Fact]
+    public async Task Level10_KeepsEverything_ReportsExpectedAndObtained()
+    {
+        var level = Find("10-lists");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(
+            level,
+            "static List<string> PackBag(string[] loot)\n{\n    return new List<string>(loot);\n}"));
+
+        Assert.Contains(new CheckOutcome("PackBag({ \"ruby\", \"stone\", \"key\" })", "{ \"ruby\", \"key\" }", "{ \"ruby\", \"stone\", \"key\" }"), result.Checks);
+        Assert.Contains(new CheckOutcome("PackBag({ })", "{ }", "{ }"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level10_ReversedOrder_DoesNotPass()
+    {
+        var level = Find("10-lists");
+
+        Assert.IsType<ChecksFailed>(await Run(
+            level,
+            "static List<string> PackBag(string[] loot)\n{\n    var bag = new List<string>();\n    foreach (var item in loot)\n    {\n        if (item != \"stone\")\n        {\n            bag.Insert(0, item);\n        }\n    }\n\n    return bag;\n}"));
+    }
+
+    [Fact]
+    public async Task Level10_LinqOneLiner_Passes()
+    {
+        var level = Find("10-lists");
+
+        var result = Assert.IsType<Passed>(await Run(
+            level,
+            "static List<string> PackBag(string[] loot)\n{\n    return loot.Where(item => item != \"stone\").ToList();\n}"));
+
+        Assert.Equal(1, result.StatementCount);
+    }
+
+    [Theory]
+    [InlineData("static string[] PackBag(string[] loot) => Array.FindAll(loot, item => item != \"stone\");")]
+    [InlineData("static IEnumerable<string> PackBag(string[] loot)\n{\n    foreach (var item in loot)\n    {\n        if (item != \"stone\")\n        {\n            yield return item;\n        }\n    }\n}")]
+    public async Task Level10_ArrayInsteadOfList_IsRejected(string playerCode)
+    {
+        var level = Find("10-lists");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, playerCode));
+
+        Assert.All(result.Checks, check => Assert.Equal("not a List<string>", check.Actual));
+    }
+
+    [Fact]
+    public async Task Level10_NullItem_IsShownAsNull()
+    {
+        var level = Find("10-lists");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(
+            level,
+            "static List<string> PackBag(string[] loot)\n{\n    return new List<string> { null };\n}"));
+
+        Assert.Equal("{ null }", result.Checks.First().Actual);
+    }
+
+    [Fact]
+    public async Task Level11_Solution_RunsTheFourDictionaryChecksWithinTheStarLimit()
+    {
+        var level = Find("11-dictionaries");
+
+        var result = Assert.IsType<Passed>(await Run(level, level.Solution));
+
+        Assert.Equal(
+            ["CountPotions({ \"heal\", \"mana\", \"heal\" })", "CountPotions({ })", "CountPotions({ \"fire\" })", "CountPotions({ \"mana\", \"fire\", \"mana\", \"mana\" })"],
+            result.Checks.Select(check => check.Case));
+        Assert.Equal(["{ [\"heal\"] = 2, [\"mana\"] = 1 }", "{ }", "{ [\"fire\"] = 1 }", "{ [\"fire\"] = 1, [\"mana\"] = 3 }"], result.Checks.Select(check => check.Expected));
+        Assert.Equal(6, level.MaxStatementsForThreeStars);
+        Assert.True(result.StatementCount <= level.MaxStatementsForThreeStars);
+    }
+
+    [Fact]
+    public async Task Level11_ReturnsNull_ShowsNull()
+    {
+        var level = Find("11-dictionaries");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, "static Dictionary<string, int> CountPotions(string[] potions)\n{\n    return null;\n}"));
+
+        Assert.Equal("null", result.Checks.First().Actual);
+    }
+
+    [Fact]
+    public async Task Level11_CountsEverythingAsOne_ReportsExpectedAndObtained()
+    {
+        var level = Find("11-dictionaries");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(
+            level,
+            "static Dictionary<string, int> CountPotions(string[] potions)\n{\n    var counts = new Dictionary<string, int>();\n    foreach (var potion in potions)\n    {\n        counts[potion] = 1;\n    }\n\n    return counts;\n}"));
+
+        Assert.Contains(new CheckOutcome("CountPotions({ \"heal\", \"mana\", \"heal\" })", "{ [\"heal\"] = 2, [\"mana\"] = 1 }", "{ [\"heal\"] = 1, [\"mana\"] = 1 }"), result.Checks);
+        Assert.Contains(new CheckOutcome("CountPotions({ })", "{ }", "{ }"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level11_LinqOneLiner_Passes()
+    {
+        var level = Find("11-dictionaries");
+
+        var result = Assert.IsType<Passed>(await Run(
+            level,
+            "static Dictionary<string, int> CountPotions(string[] potions)\n{\n    return potions.GroupBy(potion => potion).ToDictionary(group => group.Key, group => group.Count());\n}"));
+
+        Assert.Equal(1, result.StatementCount);
+    }
+
+    [Fact]
+    public async Task Level11_TryGetValueSolution_Passes()
+    {
+        var level = Find("11-dictionaries");
+
+        var result = Assert.IsType<Passed>(await Run(
+            level,
+            "static Dictionary<string, int> CountPotions(string[] potions)\n{\n    var counts = new Dictionary<string, int>();\n    foreach (var potion in potions)\n    {\n        counts.TryGetValue(potion, out var seen);\n        counts[potion] = seen + 1;\n    }\n\n    return counts;\n}"));
+
+        Assert.True(result.StatementCount <= level.MaxStatementsForThreeStars);
+    }
+
+    [Theory]
+    [InlineData("static SortedDictionary<string, int> CountPotions(string[] potions)\n{\n    var counts = new SortedDictionary<string, int>();\n    foreach (var potion in potions)\n    {\n        counts[potion] = counts.GetValueOrDefault(potion) + 1;\n    }\n\n    return counts;\n}")]
+    [InlineData("static List<KeyValuePair<string, int>> CountPotions(string[] potions)\n{\n    return potions.GroupBy(potion => potion).Select(group => new KeyValuePair<string, int>(group.Key, group.Count())).ToList();\n}")]
+    [InlineData("static IEnumerable<IGrouping<string, string>> CountPotions(string[] potions)\n{\n    return potions.GroupBy(potion => potion);\n}")]
+    public async Task Level11_NotADictionary_IsRejected(string playerCode)
+    {
+        var level = Find("11-dictionaries");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, playerCode));
+
+        Assert.All(result.Checks, check => Assert.Equal("not a Dictionary<string, int>", check.Actual));
+    }
+
+    [Fact]
+    public async Task Level11_KeyNotFound_Explains()
+    {
+        var level = Find("11-dictionaries");
+
+        var result = Assert.IsType<RuntimeError>(await Run(
+            level,
+            "static Dictionary<string, int> CountPotions(string[] potions)\n{\n    var counts = new Dictionary<string, int>();\n    foreach (var potion in potions)\n    {\n        counts[potion]++;\n    }\n\n    return counts;\n}"));
+
+        Assert.Equal("You asked for a key the dictionary does not have. Check with ContainsKey or TryGetValue before reading it.", result.Explanation.En);
+        Assert.Equal(6, result.Line);
+    }
 }

@@ -12,6 +12,11 @@ public sealed class GrimoireIconTests : BunitContext
     [InlineData("loops", "hourglass")]
     [InlineData("arrays", "shelf")]
     [InlineData("strings", "quill")]
+    [InlineData("methods", "tome")]
+    [InlineData("overloads", "fireballs")]
+    [InlineData("exceptions", "flask")]
+    [InlineData("lists", "backpack")]
+    [InlineData("dictionaries", "cabinet")]
     [InlineData("something-new", "book")]
     public void Icon_IsChosenByPageIdWithABookFallback(string pageId, string expectedKind)
     {

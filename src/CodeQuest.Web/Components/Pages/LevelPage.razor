@@ -15,7 +15,7 @@
     <div class="page-content" inert="@(earnedStars is not null)">
         <div class="level-header">
             <a class="back-link" href="/" aria-label="@Ui["level.backToMap"]"><span aria-hidden="true">‹</span> @Ui["level.mapShort"]</a>
-            <p class="crumb">@string.Format(Ui["level.crumb"], level.World, level.Number, Content.Levels.Count(candidate => candidate.World == level.World))</p>
+            <p class="crumb">@string.Format(Ui["level.crumb"], level.World, Content.RoomInWorld(level), Content.Levels.Count(candidate => candidate.World == level.World))</p>
         </div>
         <div class="level-layout">
             <section class="parchment">

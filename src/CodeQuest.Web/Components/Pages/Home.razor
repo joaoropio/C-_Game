@@ -22,7 +22,7 @@
         <section class="world" aria-labelledby="world-@world.Key">
             <header class="world-header">
                 <div>
-                    <p class="world-floor">@string.Format(Ui["map.floor"], world.Key)</p>
+                    <p class="world-floor">@Ui[$"map.floor.{world.Key}"]</p>
                     <h2 class="world-name" id="world-@world.Key">@Ui[$"map.world.{world.Key}"]</h2>
                 </div>
                 <p class="world-stars-total">
@@ -78,7 +78,7 @@
                                 <svg class="door" viewBox="0 0 66 84" aria-hidden="true" focusable="false"><path d="M4 82V34a29 29 0 0 1 58 0v48z" fill="#2b231b" stroke="#c8913f" stroke-width="3" /><path d="M14 82V38a19 19 0 0 1 38 0v44" fill="#e8a33d" fill-opacity="0.25" /></svg>
                             }
                             <div class="room-body">
-                                <span class="room-number">@level.World-@level.Number@if (current)
+                                <span class="room-number">@level.World-@Content.RoomInWorld(level)@if (current)
                                     {
                                         <span aria-hidden="true"> · @Ui["map.currentRoom"].ToLowerInvariant()</span>
                                     }</span>

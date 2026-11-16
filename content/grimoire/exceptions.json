@@ -1,0 +1,29 @@
+{
+  "id": "exceptions",
+  "world": 2,
+  "title": { "pt": "Exceções: throw e try/catch", "en": "Exceptions: throw and try/catch" },
+  "whatItIs": {
+    "pt": "Uma exceção é um aviso de que algo correu mal, como um argumento inválido. throw lança uma exceção e o método pára nesse ponto. Se ninguém a apanhar, o programa falha. Um bloco try executa o código arriscado e um catch trata a exceção de um tipo concreto; sem exceção, o catch não corre. Apanha sempre o tipo mais específico que esperas.",
+    "en": "An exception is a warning that something went wrong, such as an invalid argument. throw raises an exception and the method stops at that point. If nobody catches it, the program fails. A try block runs the risky code and a catch handles an exception of a specific type; with no exception, the catch does not run. Always catch the most specific type you expect."
+  },
+  "syntax": {
+    "pt": "throw new TipoDeExceção(\"mensagem\");\n\ntry\n{\n    // código arriscado\n}\ncatch (TipoDeExceção)\n{\n    // o que fazer se falhar\n}",
+    "en": "throw new ExceptionType(\"message\");\n\ntry\n{\n    // risky code\n}\ncatch (ExceptionType)\n{\n    // what to do if it fails\n}"
+  },
+  "example": "static int Ration(int days)\n{\n    if (days < 1)\n    {\n        throw new InvalidOperationException(\"no days\");\n    }\n\n    return 30 / days;\n}\n\nstatic string Plan(int days)\n{\n    string report = \"ready\";\n\n    try\n    {\n        Ration(days);\n    }\n    catch (InvalidOperationException)\n    {\n        report = \"no rations\";\n    }\n\n    return report;\n}",
+  "commonMistakes": [
+    {
+      "pt": "Esquecer o throw e deixar o erro acontecer sozinho: dividir por zero lança DivideByZeroException, não a exceção que querias.",
+      "en": "Forgetting the throw and letting the error happen by itself: dividing by zero throws DivideByZeroException, not the exception you wanted."
+    },
+    {
+      "pt": "Apanhar o tipo errado: um catch (ArgumentException) não apanha uma exceção de outro tipo.",
+      "en": "Catching the wrong type: a catch (ArgumentException) does not catch an exception of another type."
+    },
+    {
+      "pt": "Escrever throw ArgumentException(\"...\") sem new: é preciso criar a exceção com new.",
+      "en": "Writing throw ArgumentException(\"...\") without new: the exception must be created with new."
+    }
+  ],
+  "learnUrl": "https://learn.microsoft.com/dotnet/csharp/fundamentals/exceptions/exception-handling"
+}

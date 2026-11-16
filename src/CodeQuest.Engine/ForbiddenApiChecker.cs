@@ -23,6 +23,7 @@ internal static class ForbiddenApiChecker
         "System.Type",
         "System.Delegate",
         "System.TimeProvider",
+        "System.Progress<T>",
         "System.Linq.ParallelEnumerable",
     ];
 
