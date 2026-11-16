@@ -2,7 +2,7 @@
 
 Jogo web onde o jogador é um mago e a magia é código C#. Cada sala da masmorra é um desafio: o código escrito no editor é compilado com Roslyn, validado por testes escondidos e, se passar, a porta abre. Pensado para aprender C# do zero, com interface em PT-PT e EN, Grimório (documentação dentro do jogo) e progresso guardado no `localStorage`.
 
-Estado atual: Mundo 1, níveis 1 a 6 (variáveis, operadores, condições, ciclos, arrays, strings).
+Estado atual: Mundo 1, níveis 1 a 6 (variáveis, operadores, condições, ciclos, arrays, strings); Mundo 2 em curso, nível 7 (métodos).
 
 ## Requisitos
 

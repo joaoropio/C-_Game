@@ -1,0 +1,29 @@
+{
+  "id": "methods",
+  "world": 2,
+  "title": { "pt": "Métodos", "en": "Methods" },
+  "whatItIs": {
+    "pt": "Um método é um bloco de código com nome, que podes usar quantas vezes quiseres. Tem um tipo de resultado, um nome e parâmetros entre parênteses. Quem o chama passa os argumentos e recebe o resultado com return. Se não devolve nada, o tipo é void. Por agora escreve public static antes do tipo: public deixa o resto do código usá-lo e static dispensa criar um objeto.",
+    "en": "A method is a named block of code that you can use as many times as you like. It has a result type, a name and parameters in parentheses. Whoever calls it passes the arguments and gets the result back with return. If it returns nothing, the type is void. For now write public static before the type: public lets the rest of the code use it and static means no object is needed."
+  },
+  "syntax": {
+    "pt": "public static tipo Nome(tipo parametro)\n{\n    return valor;\n}\n\npublic static tipo Nome(tipo parametro) => valor;   // só uma expressão\n\nNome(argumento)   // chamar o método\n\npublic static void Nome()   // void: não devolve nada",
+    "en": "public static type Name(type parameter)\n{\n    return value;\n}\n\npublic static type Name(type parameter) => value;   // a single expression\n\nName(argument)   // call the method\n\npublic static void Name()   // void: returns nothing"
+  },
+  "example": "static int Triple(int gold) => gold * 3;\n\nstatic string Greet(string wizard) => \"Hello, \" + wizard;\n\nint loot = Triple(4);\nstring message = Greet(\"Merlin\");",
+  "commonMistakes": [
+    {
+      "pt": "Esquecer public ou static: neste jogo os métodos escrevem-se com public static antes do tipo.",
+      "en": "Forgetting public or static: in this game methods are written with public static before the type."
+    },
+    {
+      "pt": "Chamar o método com o nome errado ou com o número errado de argumentos: tem de coincidir com o que foi declarado.",
+      "en": "Calling the method with the wrong name or the wrong number of arguments: it has to match what was declared."
+    },
+    {
+      "pt": "Esquecer o return num método que não é void: um método com tipo de resultado tem de devolver um valor em todos os caminhos.",
+      "en": "Forgetting return in a method that isn't void: a method with a result type must return a value on every path."
+    }
+  ],
+  "learnUrl": "https://learn.microsoft.com/dotnet/csharp/programming-guide/classes-and-structs/methods"
+}

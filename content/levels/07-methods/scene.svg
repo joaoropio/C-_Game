@@ -1,0 +1,16 @@
+<svg viewBox="0 0 540 210" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+<rect width="540" height="210" fill="#2a231c"/>
+<path d="M0 0H540M0 42H540M0 84H540M0 126H540M0 168H540M60 0V42M180 0V42M300 0V42M420 0V42M120 42V84M240 42V84M360 42V84M480 42V84M60 84V126M180 84V126M300 84V126M420 84V126M120 126V168M240 126V168M360 126V168M480 126V168" stroke="#352c23" stroke-width="2"/>
+<circle cx="270" cy="110" r="100" fill="#e8a33d" fill-opacity="0.08"/>
+<path d="M90 30H450V180H90Z" fill="#3a2d20" stroke="#8a6a3e" stroke-width="3"/>
+<path d="M90 100H450" stroke="#8a6a3e" stroke-width="4"/>
+<path d="M110 100V52H134V100ZM138 100V44H158V100ZM162 100V58H190V100Z" fill="#6e3a2a" stroke="#40221a" stroke-width="2"/>
+<path d="M350 100V50H376V100ZM380 100V56H402V100ZM406 100V44H430V100Z" fill="#2f5a52" stroke="#1d3a34" stroke-width="2"/>
+<path d="M110 180V134H132V180ZM136 180V126H162V180ZM380 180V130H404V180ZM408 180V138H430V180Z" fill="#4a4a6a" stroke="#2c2c44" stroke-width="2"/>
+<path d="M200 116L270 108L270 150L200 158Z" fill="#e9dcc0" stroke="#8a6a3e" stroke-width="2" stroke-linejoin="round"/>
+<path d="M340 116L270 108L270 150L340 158Z" fill="#dccaa2" stroke="#8a6a3e" stroke-width="2" stroke-linejoin="round"/>
+<path d="M270 108V150" stroke="#8a6a3e" stroke-width="2"/>
+<path d="M212 126L258 120M212 136L258 130M212 146L258 140M282 120L328 126M282 130L328 136M282 140L328 146" stroke="#b39a6b" stroke-width="2" stroke-linecap="round"/>
+<path d="M270 62l5 14 14 5-14 5-5 14-5-14-14-5 14-5z" fill="#f4c06a"/>
+<path d="M214 84v12M208 90h12M326 80v14M319 87h14M240 66v8M236 70h8" stroke="#f4c06a" stroke-width="2" stroke-linecap="round"/>
+</svg>

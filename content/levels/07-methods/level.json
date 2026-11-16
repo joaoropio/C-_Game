@@ -1,0 +1,27 @@
+{
+  "id": "07-methods",
+  "world": 2,
+  "number": 7,
+  "title": { "pt": "O Tomo da Cura", "en": "The Tome of Healing" },
+  "story": {
+    "pt": "Bem-vindo à Biblioteca Arcana! Aqui os feitiços guardam-se em tomos, prontos a usar sempre que forem precisos. Um feitiço reutilizável chama-se método. Escreve o método Heal (começa por public static): recebe a vida atual (health) e o valor de uma poção (potion) e devolve a vida depois de curar, que é health + potion, mas nunca mais de 100. Por exemplo, Heal(50, 30) devolve 80 e Heal(90, 30) devolve 100, porque a vida não passa do máximo.",
+    "en": "Welcome to the Arcane Library! Here spells are kept in tomes, ready to use whenever they are needed. A reusable spell is called a method. Write the method Heal (start with public static): it receives the current health (health) and the value of a potion (potion) and returns the health after healing, which is health + potion, but never more than 100. For example, Heal(50, 30) returns 80 and Heal(90, 30) returns 100, because health never goes past the maximum."
+  },
+  "concept": {
+    "pt": "Um método é um bloco de código com nome que podes usar muitas vezes. Exemplo: public static int Double(int mana) { return mana * 2; } public deixa o resto do código usar o método. static significa que o método pertence à classe e pode ser chamado sem criar nada. Por agora escreve sempre public static. int é o tipo do resultado que o método devolve. Double é o nome. Entre parênteses ficam os parâmetros: cada um tem um tipo e um nome (int mana). Quem chama dá os valores, chamados argumentos: Double(5) devolve 10. return entrega o resultado e termina o método. Se o método não devolve nada, o tipo é void. Para uma só expressão, também podes escrever public static int Double(int mana) => mana * 2;",
+    "en": "A method is a named block of code that you can use many times. Example: public static int Double(int mana) { return mana * 2; } public lets the rest of the code use the method. static means the method belongs to the class and can be called without creating anything. For now always write public static. int is the type of the result the method returns. Double is the name. The parameters go in parentheses: each has a type and a name (int mana). Whoever calls it gives the values, called arguments: Double(5) returns 10. return hands back the result and ends the method. If the method returns nothing, the type is void. For a single expression you can also write public static int Double(int mana) => mana * 2;"
+  },
+  "hints": [
+    {
+      "pt": "Escreve a assinatura public static int Heal(int health, int potion) com um corpo entre chavetas. Dentro, soma health + potion e garante que o resultado não passa de 100.",
+      "en": "Write the signature public static int Heal(int health, int potion) with a body between braces. Inside, add health + potion and make sure the result never goes past 100."
+    },
+    {
+      "pt": "Escreve: public static int Heal(int health, int potion) { return Math.Min(health + potion, 100); } Math.Min devolve o menor dos dois valores, por isso nunca passa de 100.",
+      "en": "Write: public static int Heal(int health, int potion) { return Math.Min(health + potion, 100); } Math.Min returns the smaller of the two values, so it never goes past 100."
+    }
+  ],
+  "maxStatementsForThreeStars": 3,
+  "grimoirePageId": "methods",
+  "sceneLabel": { "pt": "Uma estante de tomos com um tomo aberto a brilhar", "en": "A bookshelf of tomes with an open tome glowing" }
+}
