@@ -525,4 +525,64 @@ public class LevelSolutionTests
             level,
             "static int SplitMana(int mana, int wizards)\n{\n    while (true) { }\n}\nstatic int SafeSplit(int mana, int wizards) => 0;"));
     }
+
+    [Fact]
+    public async Task Level10_Solution_RunsTheFourListChecksWithinTheStarLimit()
+    {
+        var level = Find("10-lists");
+
+        var result = Assert.IsType<Passed>(await Run(level, level.Solution));
+
+        Assert.Equal(
+            ["PackBag({ \"ruby\", \"stone\", \"key\" })", "PackBag({ \"stone\" })", "PackBag({ })", "PackBag({ \"key\", \"key\" })"],
+            result.Checks.Select(check => check.Case));
+        Assert.Equal(["{ \"ruby\", \"key\" }", "{ }", "{ }", "{ \"key\", \"key\" }"], result.Checks.Select(check => check.Expected));
+        Assert.Equal(5, level.MaxStatementsForThreeStars);
+        Assert.True(result.StatementCount <= level.MaxStatementsForThreeStars);
+    }
+
+    [Fact]
+    public async Task Level10_ReturnsNull_ShowsNull()
+    {
+        var level = Find("10-lists");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, "static List<string> PackBag(string[] loot)\n{\n    return null;\n}"));
+
+        Assert.Equal("null", result.Checks.First().Actual);
+    }
+
+    [Fact]
+    public async Task Level10_KeepsEverything_ReportsExpectedAndObtained()
+    {
+        var level = Find("10-lists");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(
+            level,
+            "static List<string> PackBag(string[] loot)\n{\n    return new List<string>(loot);\n}"));
+
+        Assert.Contains(new CheckOutcome("PackBag({ \"ruby\", \"stone\", \"key\" })", "{ \"ruby\", \"key\" }", "{ \"ruby\", \"stone\", \"key\" }"), result.Checks);
+        Assert.Contains(new CheckOutcome("PackBag({ })", "{ }", "{ }"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level10_ReversedOrder_DoesNotPass()
+    {
+        var level = Find("10-lists");
+
+        Assert.IsType<ChecksFailed>(await Run(
+            level,
+            "static List<string> PackBag(string[] loot)\n{\n    var bag = new List<string>();\n    foreach (var item in loot)\n    {\n        if (item != \"stone\")\n        {\n            bag.Insert(0, item);\n        }\n    }\n\n    return bag;\n}"));
+    }
+
+    [Fact]
+    public async Task Level10_LinqOneLiner_Passes()
+    {
+        var level = Find("10-lists");
+
+        var result = Assert.IsType<Passed>(await Run(
+            level,
+            "static List<string> PackBag(string[] loot)\n{\n    return loot.Where(item => item != \"stone\").ToList();\n}"));
+
+        Assert.Equal(1, result.StatementCount);
+    }
 }

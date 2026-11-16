@@ -1,0 +1,14 @@
+<svg viewBox="0 0 540 210" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+<rect width="540" height="210" fill="#2a231c"/>
+<path d="M0 0H540M0 42H540M0 84H540M0 126H540M0 168H540M60 0V42M180 0V42M300 0V42M420 0V42M120 42V84M240 42V84M360 42V84M480 42V84M60 84V126M180 84V126M300 84V126M420 84V126M120 126V168M240 126V168M360 126V168M480 126V168" stroke="#352c23" stroke-width="2"/>
+<circle cx="270" cy="120" r="90" fill="#e8a33d" fill-opacity="0.08"/>
+<path d="M210 90c0-34 120-34 120 0v84c0 14-12 24-26 24h-68c-14 0-26-10-26-24z" fill="#7a5230" stroke="#b58a5a" stroke-width="4" stroke-linejoin="round"/>
+<path d="M222 96c20-18 76-18 96 0" fill="none" stroke="#b58a5a" stroke-width="4" stroke-linecap="round"/>
+<path d="M232 150h76v34h-76z" fill="#5e3f24" stroke="#b58a5a" stroke-width="3" stroke-linejoin="round"/>
+<path d="M232 150c0-10 76-10 76 0" fill="none" stroke="#b58a5a" stroke-width="3"/>
+<path d="M214 100c10-20 22-26 34-26M326 100c-10-20-22-26-34-26" fill="none" stroke="#e8c9a0" stroke-width="6" stroke-linecap="round"/>
+<path d="M256 60l14-18l14 18l-14 16z" fill="#c0392b" fill-opacity="0.85" stroke="#f08a7e" stroke-width="3" stroke-linejoin="round"/>
+<path d="M340 40h22M351 40v26M351 52h10" fill="none" stroke="#f4c06a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="351" cy="34" r="8" fill="none" stroke="#f4c06a" stroke-width="4"/>
+<path d="M180 64v16M172 72h16M400 90v14M393 97h14M150 120v12M144 126h12" stroke="#f4c06a" stroke-width="2" stroke-linecap="round"/>
+</svg>

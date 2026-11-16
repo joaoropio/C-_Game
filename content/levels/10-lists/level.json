@@ -1,0 +1,27 @@
+{
+  "id": "10-lists",
+  "world": 2,
+  "number": 10,
+  "title": { "pt": "A Mochila do Aventureiro", "en": "The Adventurer's Backpack" },
+  "story": {
+    "pt": "No fundo da Biblioteca, uma mochila aberta espera por tesouros. Mas a mochila é pequena e as pedras comuns só pesam. Um array tem sempre o mesmo tamanho; uma lista (List<string>) cresce à medida que lhe juntas coisas. Escreve PackBag(string[] loot), que devolve uma nova lista com todos os objetos do saque menos \"stone\", pela mesma ordem. Cria a lista com new List<string>() e junta cada objeto com Add. Por exemplo, { \"ruby\", \"stone\", \"key\" } dá { \"ruby\", \"key\" }, { \"stone\" } dá { } e { \"key\", \"key\" } dá { \"key\", \"key\" }.",
+    "en": "At the bottom of the Library, an open backpack waits for treasure. But the backpack is small and plain stones are just weight. An array always keeps the same size; a list (List<string>) grows as you add things to it. Write PackBag(string[] loot), which returns a new list with every item of the loot except \"stone\", in the same order. Create the list with new List<string>() and add each item with Add. For example, { \"ruby\", \"stone\", \"key\" } gives { \"ruby\", \"key\" }, { \"stone\" } gives { } and { \"key\", \"key\" } gives { \"key\", \"key\" }."
+  },
+  "concept": {
+    "pt": "Uma List<T> é uma coleção que cresce e encolhe. Cria uma vazia com new List<string>(), junta com Add(\"ruby\"), lê com bag[0] e pergunta o tamanho com bag.Count. Ao contrário de um array, não tens de saber de antemão quantos elementos vão caber. Exemplo: static List<int> Evens(int[] numbers) { var result = new List<int>(); foreach (var n in numbers) { if (n % 2 == 0) { result.Add(n); } } return result; }",
+    "en": "A List<T> is a collection that grows and shrinks. Create an empty one with new List<string>(), add with Add(\"ruby\"), read with bag[0] and ask the size with bag.Count. Unlike an array, you do not have to know in advance how many items will fit. Example: static List<int> Evens(int[] numbers) { var result = new List<int>(); foreach (var n in numbers) { if (n % 2 == 0) { result.Add(n); } } return result; }"
+  },
+  "hints": [
+    {
+      "pt": "Começa com var bag = new List<string>(); e, no fim, return bag; No meio, percorre o saque com foreach (var item in loot).",
+      "en": "Start with var bag = new List<string>(); and finish with return bag; In the middle, walk the loot with foreach (var item in loot)."
+    },
+    {
+      "pt": "Dentro do foreach, só junta o objeto se não for pedra: if (item != \"stone\") { bag.Add(item); }",
+      "en": "Inside the foreach, only add the item if it is not a stone: if (item != \"stone\") { bag.Add(item); }"
+    }
+  ],
+  "maxStatementsForThreeStars": 5,
+  "grimoirePageId": "lists",
+  "sceneLabel": { "pt": "Uma mochila aberta com objetos a entrar", "en": "An open backpack with items going in" }
+}
