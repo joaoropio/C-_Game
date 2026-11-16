@@ -1,0 +1,27 @@
+{
+  "id": "09-exceptions",
+  "world": 2,
+  "number": 9,
+  "title": { "pt": "O Frasco Rachado", "en": "The Cracked Flask" },
+  "story": {
+    "pt": "Na prateleira mais alta da Biblioteca, um frasco de mana está rachado e prestes a cair. Uma mão mágica espera por baixo para o apanhar. Quando um feitiço corre mal, em vez de partir tudo, lança-se uma exceção; e quem sabe lidar com ela apanha-a. Escreve SplitMana(int mana, int wizards), que devolve mana / wizards, mas lança uma ArgumentException quando wizards é 0 ou negativo. Escreve também SafeSplit(int mana, int wizards), que chama SplitMana dentro de um try e, se apanhar uma ArgumentException, devolve 0. Por exemplo, SplitMana(10, 2) devolve 5, SplitMana(10, 0) lança ArgumentException, SafeSplit(10, 0) devolve 0 e SafeSplit(9, 3) devolve 3.",
+    "en": "On the highest shelf of the Library, a flask of mana is cracked and about to fall. A magic hand waits underneath to catch it. When a spell goes wrong, instead of breaking everything, it throws an exception; and whoever knows how to deal with it catches it. Write SplitMana(int mana, int wizards), which returns mana / wizards but throws an ArgumentException when wizards is 0 or negative. Also write SafeSplit(int mana, int wizards), which calls SplitMana inside a try and, if it catches an ArgumentException, returns 0. For example, SplitMana(10, 2) returns 5, SplitMana(10, 0) throws ArgumentException, SafeSplit(10, 0) returns 0 and SafeSplit(9, 3) returns 3."
+  },
+  "concept": {
+    "pt": "Uma exceção é um aviso de que algo correu mal. Para a lançar, escreve throw new ArgumentException(\"mensagem\"); o método pára ali. ArgumentException é o tipo usado quando um argumento não é válido. Se ninguém a apanhar, o feitiço falha. Para apanhar, põe o código arriscado num try e trata o problema num catch: try { return Risky(x); } catch (ArgumentException) { return 0; }. O catch só corre se for lançada uma exceção desse tipo; se não for, o try continua normalmente. Exemplo: static int Pack(int bags) { if (bags < 0) { throw new ArgumentException(\"bags\"); } return bags * 2; }",
+    "en": "An exception is a warning that something went wrong. To raise one, write throw new ArgumentException(\"message\"); the method stops right there. ArgumentException is the type used when an argument is not valid. If nobody catches it, the spell fails. To catch one, put the risky code in a try and deal with the problem in a catch: try { return Risky(x); } catch (ArgumentException) { return 0; }. The catch only runs if an exception of that type is thrown; otherwise the try carries on normally. Example: static int Pack(int bags) { if (bags < 0) { throw new ArgumentException(\"bags\"); } return bags * 2; }"
+  },
+  "hints": [
+    {
+      "pt": "Em SplitMana, antes de dividir, verifica: if (wizards <= 0) e dentro lança throw new ArgumentException(\"...\"). Em SafeSplit, põe return SplitMana(mana, wizards); dentro de um try.",
+      "en": "In SplitMana, before dividing, check: if (wizards <= 0) and inside it write throw new ArgumentException(\"...\"). In SafeSplit, put return SplitMana(mana, wizards); inside a try."
+    },
+    {
+      "pt": "Depois do try, escreve catch (ArgumentException) { return 0; }. O corpo de SplitMana é: if (wizards <= 0) { throw new ArgumentException(\"...\"); } return mana / wizards;",
+      "en": "After the try, write catch (ArgumentException) { return 0; }. The body of SplitMana is: if (wizards <= 0) { throw new ArgumentException(\"...\"); } return mana / wizards;"
+    }
+  ],
+  "maxStatementsForThreeStars": 6,
+  "grimoirePageId": "exceptions",
+  "sceneLabel": { "pt": "Um frasco rachado a ser apanhado por uma mão mágica", "en": "A cracked flask being caught by a magic hand" }
+}

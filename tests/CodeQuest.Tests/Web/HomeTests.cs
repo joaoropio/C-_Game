@@ -273,7 +273,8 @@ public sealed class HomeTests : BunitContext
         var cut = await RenderTwoWorldsAsync(progress);
 
         var totals = cut.FindAll(".world-stars").Select(element => element.TextContent.Trim()).ToArray();
-        Assert.Equal(["7 de 12 estrelas", "0 de 12 estrelas"], totals);
+        var secondWorldLevels = Content.Levels.Count(level => level.World == 2) + 2;
+        Assert.Equal(["7 de 12 estrelas", $"0 de {secondWorldLevels * 3} estrelas"], totals);
     }
 
     [Fact]
