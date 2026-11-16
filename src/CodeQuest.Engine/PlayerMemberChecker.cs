@@ -57,6 +57,8 @@ internal static class PlayerMemberChecker
     {
         BaseNamespaceDeclarationSyntax => PlayerMessages.NamespaceNotAllowed,
         ConstructorDeclarationSyntax { Body: null, ExpressionBody: null } => PlayerMessages.StatementsBelongInMethods,
+        ConstructorDeclarationSyntax constructor when IsNotNamedAfterItsClass(constructor)
+            => PlayerMessages.MissingReturnType(constructor.Identifier.Text),
         BaseTypeDeclarationSyntax or DelegateDeclarationSyntax => PlayerMessages.TypesNotAllowed,
         BaseFieldDeclarationSyntax or BasePropertyDeclarationSyntax or ConstructorDeclarationSyntax
             or DestructorDeclarationSyntax => PlayerMessages.OnlyMethodsAllowed,
@@ -64,6 +66,10 @@ internal static class PlayerMemberChecker
         _ when IsExtern(node) => PlayerMessages.ExternNotAllowed(playerLine),
         _ => null,
     };
+
+    // `static Heal(int a) { ... }` has no return type, so Roslyn reads it as a constructor named Heal (CS1520).
+    private static bool IsNotNamedAfterItsClass(ConstructorDeclarationSyntax constructor) =>
+        constructor.Parent is BaseTypeDeclarationSyntax type && type.Identifier.Text != constructor.Identifier.Text;
 
     private static bool IsAsync(SyntaxNode node) => node switch
     {

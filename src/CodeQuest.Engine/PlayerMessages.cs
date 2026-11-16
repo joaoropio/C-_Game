@@ -96,6 +96,10 @@ internal static class PlayerMessages
         $"Falta static no método \"{name}\".",
         $"The method \"{name}\" needs to be static.");
 
+    public static LocalizedText MissingReturnType(string name) => new(
+        $"Falta o tipo do resultado do método \"{name}\" (por exemplo int, ou void se não devolver nada).",
+        $"The method \"{name}\" is missing its return type (for example int, or void if it returns nothing).");
+
     public static readonly LocalizedText NamespaceNotAllowed = new(
         "Não uses namespace aqui.",
         "Don't use a namespace here.");
