@@ -104,6 +104,10 @@ internal static class PlayerMessages
         "Tentaste usar uma posição que não existe.",
         "You tried to use a position that doesn't exist.");
 
+    public static readonly LocalizedText KeyNotInDictionary = new(
+        "Pediste uma chave que o dicionário não tem. Verifica com ContainsKey ou TryGetValue antes de a ler.",
+        "You asked for a key the dictionary does not have. Check with ContainsKey or TryGetValue before reading it.");
+
     public static readonly LocalizedText UnexpectedFormat = new(
         "O texto não tem o formato esperado.",
         "The text isn't in the expected format.");

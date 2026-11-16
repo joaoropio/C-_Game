@@ -667,4 +667,92 @@ public class LevelSolutionTests
 
         Assert.Equal("{ null }", result.Checks.First().Actual);
     }
+
+    [Fact]
+    public async Task Level11_Solution_RunsTheThreeDictionaryChecksWithinTheStarLimit()
+    {
+        var level = Find("11-dictionaries");
+
+        var result = Assert.IsType<Passed>(await Run(level, level.Solution));
+
+        Assert.Equal(
+            ["CountPotions({ \"heal\", \"mana\", \"heal\" })", "CountPotions({ })", "CountPotions({ \"fire\" })"],
+            result.Checks.Select(check => check.Case));
+        Assert.Equal(["{ [\"heal\"] = 2, [\"mana\"] = 1 }", "{ }", "{ [\"fire\"] = 1 }"], result.Checks.Select(check => check.Expected));
+        Assert.Equal(6, level.MaxStatementsForThreeStars);
+        Assert.True(result.StatementCount <= level.MaxStatementsForThreeStars);
+    }
+
+    [Fact]
+    public async Task Level11_ReturnsNull_ShowsNull()
+    {
+        var level = Find("11-dictionaries");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, "static Dictionary<string, int> CountPotions(string[] potions)\n{\n    return null;\n}"));
+
+        Assert.Equal("null", result.Checks.First().Actual);
+    }
+
+    [Fact]
+    public async Task Level11_CountsEverythingAsOne_ReportsExpectedAndObtained()
+    {
+        var level = Find("11-dictionaries");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(
+            level,
+            "static Dictionary<string, int> CountPotions(string[] potions)\n{\n    var counts = new Dictionary<string, int>();\n    foreach (var potion in potions)\n    {\n        counts[potion] = 1;\n    }\n\n    return counts;\n}"));
+
+        Assert.Contains(new CheckOutcome("CountPotions({ \"heal\", \"mana\", \"heal\" })", "{ [\"heal\"] = 2, [\"mana\"] = 1 }", "{ [\"heal\"] = 1, [\"mana\"] = 1 }"), result.Checks);
+        Assert.Contains(new CheckOutcome("CountPotions({ })", "{ }", "{ }"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level11_LinqOneLiner_Passes()
+    {
+        var level = Find("11-dictionaries");
+
+        var result = Assert.IsType<Passed>(await Run(
+            level,
+            "static Dictionary<string, int> CountPotions(string[] potions)\n{\n    return potions.GroupBy(potion => potion).ToDictionary(group => group.Key, group => group.Count());\n}"));
+
+        Assert.Equal(1, result.StatementCount);
+    }
+
+    [Fact]
+    public async Task Level11_TryGetValueSolution_Passes()
+    {
+        var level = Find("11-dictionaries");
+
+        var result = Assert.IsType<Passed>(await Run(
+            level,
+            "static Dictionary<string, int> CountPotions(string[] potions)\n{\n    var counts = new Dictionary<string, int>();\n    foreach (var potion in potions)\n    {\n        counts.TryGetValue(potion, out var seen);\n        counts[potion] = seen + 1;\n    }\n\n    return counts;\n}"));
+
+        Assert.True(result.StatementCount <= 6);
+    }
+
+    [Theory]
+    [InlineData("static SortedDictionary<string, int> CountPotions(string[] potions)\n{\n    var counts = new SortedDictionary<string, int>();\n    foreach (var potion in potions)\n    {\n        counts[potion] = counts.GetValueOrDefault(potion) + 1;\n    }\n\n    return counts;\n}")]
+    [InlineData("static List<KeyValuePair<string, int>> CountPotions(string[] potions)\n{\n    return potions.GroupBy(potion => potion).Select(group => new KeyValuePair<string, int>(group.Key, group.Count())).ToList();\n}")]
+    [InlineData("static IEnumerable<IGrouping<string, string>> CountPotions(string[] potions)\n{\n    return potions.GroupBy(potion => potion);\n}")]
+    public async Task Level11_NotADictionary_IsRejected(string playerCode)
+    {
+        var level = Find("11-dictionaries");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, playerCode));
+
+        Assert.All(result.Checks, check => Assert.Equal("not a Dictionary<string, int>", check.Actual));
+    }
+
+    [Fact]
+    public async Task Level11_KeyNotFound_Explains()
+    {
+        var level = Find("11-dictionaries");
+
+        var result = Assert.IsType<RuntimeError>(await Run(
+            level,
+            "static Dictionary<string, int> CountPotions(string[] potions)\n{\n    var counts = new Dictionary<string, int>();\n    foreach (var potion in potions)\n    {\n        counts[potion]++;\n    }\n\n    return counts;\n}"));
+
+        Assert.Equal("You asked for a key the dictionary does not have. Check with ContainsKey or TryGetValue before reading it.", result.Explanation.En);
+        Assert.Equal(6, result.Line);
+    }
 }

@@ -1,0 +1,29 @@
+{
+  "id": "dictionaries",
+  "world": 2,
+  "title": { "pt": "Dicionários: Dictionary<TKey, TValue>", "en": "Dictionaries: Dictionary<TKey, TValue>" },
+  "whatItIs": {
+    "pt": "Um Dictionary<TKey, TValue> guarda pares chave-valor: encontras cada valor pela sua chave, como uma etiqueta num frasco, e não por uma posição. As chaves não se repetem. Define ou substitui um valor com dic[chave] = valor, pergunta se uma chave existe com ContainsKey e lê com dic[chave]. Ler uma chave que não existe lança KeyNotFoundException; para ler com segurança, usa TryGetValue, que devolve se encontrou e entrega o valor.",
+    "en": "A Dictionary<TKey, TValue> holds key-value pairs: you find each value by its key, like a label on a flask, not by a position. Keys never repeat. Set or replace a value with dict[key] = value, ask if a key exists with ContainsKey and read with dict[key]. Reading a key that does not exist throws KeyNotFoundException; to read safely, use TryGetValue, which tells you if it found the key and hands you the value."
+  },
+  "syntax": {
+    "pt": "var precos = new Dictionary<string, int>();\nprecos[\"espada\"] = 50;\nvar existe = precos.ContainsKey(\"espada\");\nvar achou = precos.TryGetValue(\"escudo\", out var preco);\nvar quantos = precos.Count;",
+    "en": "var prices = new Dictionary<string, int>();\nprices[\"sword\"] = 50;\nvar exists = prices.ContainsKey(\"sword\");\nvar found = prices.TryGetValue(\"shield\", out var price);\nvar howMany = prices.Count;"
+  },
+  "example": "static int PriceOf(string item)\n{\n    var prices = new Dictionary<string, int>();\n    prices[\"sword\"] = 50;\n    prices[\"shield\"] = 30;\n    if (prices.TryGetValue(item, out var price))\n    {\n        return price;\n    }\n\n    return 0;\n}",
+  "commonMistakes": [
+    {
+      "pt": "Ler uma chave que não existe: prices[\"bow\"] lança KeyNotFoundException. Verifica com ContainsKey ou usa TryGetValue.",
+      "en": "Reading a key that does not exist: prices[\"bow\"] throws KeyNotFoundException. Check with ContainsKey or use TryGetValue."
+    },
+    {
+      "pt": "Usar Add com uma chave repetida: lança uma exceção. Para definir ou substituir, usa dic[chave] = valor.",
+      "en": "Using Add with a repeated key: it throws an exception. To set or replace, use dict[key] = value."
+    },
+    {
+      "pt": "Contar com Length: o número de pares de um dicionário é Count.",
+      "en": "Counting with Length: the number of pairs in a dictionary is Count."
+    }
+  ],
+  "learnUrl": "https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2"
+}

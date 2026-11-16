@@ -1,0 +1,27 @@
+{
+  "id": "11-dictionaries",
+  "world": 2,
+  "number": 11,
+  "title": { "pt": "O Armário dos Frascos", "en": "The Flask Cabinet" },
+  "story": {
+    "pt": "Na sala do alquimista, um armário guarda frascos, cada um com a sua etiqueta. Para saberes quantos há de cada poção, procuras pela etiqueta, não pela posição. É o que faz um dicionário (Dictionary<string, int>): liga cada chave (a etiqueta) a um valor (a quantidade). Escreve CountPotions(string[] potions), que devolve um Dictionary<string, int> novo com o número de vezes que cada poção aparece. Cuidado: ler uma chave que ainda não existe dá erro, por isso verifica primeiro se já a tens. Por exemplo, { \"heal\", \"mana\", \"heal\" } dá { [\"heal\"] = 2, [\"mana\"] = 1 }, { } dá { } e { \"fire\" } dá { [\"fire\"] = 1 }.",
+    "en": "In the alchemist's room, a cabinet holds flasks, each with its own label. To know how many there are of each potion, you look up the label, not the position. That is what a dictionary (Dictionary<string, int>) does: it links each key (the label) to a value (the amount). Write CountPotions(string[] potions), which returns a new Dictionary<string, int> with the number of times each potion appears. Careful: reading a key that does not exist yet is an error, so check first whether you already have it. For example, { \"heal\", \"mana\", \"heal\" } gives { [\"heal\"] = 2, [\"mana\"] = 1 }, { } gives { } and { \"fire\" } gives { [\"fire\"] = 1 }."
+  },
+  "concept": {
+    "pt": "Um Dictionary<TKey, TValue> guarda pares chave-valor e encontra o valor pela chave. Cria um vazio com new Dictionary<string, int>(), define com prices[\"sword\"] = 50, pergunta se existe com prices.ContainsKey(\"sword\") e lê com prices[\"sword\"], mas só se a chave existir, senão há KeyNotFoundException. Exemplo: static int PriceOf(string item) { var prices = new Dictionary<string, int>(); prices[\"sword\"] = 50; prices[\"shield\"] = 30; return prices.TryGetValue(item, out var price) ? price : 0; }",
+    "en": "A Dictionary<TKey, TValue> holds key-value pairs and finds the value by its key. Create an empty one with new Dictionary<string, int>(), set with prices[\"sword\"] = 50, ask if a key exists with prices.ContainsKey(\"sword\") and read with prices[\"sword\"], but only if the key exists, otherwise you get a KeyNotFoundException. Example: static int PriceOf(string item) { var prices = new Dictionary<string, int>(); prices[\"sword\"] = 50; prices[\"shield\"] = 30; return prices.TryGetValue(item, out var price) ? price : 0; }"
+  },
+  "hints": [
+    {
+      "pt": "Começa com var counts = new Dictionary<string, int>(); e, no fim, return counts; No meio, percorre as poções com foreach (var potion in potions).",
+      "en": "Start with var counts = new Dictionary<string, int>(); and finish with return counts; In the middle, walk the potions with foreach (var potion in potions)."
+    },
+    {
+      "pt": "Se a poção já está no dicionário, soma um: if (counts.ContainsKey(potion)) { counts[potion]++; } Se não, é a primeira vez: else { counts[potion] = 1; }",
+      "en": "If the potion is already in the dictionary, add one: if (counts.ContainsKey(potion)) { counts[potion]++; } If not, it is the first time: else { counts[potion] = 1; }"
+    }
+  ],
+  "maxStatementsForThreeStars": 6,
+  "grimoirePageId": "dictionaries",
+  "sceneLabel": { "pt": "Um armário com frascos etiquetados", "en": "A cabinet of labelled flasks" }
+}
