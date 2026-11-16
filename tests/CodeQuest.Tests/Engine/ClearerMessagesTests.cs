@@ -149,6 +149,8 @@ public class ClearerMessagesTests
     [Theory]
     [InlineData("static Heal(int a) { return a; }")]
     [InlineData("Heal(int a) => a;")]
+    [InlineData("static Heal() { }")]
+    [InlineData("public Heal(int a) { }")]
     public void MethodWithoutReturnType_ExplainsTheMissingReturnType(string method)
     {
         var rejected = Rejected(PartialTemplate, Heal + "\n" + method);
