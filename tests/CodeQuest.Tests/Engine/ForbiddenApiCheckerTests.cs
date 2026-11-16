@@ -79,6 +79,13 @@ public class ForbiddenApiCheckerTests
     public void Check_TimeProvider_Rejected() => AssertRejected("var t = TimeProvider.System;", "System.TimeProvider");
 
     [Fact]
+    public void Check_ProgressCallback_Rejected() =>
+        AssertRejected("IProgress<int> p = new Progress<int>(v => throw new Exception(\"boom\")); p.Report(1);", "System.Progress<int>");
+
+    [Fact]
+    public void Check_IProgressAlone_Allowed() => Assert.Null(Check("IProgress<int>? p = null;"));
+
+    [Fact]
     public void Check_AsParallel_Rejected() => AssertRejected("new[] { 1 }.AsParallel();", "AsParallel");
 
     [Fact]

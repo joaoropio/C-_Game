@@ -164,4 +164,13 @@ public class ClassScopeRunnerTests
 
         Assert.Equal("The spell keeps calling itself and never stops (infinite recursion).", result.Explanation.En);
     }
+
+    [Fact]
+    public async Task Run_ProgressCallbackInMethod_CodeRejected()
+    {
+        var result = Assert.IsType<CodeRejected>(await Run(
+            "static void Boom()\n{\n    new Progress<int>(v => throw new Exception(\"boom\")).Report(1);\n}"));
+
+        Assert.Equal(3, result.Line);
+    }
 }

@@ -373,4 +373,14 @@ public class RoslynCodeRunnerTests
         Assert.Equal(1, result.Line);
         Assert.Contains("async", result.Reason.En);
     }
+
+    [Fact]
+    public async Task Run_ProgressCallback_CodeRejected()
+    {
+        var result = Assert.IsType<CodeRejected>(await Run(
+            "IProgress<int> p = new Progress<int>(v => throw new Exception(\"boom\"));\np.Report(1);\nreturn x * 2;"));
+
+        Assert.Equal(1, result.Line);
+        Assert.Contains("Progress", result.Reason.En);
+    }
 }
