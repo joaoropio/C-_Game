@@ -173,4 +173,43 @@ public class ClassScopeRunnerTests
 
         Assert.Equal(3, result.Line);
     }
+
+    private const string PartialTemplate = """
+        public static partial class Spell
+        {
+            // {{PLAYER_CODE}}
+        }
+        """;
+
+    private const string NestedValidation = """
+        public static partial class Spell
+        {
+            public static class Validation
+            {
+                public static System.Collections.Generic.IEnumerable<(string Case, string Expected, string Actual)> Run()
+                {
+                    yield return ("x = 2", "4", Twice(2).ToString());
+                }
+            }
+        }
+        """;
+
+    private Task<RunResult> RunNested(string playerCode) =>
+        _runner.RunAsync(new RunRequest(PartialTemplate, playerCode, NestedValidation), Language.En, CancellationToken.None);
+
+    [Fact]
+    public async Task Run_NestedValidation_SeesPrivatePlayerMethods() =>
+        Assert.IsType<Passed>(await RunNested("static int Twice(int x) => x * 2;"));
+
+    [Fact]
+    public async Task Run_NestedValidation_ReportsFailedChecks()
+    {
+        var result = Assert.IsType<ChecksFailed>(await RunNested("static int Twice(int x) => x + 1;"));
+
+        Assert.Equal(new CheckOutcome("x = 2", "4", "3"), Assert.Single(result.Checks));
+    }
+
+    [Fact]
+    public async Task Run_PlayerMethodNamedValidation_FailsToCompile() =>
+        Assert.IsType<CompilationFailed>(await RunNested("static int Twice(int x) => x * 2;\nstatic int Validation() => 0;"));
 }

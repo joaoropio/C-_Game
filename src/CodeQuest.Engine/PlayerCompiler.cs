@@ -80,6 +80,7 @@ internal sealed partial class PlayerCompiler
             .Where(d => d.Severity == DiagnosticSeverity.Error)
             .Select(d => ToCompilationError(d, written, markerIndex, playerLineCount, culture))
             .ToList();
+        writtenErrors = DropRepeatsWithoutLine(writtenErrors);
         if (writtenErrors.Count > 0)
         {
             return new CompileOutcome(null, null, writtenErrors, markerIndex, playerLineCount, null);
@@ -104,6 +105,13 @@ internal sealed partial class PlayerCompiler
             ? new CompileOutcome(assembly.ToArray(), pdb.ToArray(), errors, markerIndex, playerLineCount, null)
             : new CompileOutcome(null, null, errors, markerIndex, playerLineCount, null);
     }
+
+    // One mistake can surface twice: at the declaration (with the player line) and at a call in the validation
+    // (without a line, naming internals). Only the first one helps the player.
+    private static List<CompilationError> DropRepeatsWithoutLine(List<CompilationError> errors) => errors
+        .Where(error => error.Line is not null
+            || !errors.Any(other => other.Line is not null && other.Explanation == error.Explanation))
+        .ToList();
 
     private static CSharpCompilation CreateCompilation(IEnumerable<SyntaxTree> trees) => CSharpCompilation.Create(
         "PlayerAssembly_" + Guid.NewGuid().ToString("N"),

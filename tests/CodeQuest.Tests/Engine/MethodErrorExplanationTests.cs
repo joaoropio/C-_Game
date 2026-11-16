@@ -142,6 +142,14 @@ public class MethodErrorExplanationTests
     }
 
     [Fact]
+    public void InstanceMethodInStaticClass_ReportedOnlyOnceAtTheDeclaration()
+    {
+        var error = Assert.Single(Errors("public int Heal(int amount) => amount;", "Spell.Heal(1)"));
+
+        Assert.Equal(1, error.Line);
+    }
+
+    [Fact]
     public void InstanceMethodInStaticClass_Explained()
     {
         var error = Assert.Single(Errors("public int Heal(int amount) => amount;", "Spell.Heal(1)"), e => e.Line is not null);

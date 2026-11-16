@@ -87,8 +87,9 @@ public sealed class RoslynCodeRunner : ICodeRunner
     }
     private static MethodInfo FindValidationMethod(Assembly assembly)
     {
-        var validation = assembly.GetType(ValidationTypeName)
-            ?? throw new InvalidOperationException($"The validation source declares no type named '{ValidationTypeName}'.");
+        var validation = assembly.GetTypes().Where(type => type.Name == ValidationTypeName).ToList() is [var single]
+            ? single
+            : throw new InvalidOperationException($"The validation source must declare exactly one type named '{ValidationTypeName}'.");
         var run = validation.GetMethod(ValidationMethodName, BindingFlags.Public | BindingFlags.Static, Type.EmptyTypes)
             ?? throw new InvalidOperationException(
                 $"'{ValidationTypeName}' has no public static parameterless method named '{ValidationMethodName}'.");
