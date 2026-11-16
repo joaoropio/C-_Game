@@ -76,10 +76,14 @@ public class ContentTests
             .ToHashSet();
 
     [Fact]
-    public void EveryLevelWorld_HasAMapWorldName()
+    public void EveryLevelWorld_HasAMapWorldNameAndFloorInBothLanguages()
     {
         Assert.All(Levels.Select(level => level.World).Distinct(), world =>
-            Assert.False(string.IsNullOrWhiteSpace(Ui.Get($"map.world.{world}", Language.Pt))));
+            Assert.All(new[] { Language.Pt, Language.En }, language =>
+            {
+                Assert.False(string.IsNullOrWhiteSpace(Ui.Get($"map.world.{world}", language)));
+                Assert.False(string.IsNullOrWhiteSpace(Ui.Get($"map.floor.{world}", language)));
+            }));
     }
 
     [Fact]
