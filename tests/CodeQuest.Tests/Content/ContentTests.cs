@@ -114,6 +114,16 @@ public class ContentTests
             }));
     }
 
+    [Theory]
+    [InlineData(Language.Pt, "Mundo 3 · Terceiro andar", "O Bestiário Encantado", "Mundo 4 · Genéricos, lambdas e LINQ — em breve")]
+    [InlineData(Language.En, "World 3 · Third floor", "The Enchanted Bestiary", "World 4 · Generics, lambdas and LINQ — coming soon")]
+    public void ThirdFloorTexts_AreThePlannedOnes(Language language, string floor, string world, string teaser)
+    {
+        Assert.Equal(floor, Ui.Get("map.floor.3", language));
+        Assert.Equal(world, Ui.Get("map.world.3", language));
+        Assert.Equal(teaser, Ui.Get("map.nextWorldSoon", language));
+    }
+
     [Fact]
     public void EveryLevel_HasASafeDecorativeSceneAndALocalizedLabel()
     {

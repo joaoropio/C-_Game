@@ -292,7 +292,7 @@ public sealed class HomeTests : BunitContext
 
         var worlds = cut.FindAll("section.world");
         Assert.Empty(worlds[0].QuerySelectorAll(".next-world"));
-        Assert.Contains("Mundo 3 · Classes e objetos — em breve", worlds[1].QuerySelector(".next-world")!.TextContent);
+        Assert.Contains("Mundo 4 · Genéricos, lambdas e LINQ — em breve", worlds[1].QuerySelector(".next-world")!.TextContent);
     }
 
     [Fact]
@@ -304,7 +304,7 @@ public sealed class HomeTests : BunitContext
         Assert.Equal("World 1 · First floor", worlds[0].QuerySelector(".world-floor")!.TextContent);
         Assert.Equal("World 2 · Second floor", worlds[1].QuerySelector(".world-floor")!.TextContent);
         Assert.Equal("The Arcane Library", worlds[1].QuerySelector("h2.world-name")!.TextContent);
-        Assert.Contains("World 3 · Classes and objects — coming soon", worlds[1].QuerySelector(".next-world")!.TextContent);
+        Assert.Contains("World 4 · Generics, lambdas and LINQ — coming soon", worlds[1].QuerySelector(".next-world")!.TextContent);
     }
 
     [Fact]
