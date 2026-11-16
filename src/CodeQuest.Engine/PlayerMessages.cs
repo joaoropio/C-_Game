@@ -40,6 +40,34 @@ internal static class PlayerMessages
         "Há um erro no feitiço que a porta não consegue ler. Verifica tipos e nomes.",
         "There is an error in the spell that the door can't read. Check types and names.");
 
+    public static LocalizedText MissingMethod(string name) => new(
+        $"Falta o método \"{name}\".",
+        $"The method \"{name}\" is missing.");
+
+    public static LocalizedText WrongArgumentCount(string name, int count) => count == 1
+        ? new LocalizedText(
+            $"O método \"{name}\" não recebe 1 argumento.",
+            $"The method \"{name}\" doesn't take 1 argument.")
+        : new LocalizedText(
+            $"O método \"{name}\" não recebe {count} argumentos.",
+            $"The method \"{name}\" doesn't take {count} arguments.");
+
+    public static LocalizedText MissingArguments(string name) => new(
+        $"Faltam argumentos na chamada ao método \"{name}\".",
+        $"The call to the method \"{name}\" is missing arguments.");
+
+    public static LocalizedText DuplicateMethod(string name) => new(
+        $"Já existe um método \"{name}\" com estes mesmos parâmetros.",
+        $"There is already a method \"{name}\" with these same parameters.");
+
+    public static LocalizedText MissingStatic(string name) => new(
+        $"Falta static no método \"{name}\".",
+        $"The method \"{name}\" needs static.");
+
+    public static readonly LocalizedText NamespaceNotAllowed = new(
+        "Não uses namespace: escreve só os métodos static, sem mais nada à volta.",
+        "Don't use a namespace: write only the static methods, with nothing around them.");
+
     public static LocalizedText ForbiddenSpell(string symbol, int line) => new(
         $"Esse feitiço é proibido nesta masmorra: \"{symbol}\" (linha {line}).",
         $"That spell is forbidden in this dungeon: \"{symbol}\" (line {line}).");

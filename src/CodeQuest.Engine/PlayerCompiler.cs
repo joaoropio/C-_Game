@@ -36,6 +36,14 @@ internal sealed partial class PlayerCompiler
     private const string CannotConvertArgumentErrorId = "CS1503";
     private const string CannotConvertImplicitlyErrorId = "CS0266";
 
+    private const string MissingMemberErrorId = "CS0117";
+    private const string MissingMemberOnTypeErrorId = "CS1061";
+    private const string WrongArgumentCountErrorId = "CS1501";
+    private const string MissingArgumentErrorId = "CS7036";
+    private const string DuplicateMethodErrorId = "CS0111";
+    private const string InstanceMemberInStaticClassErrorId = "CS0708";
+    private const string ObjectReferenceRequiredErrorId = "CS0120";
+
     private static readonly CultureInfo EnglishCulture = CultureInfo.GetCultureInfo("en");
 
     private static readonly Lazy<IReadOnlyList<MetadataReference>> References = new(LoadReferences);
@@ -141,13 +149,61 @@ internal sealed partial class PlayerCompiler
 
     private static LocalizedText? Explain(Diagnostic diagnostic) => diagnostic.Id switch
     {
-        MissingNameErrorId => PlayerMessages.MissingVariable(SpanText(diagnostic)),
+        MissingNameErrorId => ExplainMissingName(diagnostic),
         MissingReturnErrorId => PlayerMessages.MissingReturn,
         UnassignedVariableErrorId => PlayerMessages.UnassignedVariable(SpanText(diagnostic)),
         CannotConvertErrorId or CannotConvertArgumentErrorId or CannotConvertImplicitlyErrorId =>
             ExplainTypeMismatch(diagnostic),
+        MissingMemberErrorId or MissingMemberOnTypeErrorId => ExplainMissingMethod(diagnostic),
+        WrongArgumentCountErrorId => ExplainWrongArgumentCount(diagnostic),
+        MissingArgumentErrorId => ExplainMissingArguments(diagnostic),
+        DuplicateMethodErrorId => ExplainDuplicateMethod(diagnostic),
+        InstanceMemberInStaticClassErrorId or ObjectReferenceRequiredErrorId => ExplainMissingStatic(diagnostic),
         _ => null,
     };
+
+    // An unknown name that is being called is a missing method, not a missing variable.
+    private static LocalizedText ExplainMissingName(Diagnostic diagnostic)
+    {
+        var name = SpanText(diagnostic);
+        var node = diagnostic.Location.SourceTree!.GetRoot().FindNode(diagnostic.Location.SourceSpan);
+        return node.Parent is InvocationExpressionSyntax invocation && invocation.Expression == node
+            ? PlayerMessages.MissingMethod(name)
+            : PlayerMessages.MissingVariable(name);
+    }
+
+    // The type is the first quoted name of the English message and the missing member the second.
+    private static LocalizedText? ExplainMissingMethod(Diagnostic diagnostic) =>
+        QuotedNames(diagnostic) is [_, var member, ..] ? PlayerMessages.MissingMethod(member) : null;
+
+    private static LocalizedText? ExplainWrongArgumentCount(Diagnostic diagnostic)
+    {
+        var count = ArgumentCount().Match(diagnostic.GetMessage(EnglishCulture));
+        return QuotedNames(diagnostic) is [var method, ..] && count.Success
+            ? PlayerMessages.WrongArgumentCount(method, int.Parse(count.Groups[1].Value, CultureInfo.InvariantCulture))
+            : null;
+    }
+
+    // "...required parameter 'b' of 'Spell.Heal(int, int)'": the method is the name before the parenthesis.
+    private static LocalizedText? ExplainMissingArguments(Diagnostic diagnostic) =>
+        QuotedNames(diagnostic) is [_, var signature, ..] && signature.Split('(')[0].Split('.')[^1] is { Length: > 0 } method
+            ? PlayerMessages.MissingArguments(method)
+            : null;
+
+    // "Type 'Spell' already defines a member called 'Heal' with the same parameter types".
+    private static LocalizedText? ExplainDuplicateMethod(Diagnostic diagnostic) =>
+        QuotedNames(diagnostic) is [_, var method, ..] ? PlayerMessages.DuplicateMethod(method) : null;
+
+    private static LocalizedText? ExplainMissingStatic(Diagnostic diagnostic)
+    {
+        var name = SpanText(diagnostic);
+        return IsIdentifier(name) ? PlayerMessages.MissingStatic(name) : null;
+    }
+
+    private static List<string> QuotedNames(Diagnostic diagnostic) => QuotedName()
+        .Matches(diagnostic.GetMessage(EnglishCulture))
+        .Select(match => match.Groups[1].Value)
+        .ToList();
 
     private static LocalizedText? ExplainTypeMismatch(Diagnostic diagnostic)
     {
@@ -184,6 +240,9 @@ internal sealed partial class PlayerCompiler
 
     private static string SpanText(Diagnostic diagnostic) =>
         diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan);
+
+    [GeneratedRegex(@"takes (\d+) arguments")]
+    private static partial Regex ArgumentCount();
 
     [GeneratedRegex("'([^']+)'")]
     private static partial Regex QuotedName();

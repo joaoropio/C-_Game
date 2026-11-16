@@ -33,6 +33,7 @@ internal static class PlayerMemberChecker
 
     private static LocalizedText? ReasonToReject(SyntaxNode node, int playerLine) => node switch
     {
+        BaseNamespaceDeclarationSyntax => PlayerMessages.NamespaceNotAllowed,
         BaseTypeDeclarationSyntax or DelegateDeclarationSyntax => PlayerMessages.TypesNotAllowed,
         BaseFieldDeclarationSyntax or BasePropertyDeclarationSyntax or ConstructorDeclarationSyntax
             or DestructorDeclarationSyntax => PlayerMessages.OnlyMethodsAllowed,
