@@ -81,10 +81,10 @@ internal sealed partial class PlayerCompiler
             return new CompileOutcome(null, null, [], markerIndex, playerLineCount, rejected, scope);
         }
 
-        var playerMethods = PlayerMethodNames(written, markerIndex, playerLineCount);
+        var playerMembers = PlayerMemberNames(written, markerIndex, playerLineCount);
         var writtenErrors = writtenCompilation.GetDiagnostics()
             .Where(d => d.Severity == DiagnosticSeverity.Error)
-            .Select(d => ToCompilationError(d, written, markerIndex, playerLineCount, playerMethods))
+            .Select(d => ToCompilationError(d, written, markerIndex, playerLineCount, playerMembers))
             .ToList();
         writtenErrors = DropErrorsWithoutLineWhenThePlayerHasOne(writtenErrors);
         if (writtenErrors.Count > 0)
@@ -104,7 +104,7 @@ internal sealed partial class PlayerCompiler
 
         var errors = emitResult.Diagnostics
             .Where(d => d.Severity == DiagnosticSeverity.Error)
-            .Select(d => ToCompilationError(d, playerTree, markerIndex, playerLineCount, playerMethods))
+            .Select(d => ToCompilationError(d, playerTree, markerIndex, playerLineCount, playerMembers))
             .ToList();
 
         return emitResult.Success
@@ -142,7 +142,7 @@ internal sealed partial class PlayerCompiler
         SyntaxTree playerTree,
         int lineOffset,
         int playerLineCount,
-        IReadOnlySet<string> playerMethods)
+        IReadOnlySet<string> playerMembers)
     {
         var message = diagnostic.GetMessage(MessageCulture);
         var position = diagnostic.Location.GetLineSpan().StartLinePosition;
@@ -150,7 +150,7 @@ internal sealed partial class PlayerCompiler
         var insidePlayerCode = diagnostic.Location.SourceTree == playerTree
             && playerLine >= 1
             && playerLine <= playerLineCount;
-        var explanation = Explain(diagnostic, insidePlayerCode, playerMethods);
+        var explanation = Explain(diagnostic, insidePlayerCode, playerMembers);
         if (insidePlayerCode)
         {
             return new CompilationError(playerLine, position.Character + 1, message, explanation);
@@ -159,17 +159,31 @@ internal sealed partial class PlayerCompiler
         return new CompilationError(null, null, message, explanation ?? PlayerMessages.UnreadableSpell);
     }
 
-    private static HashSet<string> PlayerMethodNames(SyntaxTree tree, int lineOffset, int playerLineCount) => tree
-        .GetRoot()
-        .DescendantNodes()
-        .OfType<MethodDeclarationSyntax>()
-        .Where(method => method.Identifier.GetLocation().GetLineSpan().StartLinePosition.Line is var line
+    // What the player declared: method names, and "Type.Member" for fields and properties (a bare name could also be
+    // a library member, like string.Length).
+    private static HashSet<string> PlayerMemberNames(SyntaxTree tree, int lineOffset, int playerLineCount)
+    {
+        bool IsPlayers(SyntaxToken identifier) => identifier.GetLocation().GetLineSpan().StartLinePosition.Line is var line
             && line >= lineOffset
-            && line < lineOffset + playerLineCount)
-        .Select(method => method.Identifier.Text)
-        .ToHashSet();
+            && line < lineOffset + playerLineCount;
 
-    private static LocalizedText? Explain(Diagnostic diagnostic, bool insidePlayerCode, IReadOnlySet<string> playerMethods) =>
+        var nodes = tree.GetRoot().DescendantNodes().ToList();
+        var methods = nodes.OfType<MethodDeclarationSyntax>()
+            .Where(method => IsPlayers(method.Identifier))
+            .Select(method => method.Identifier.Text);
+        var properties = nodes.OfType<PropertyDeclarationSyntax>()
+            .Where(property => IsPlayers(property.Identifier))
+            .Select(property => QualifiedName(property, property.Identifier.Text));
+        var fields = nodes.OfType<VariableDeclaratorSyntax>()
+            .Where(variable => variable.Parent?.Parent is FieldDeclarationSyntax && IsPlayers(variable.Identifier))
+            .Select(variable => QualifiedName(variable, variable.Identifier.Text));
+        return methods.Concat(properties).Concat(fields).ToHashSet();
+    }
+
+    private static string QualifiedName(SyntaxNode member, string name) =>
+        member.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault() is { } type ? $"{type.Identifier.Text}.{name}" : name;
+
+    private static LocalizedText? Explain(Diagnostic diagnostic, bool insidePlayerCode, IReadOnlySet<string> playerMembers) =>
         diagnostic.Id switch
         {
             MissingNameErrorId => ExplainMissingName(diagnostic),
@@ -177,17 +191,17 @@ internal sealed partial class PlayerCompiler
             UnassignedVariableErrorId => PlayerMessages.UnassignedVariable(SpanText(diagnostic)),
             CannotConvertErrorId or CannotConvertImplicitlyErrorId => ExplainTypeMismatch(diagnostic),
             CannotConvertArgumentErrorId =>
-                (insidePlayerCode ? null : ExplainMissingOverloadForType(diagnostic, playerMethods))
+                (insidePlayerCode ? null : ExplainMissingOverloadForType(diagnostic, playerMembers))
                     ?? ExplainTypeMismatch(diagnostic),
             MissingMemberErrorId or MissingMemberOnTypeErrorId => ExplainMissingMember(diagnostic, insidePlayerCode),
             MethodGroupToNonDelegateErrorId => ExplainCountWithoutParentheses(diagnostic),
-            WrongArgumentCountErrorId => ExplainWrongArgumentCount(diagnostic, insidePlayerCode, playerMethods),
+            WrongArgumentCountErrorId => ExplainWrongArgumentCount(diagnostic, insidePlayerCode, playerMembers),
             MissingArgumentErrorId => ExplainMissingArguments(diagnostic),
             DuplicateMethodErrorId => ExplainDuplicateMethod(diagnostic),
             DuplicateDefinitionErrorId => ExplainDuplicateDefinition(diagnostic),
             InstanceMemberInStaticClassErrorId => ExplainMissingStaticAtDeclaration(diagnostic),
-            ObjectReferenceRequiredErrorId => ExplainObjectReferenceRequired(diagnostic, playerMethods),
-            _ => null,
+            ObjectReferenceRequiredErrorId => ExplainObjectReferenceRequired(diagnostic, playerMembers),
+            _ => ExplainObjectOrientedError(diagnostic, insidePlayerCode),
         };
 
     // An unknown name that is being called is a missing method, not a missing variable.
@@ -244,7 +258,7 @@ internal sealed partial class PlayerCompiler
 
     // A call from the hidden validation that the player's methods can't answer: the player has the method, but
     // not the version being called.
-    private static LocalizedText? ExplainMissingOverloadForType(Diagnostic diagnostic, IReadOnlySet<string> playerMethods)
+    private static LocalizedText? ExplainMissingOverloadForType(Diagnostic diagnostic, IReadOnlySet<string> playerMembers)
     {
         var invocation = diagnostic.Location.SourceTree!.GetRoot()
             .FindNode(diagnostic.Location.SourceSpan)
@@ -257,7 +271,7 @@ internal sealed partial class PlayerCompiler
             MemberAccessExpressionSyntax access => access.Name.Identifier.Text,
             _ => null,
         };
-        return method is not null && playerMethods.Contains(method) && QuotedNames(diagnostic) is [var type, ..]
+        return method is not null && playerMembers.Contains(method) && QuotedNames(diagnostic) is [var type, ..]
             ? PlayerMessages.MissingOverloadForType(method, type)
             : null;
     }
@@ -265,7 +279,7 @@ internal sealed partial class PlayerCompiler
     private static LocalizedText? ExplainWrongArgumentCount(
         Diagnostic diagnostic,
         bool insidePlayerCode,
-        IReadOnlySet<string> playerMethods)
+        IReadOnlySet<string> playerMembers)
     {
         var match = ArgumentCount().Match(diagnostic.GetMessage(MessageCulture));
         if (QuotedNames(diagnostic) is not [var method, ..] || !match.Success)
@@ -274,19 +288,29 @@ internal sealed partial class PlayerCompiler
         }
 
         var count = int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
-        return !insidePlayerCode && playerMethods.Contains(method)
+        return !insidePlayerCode && playerMembers.Contains(method)
             ? PlayerMessages.MissingOverloadForCount(method, count)
             : PlayerMessages.WrongArgumentCount(method, count);
     }
 
     // "...required parameter 'b' of 'Spell.Heal<T>(T, T)'": the method is the name before the parenthesis.
-    private static LocalizedText? ExplainMissingArguments(Diagnostic diagnostic) =>
-        QuotedNames(diagnostic) is [var parameter, var signature, ..] && MethodNameOf(signature) is { Length: > 0 } method
-            ? PlayerMessages.MissingArguments(method, parameter)
-            : null;
+    // A constructor is "Golem.Golem(int, int)": its name repeats the type's.
+    private static LocalizedText? ExplainMissingArguments(Diagnostic diagnostic)
+    {
+        if (QuotedNames(diagnostic) is not [var parameter, var signature, ..])
+        {
+            return null;
+        }
+
+        var path = SymbolPath(signature);
+        var name = path[^1];
+        return name.Length == 0 ? null
+            : path is [.., var type, _] && type == name ? PlayerMessages.MissingConstructorArguments(type, parameter)
+            : PlayerMessages.MissingArguments(name, parameter);
+    }
 
     // "Spell.Heal<T>(T, T)" or "Dictionary<string, int>.ContainsKey(string)" -> "Heal" / "ContainsKey".
-    private static string MethodNameOf(string signature) => signature.Split('(')[0].Split('.')[^1].Split('<')[0];
+    private static string MethodNameOf(string signature) => SymbolPath(signature)[^1];
 
     // "Type 'Spell' already defines a member called 'Heal' with the same parameter types".
     private static LocalizedText? ExplainDuplicateMethod(Diagnostic diagnostic) =>
@@ -307,11 +331,24 @@ internal sealed partial class PlayerCompiler
 
     // "An object reference is required for the non-static field, method, or property 'Spell.Heal(int)'": only a
     // method written by the player is "missing static"; `string.Length` or `List<int>.Count` are not the player's.
-    private static LocalizedText? ExplainObjectReferenceRequired(Diagnostic diagnostic, IReadOnlySet<string> playerMethods) =>
-        QuotedNames(diagnostic) is [var symbol, ..] && symbol.Contains('(') && MethodNameOf(symbol) is var name
-            && playerMethods.Contains(name)
-            ? PlayerMessages.MissingStatic(name)
+    // A field or property of the player's ("Hero.hp") is an instance member used without an object.
+    private static LocalizedText? ExplainObjectReferenceRequired(Diagnostic diagnostic, IReadOnlySet<string> playerMembers)
+    {
+        if (QuotedNames(diagnostic) is not [var symbol, ..])
+        {
+            return null;
+        }
+
+        var path = SymbolPath(symbol);
+        if (symbol.Contains('('))
+        {
+            return playerMembers.Contains(path[^1]) ? PlayerMessages.MissingStatic(path[^1]) : null;
+        }
+
+        return path is [.., var type, var member] && playerMembers.Contains($"{type}.{member}")
+            ? PlayerMessages.InstanceMemberInStaticMethod(member)
             : null;
+    }
 
     private static List<string> QuotedNames(Diagnostic diagnostic) => QuotedName()
         .Matches(diagnostic.GetMessage(MessageCulture))

@@ -140,6 +140,54 @@ internal static class PlayerMessages
         $"Ainda não podes usar extern nesta masmorra (linha {line}).",
         $"You can't use extern in this dungeon yet (line {line}).");
 
+    public static LocalizedText MissingClass(string name) => new(
+        $"Falta a classe \"{name}\".",
+        $"The class \"{name}\" is missing.");
+
+    public static LocalizedText UnknownType(string name) => new(
+        $"Não existe nenhum tipo \"{name}\". Verifica o nome.",
+        $"There is no type \"{name}\". Check the name.");
+
+    public static LocalizedText NoConstructorForCount(string type, int count) => count == 1
+        ? new LocalizedText(
+            $"A classe \"{type}\" não tem um construtor que receba 1 argumento.",
+            $"The class \"{type}\" has no constructor that takes 1 argument.")
+        : new LocalizedText(
+            $"A classe \"{type}\" não tem um construtor que receba {count} argumentos.",
+            $"The class \"{type}\" has no constructor that takes {count} arguments.");
+
+    public static LocalizedText MissingConstructorArguments(string type, string parameter) => new(
+        $"Falta o valor de \"{parameter}\" ao criar \"{type}\".",
+        $"Missing the value of \"{parameter}\" when creating \"{type}\".");
+
+    public static LocalizedText PrivateMember(string member, string type) => new(
+        $"\"{member}\" é private: só se pode usar dentro da classe \"{type}\".",
+        $"\"{member}\" is private: it can only be used inside the class \"{type}\".");
+
+    public static LocalizedText CannotAssignFromOutside(string member) => new(
+        $"\"{member}\" não se pode mudar de fora da classe (o set é private ou não existe).",
+        $"\"{member}\" can't be changed from outside the class (its set is private or missing).");
+
+    public static LocalizedText NothingToOverride(string name) => new(
+        $"Não há nenhum método \"{name}\" para substituir: falta virtual na classe base?",
+        $"There is no method \"{name}\" to override: is virtual missing in the base class?");
+
+    public static LocalizedText NotOverridable(string name) => new(
+        $"\"{name}\" na classe base não é virtual nem abstract, por isso não se pode fazer override.",
+        $"\"{name}\" in the base class is neither virtual nor abstract, so it can't be overridden.");
+
+    public static LocalizedText MissingImplementation(string type, string member, string required) => new(
+        $"A classe \"{type}\" ainda não implementa \"{member}\" (pedido por \"{required}\").",
+        $"The class \"{type}\" doesn't implement \"{member}\" yet (required by \"{required}\").");
+
+    public static LocalizedText AbstractInstance(string type) => new(
+        $"Não se pode fazer new de \"{type}\": é abstrata (ou uma interface).",
+        $"You can't use new on \"{type}\": it is abstract (or an interface).");
+
+    public static LocalizedText InstanceMemberInStaticMethod(string name) => new(
+        $"\"{name}\" pertence a cada objeto: um método static não lhe pode aceder sem um objeto (ou \"{name}\" tem de ser static).",
+        $"\"{name}\" belongs to each object: a static method can't use it without an object (or make \"{name}\" static).");
+
     public static readonly LocalizedText DividedByZero = new(
         "Dividiste por zero.",
         "You divided by zero.");
