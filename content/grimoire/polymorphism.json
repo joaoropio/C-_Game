@@ -1,0 +1,29 @@
+{
+  "id": "polymorphism",
+  "world": 3,
+  "title": { "pt": "Polimorfismo", "en": "Polymorphism" },
+  "whatItIs": {
+    "pt": "Polimorfismo significa \"muitas formas\": uma referência do tipo da base pode apontar para objetos de várias derivadas, e cada um responde à sua maneira. A base marca o método com virtual; cada derivada que quer mudá-lo escreve o mesmo método com override. Na chamada, o C# olha para o objeto que existe de verdade (não para o tipo da variável) e corre o override dele. Assim, um Lamp[] com várias lâmpadas diferentes pode ser percorrido com um único lamp.Glow(). Se a derivada escrever o método sem override (ou com new), ele só esconde o da base e, pela referência da base, corre o da base. Só se pode fazer override de um método virtual (ou abstract).",
+    "en": "Polymorphism means \"many forms\": a reference of the base type can point to objects of several derived classes, and each one answers in its own way. The base marks the method with virtual; each derived class that wants to change it writes the same method with override. At the call, C# looks at the object that really exists (not at the type of the variable) and runs its override. So a Lamp[] with several different lamps can be walked with a single lamp.Glow(). If the derived class writes the method without override (or with new), it only hides the one in the base and, through the base reference, the one in the base runs. You can only override a virtual (or abstract) method."
+  },
+  "syntax": {
+    "pt": "class Lampada\n{\n    public virtual string Brilho()\n    {\n        return \"fraco\";\n    }\n}\n\nclass Tocha : Lampada\n{\n    public override string Brilho()\n    {\n        return \"chama\";\n    }\n}",
+    "en": "class Lamp\n{\n    public virtual string Glow()\n    {\n        return \"dim\";\n    }\n}\n\nclass Torch : Lamp\n{\n    public override string Glow()\n    {\n        return \"flame\";\n    }\n}"
+  },
+  "example": "class Lamp\n{\n    public virtual string Glow()\n    {\n        return \"dim\";\n    }\n}\n\nclass Torch : Lamp\n{\n    public override string Glow()\n    {\n        return \"flame\";\n    }\n}\n\nclass Crystal : Lamp\n{\n    public override string Glow()\n    {\n        return \"blue\";\n    }\n}\n\nclass Hall\n{\n    public string Light()\n    {\n        Lamp[] lamps = { new Lamp(), new Torch(), new Crystal() };\n        string text = \"\";\n        foreach (Lamp lamp in lamps)\n        {\n            text += lamp.Glow() + \" \";\n        }\n\n        return text;\n    }\n}",
+  "commonMistakes": [
+    {
+      "pt": "Esquecer o override (ou escrever new): o método da derivada só esconde o da base, não dá erro, e pela referência da base continua a correr o método da base.",
+      "en": "Forgetting override (or writing new): the method of the derived class only hides the one in the base, there is no error, and through the base reference the method of the base still runs."
+    },
+    {
+      "pt": "Fazer override de um método que não é virtual na base: o compilador recusa. Põe virtual no método da base.",
+      "en": "Overriding a method that is not virtual in the base: the compiler refuses. Put virtual on the method of the base."
+    },
+    {
+      "pt": "Escolher o comportamento com if e is dentro da base (if (this is Cat)): funciona só para os tipos que a base conhece e ignora o polimorfismo. Cada derivada deve ter o seu override.",
+      "en": "Choosing the behaviour with if and is inside the base (if (this is Cat)): it only works for the types the base knows and ignores polymorphism. Each derived class should have its own override."
+    }
+  ],
+  "learnUrl": "https://learn.microsoft.com/dotnet/csharp/fundamentals/object-oriented/polymorphism"
+}

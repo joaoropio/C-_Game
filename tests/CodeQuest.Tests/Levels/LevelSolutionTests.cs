@@ -1194,6 +1194,155 @@ public class LevelSolutionTests
         });
     }
 
+    private static string Creatures(
+        string creatureSpeak = "public virtual string Speak() { return \"...\"; }",
+        string catHeader = "class Cat : Creature",
+        string catSpeak = "public override string Speak() { return \"Meow\"; }",
+        string owlHeader = "class Owl : Creature",
+        string owlSpeak = "public override string Speak() { return \"Hoot\"; }") =>
+        $"class Creature\n{{\n    {creatureSpeak}\n}}\n\n{catHeader}\n{{\n    {catSpeak}\n}}\n\n{owlHeader}\n{{\n    {owlSpeak}\n}}";
+
+    [Fact]
+    public async Task Level15_Solution_RunsTheElevenChoirChecksWithinTheStarLimit()
+    {
+        var level = Find("15-polymorphism");
+
+        var result = Assert.IsType<Passed>(await Run(level, level.Solution));
+
+        Assert.Equal(
+            [
+                "typeof(Creature)",
+                "typeof(Cat)",
+                "typeof(Owl)",
+                "typeof(Cat).BaseType",
+                "typeof(Owl).BaseType",
+                "creatures[0].Speak()",
+                "creatures[1].Speak()",
+                "creatures[2].Speak()",
+                "Creature.Speak",
+                "Cat.Speak",
+                "Owl.Speak",
+            ],
+            result.Checks.Select(check => check.Case));
+        Assert.Equal(["class", "class", "class", "Creature", "Creature", "\"...\"", "\"Meow\"", "\"Hoot\"", "virtual", "override", "override"], result.Checks.Select(check => check.Expected));
+        Assert.Equal(3, level.MaxStatementsForThreeStars);
+        Assert.True(result.StatementCount <= level.MaxStatementsForThreeStars);
+    }
+
+    [Theory]
+    [InlineData("public new string Speak() { return \"Meow\"; }")]
+    [InlineData("public string Speak() { return \"Meow\"; }")]
+    public async Task Level15_HidingInsteadOfOverride_ShowsWhy(string catSpeak)
+    {
+        var level = Find("15-polymorphism");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Creatures(catSpeak: catSpeak)));
+
+        Assert.Contains(new CheckOutcome("Cat.Speak", "override", "hides (missing override)"), result.Checks);
+        Assert.Contains(new CheckOutcome("creatures[1].Speak()", "\"Meow\"", "\"...\""), result.Checks);
+        Assert.Contains(new CheckOutcome("Owl.Speak", "override", "override"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level15_NewVirtualInsteadOfOverride_IsStillHiding()
+    {
+        var level = Find("15-polymorphism");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Creatures(owlSpeak: "public new virtual string Speak() { return \"Hoot\"; }")));
+
+        Assert.Contains(new CheckOutcome("Owl.Speak", "override", "hides (missing override)"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level15_SpeakNotVirtual_IsReported()
+    {
+        var level = Find("15-polymorphism");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Creatures(
+            creatureSpeak: "public string Speak() { return \"...\"; }",
+            catSpeak: "public new string Speak() { return \"Meow\"; }",
+            owlSpeak: "public new string Speak() { return \"Hoot\"; }")));
+
+        Assert.Contains(new CheckOutcome("Creature.Speak", "virtual", "not virtual"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level15_OverrideWithoutVirtual_Explains()
+    {
+        var level = Find("15-polymorphism");
+
+        var result = Assert.IsType<CompilationFailed>(await Run(level, Creatures(creatureSpeak: "public string Speak() { return \"...\"; }")));
+
+        Assert.NotEmpty(result.Errors);
+        Assert.All(result.Errors, error =>
+        {
+            Assert.Equal("\"Speak\" in the base class is neither virtual nor abstract, so it can't be overridden.", error.Explanation!.En);
+            Assert.Equal("\"Speak\" na classe base não é virtual nem abstract, por isso não se pode fazer override.", error.Explanation.Pt);
+        });
+    }
+
+    [Fact]
+    public async Task Level15_OverrideOfAMissingMethod_Explains()
+    {
+        var level = Find("15-polymorphism");
+
+        var result = Assert.IsType<CompilationFailed>(await Run(level, Creatures(creatureSpeak: "public virtual string Talk() { return \"...\"; }")));
+
+        Assert.NotEmpty(result.Errors);
+        Assert.All(result.Errors, error => Assert.NotNull(error.Explanation));
+    }
+
+    [Fact]
+    public async Task Level15_CatAndOwlNotDerivingFromCreature_AreToldSo()
+    {
+        var level = Find("15-polymorphism");
+        var notDeriving = Creatures(catHeader: "class Cat", owlHeader: "class Owl")
+            .Replace("override ", "", StringComparison.Ordinal);
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, notDeriving));
+
+        Assert.Contains(new CheckOutcome("typeof(Cat).BaseType", "Creature", "Object"), result.Checks);
+        Assert.Contains(new CheckOutcome("creatures[1].Speak()", "\"Meow\"", "not a Creature"), result.Checks);
+        Assert.Contains(new CheckOutcome("creatures[2].Speak()", "\"Hoot\"", "not a Creature"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level15_TypeSwitchInsideCreature_IsRejected()
+    {
+        var level = Find("15-polymorphism");
+        var typeSwitch = Creatures(
+            creatureSpeak: "public virtual string Speak() { return this is Cat ? \"Meow\" : this is Owl ? \"Hoot\" : \"...\"; }",
+            catSpeak: "",
+            owlSpeak: "");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, typeSwitch));
+
+        Assert.Contains(new CheckOutcome("creatures[1].Speak()", "\"Meow\"", "\"Meow\""), result.Checks);
+        Assert.Contains(new CheckOutcome("Cat.Speak", "override", "inherited (missing override)"), result.Checks);
+        Assert.Contains(new CheckOutcome("Owl.Speak", "override", "inherited (missing override)"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level15_WrongOverrideText_ReportsExpectedAndObtained()
+    {
+        var level = Find("15-polymorphism");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Creatures(owlSpeak: "public override string Speak() { return \"Woof\"; }")));
+
+        Assert.Contains(new CheckOutcome("creatures[2].Speak()", "\"Hoot\"", "\"Woof\""), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level15_EveryoneSharingTheBaseSpeech_IsRejected()
+    {
+        var level = Find("15-polymorphism");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Creatures(catSpeak: "", owlSpeak: "")));
+
+        Assert.Contains(new CheckOutcome("creatures[1].Speak()", "\"Meow\"", "\"...\""), result.Checks);
+        Assert.Contains(new CheckOutcome("Cat.Speak", "override", "inherited (missing override)"), result.Checks);
+    }
+
     [Fact]
     public async Task Level13_PrivateConstructor_Explains()
     {
