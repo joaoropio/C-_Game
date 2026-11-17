@@ -759,7 +759,7 @@ public class LevelSolutionTests
     private const string StaticHealthSlime = "class Slime\n{\n    public string Name;\n    public static int Health;\n\n    public void Hit(int damage)\n    {\n        Health -= damage;\n        if (Health < 0)\n        {\n            Health = 0;\n        }\n    }\n\n    public bool IsAlive()\n    {\n        return Health > 0;\n    }\n}";
 
     [Fact]
-    public async Task Level12_Solution_RunsTheSevenSlimeChecksWithinTheStarLimit()
+    public async Task Level12_Solution_RunsTheTenSlimeChecksWithinTheStarLimit()
     {
         var level = Find("12-classes");
 
@@ -767,16 +767,19 @@ public class LevelSolutionTests
 
         Assert.Equal(
             [
-                "Slime { Health = 10 }, Hit(3): Health",
-                "Slime { Health = 10 }, Hit(20): Health",
-                "Slime { Health = 0 }.IsAlive()",
-                "Slime { Health = 4 }.IsAlive()",
-                "Slimes a and b with Health 10, a.Hit(5): a.Health",
-                "Slimes a and b with Health 10, a.Hit(5): b.Health",
-                "Slime { Name = \"Blob\" }.Name",
+                "typeof(Slime)",
+                "new Slime { Health = 10 }; Hit(3); Health",
+                "new Slime { Health = 10 }; Hit(20); Health",
+                "new Slime { Health = 6 }; Hit(2); Health",
+                "new Slime { Health = 10 }; Hit(3); Hit(3); Health",
+                "new Slime { Health = 0 }.IsAlive()",
+                "new Slime { Health = 4 }.IsAlive()",
+                "a, b = new Slime { Health = 10 }; a.Hit(5); a.Health",
+                "a, b = new Slime { Health = 10 }; a.Hit(5); b.Health",
+                "a = new Slime { Name = \"Blob\" }, b = new Slime { Name = \"Goo\" }; a.Name",
             ],
             result.Checks.Select(check => check.Case));
-        Assert.Equal(["7", "0", "false", "true", "5", "10", "\"Blob\""], result.Checks.Select(check => check.Expected));
+        Assert.Equal(["class", "7", "0", "4", "4", "false", "true", "5", "10", "\"Blob\""], result.Checks.Select(check => check.Expected));
         Assert.Equal(4, level.MaxStatementsForThreeStars);
         Assert.True(result.StatementCount <= level.MaxStatementsForThreeStars);
     }
@@ -802,7 +805,7 @@ public class LevelSolutionTests
             level,
             "class Slime\n{\n    public string Name;\n    public int Health;\n\n    public void Hit(int damage)\n    {\n        Health -= damage;\n    }\n\n    public bool IsAlive()\n    {\n        return Health > 0;\n    }\n}"));
 
-        Assert.Contains(new CheckOutcome("Slime { Health = 10 }, Hit(20): Health", "0", "-10"), result.Checks);
+        Assert.Contains(new CheckOutcome("new Slime { Health = 10 }; Hit(20); Health", "0", "-10"), result.Checks);
     }
 
     [Fact]
@@ -812,7 +815,7 @@ public class LevelSolutionTests
 
         var result = Assert.IsType<ChecksFailed>(await Run(level, StaticHealthSlime));
 
-        Assert.Contains(new CheckOutcome("Slimes a and b with Health 10, a.Hit(5): b.Health", "10", "5"), result.Checks);
+        Assert.Contains(new CheckOutcome("a, b = new Slime { Health = 10 }; a.Hit(5); b.Health", "10", "5"), result.Checks);
     }
 
     [Fact]
@@ -824,7 +827,7 @@ public class LevelSolutionTests
             level,
             "class Slime\n{\n    public string Name;\n    public int Health;\n\n    public void Hit(int damage)\n    {\n        Health = Math.Max(0, Health - damage);\n    }\n\n    public bool IsAlive()\n    {\n        return true;\n    }\n}"));
 
-        Assert.Contains(new CheckOutcome("Slime { Health = 0 }.IsAlive()", "false", "true"), result.Checks);
+        Assert.Contains(new CheckOutcome("new Slime { Health = 0 }.IsAlive()", "false", "true"), result.Checks);
     }
 
     [Fact]
@@ -851,5 +854,52 @@ public class LevelSolutionTests
             Assert.Equal("The class \"Slime\" is missing.", error.Explanation!.En);
             Assert.Equal("Falta a classe \"Slime\".", error.Explanation.Pt);
         });
+    }
+
+    [Theory]
+    [InlineData("Health = Math.Max(0, 10 - damage);")]
+    [InlineData("Health = damage == 3 ? 7 : damage == 20 ? 0 : 10;")]
+    public async Task Level12_IgnoresCurrentHealth_IsRejected(string hitBody)
+    {
+        var level = Find("12-classes");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(
+            level,
+            $"class Slime\n{{\n    public string Name;\n    public int Health;\n\n    public void Hit(int damage)\n    {{\n        {hitBody}\n    }}\n\n    public bool IsAlive()\n    {{\n        return Health > 0;\n    }}\n}}"));
+
+        Assert.Contains(result.Checks, check => check.Case == "new Slime { Health = 6 }; Hit(2); Health" && !check.Passed);
+        Assert.Contains(result.Checks, check => check.Case == "new Slime { Health = 10 }; Hit(3); Hit(3); Health" && !check.Passed);
+    }
+
+    [Fact]
+    public async Task Level12_StaticName_IsRejected()
+    {
+        var level = Find("12-classes");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, level.Solution.Replace("public string Name;", "public static string Name;")));
+
+        Assert.Contains(new CheckOutcome("a = new Slime { Name = \"Blob\" }, b = new Slime { Name = \"Goo\" }; a.Name", "\"Blob\"", "\"Goo\""), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level12_StructSlime_IsToldItMustBeAClass()
+    {
+        var level = Find("12-classes");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, level.Solution.Replace("class Slime", "struct Slime")));
+
+        Assert.Contains(new CheckOutcome("typeof(Slime)", "class", "struct"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level12_StaticMethods_Explains()
+    {
+        var level = Find("12-classes");
+
+        var result = Assert.IsType<CompilationFailed>(await Run(level, level.StarterCode.Replace("public void Hit", "public static void Hit")));
+
+        Assert.NotEmpty(result.Errors);
+        Assert.All(result.Errors, error => Assert.Equal("\"Hit\" é static: pertence à classe e não a cada objeto. Tira o static.", error.Explanation!.Pt));
+        Assert.All(result.Errors, error => Assert.Null(error.Line));
     }
 }
