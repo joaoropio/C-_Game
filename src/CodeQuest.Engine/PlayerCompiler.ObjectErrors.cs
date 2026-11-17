@@ -19,6 +19,7 @@ internal sealed partial class PlayerCompiler
     private const string MissingAbstractImplementationErrorId = "CS0534";
     private const string MissingInterfaceImplementationErrorId = "CS0535";
     private const string AbstractInstanceErrorId = "CS0144";
+    private const string StaticMemberViaInstanceErrorId = "CS0176";
 
     private static LocalizedText? ExplainObjectOrientedError(Diagnostic diagnostic, bool insidePlayerCode) =>
         diagnostic.Id switch
@@ -26,7 +27,7 @@ internal sealed partial class PlayerCompiler
             MissingTypeErrorId => ExplainMissingType(diagnostic, insidePlayerCode),
             NoConstructorForArgumentCountErrorId => ExplainNoConstructorForArgumentCount(diagnostic),
             InaccessibleMemberErrorId => ExplainInaccessibleMember(diagnostic),
-            ReadOnlyMemberErrorId or InaccessibleSetterErrorId => ExplainAssignmentFromOutside(diagnostic),
+            ReadOnlyMemberErrorId or InaccessibleSetterErrorId => ExplainAssignment(diagnostic),
             NothingToOverrideErrorId => ExplainNothingToOverride(diagnostic),
             NotOverridableErrorId => ExplainNotOverridable(diagnostic),
             MissingAbstractImplementationErrorId or MissingInterfaceImplementationErrorId =>
@@ -68,12 +69,24 @@ internal sealed partial class PlayerCompiler
     // private inside Golem" would only confuse.
     private static LocalizedText? ExplainInaccessibleMember(Diagnostic diagnostic) =>
         QuotedNames(diagnostic) is [var symbol, ..] && SymbolPath(symbol) is [.., var owner, var member] && owner != member
-            ? PlayerMessages.PrivateMember(member, owner)
+            ? PlayerMessages.NotPublic(member, owner)
             : null;
 
-    // "Property or indexer 'Golem.Armor' cannot be assigned to -- it is read only" and the private-set twin.
-    private static LocalizedText? ExplainAssignmentFromOutside(Diagnostic diagnostic) =>
-        QuotedNames(diagnostic) is [var symbol, ..] ? PlayerMessages.CannotAssignFromOutside(MethodNameOf(symbol)) : null;
+    // "Property or indexer 'Golem.Armor' cannot be assigned to -- it is read only" (the set may also be missing from
+    // inside the class) and, for a private set, "...because the set accessor is inaccessible". An indexer such as
+    // `text[0] = 'c'` is a Worlds 1-2 mistake, so it gets no explanation here.
+    private static LocalizedText? ExplainAssignment(Diagnostic diagnostic)
+    {
+        if (QuotedNames(diagnostic) is not [var symbol, ..] || MethodNameOf(symbol).StartsWith("this[", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var member = MethodNameOf(symbol);
+        return diagnostic.Id == ReadOnlyMemberErrorId
+            ? PlayerMessages.CannotAssignHere(member)
+            : PlayerMessages.CannotAssignFromOutside(member);
+    }
 
     // "'Griffin.Speak()': no suitable method found to override".
     private static LocalizedText? ExplainNothingToOverride(Diagnostic diagnostic) =>
@@ -106,8 +119,24 @@ internal sealed partial class PlayerCompiler
     private static LocalizedText? ExplainAbstractInstance(Diagnostic diagnostic) =>
         QuotedNames(diagnostic) is [var type, ..] ? PlayerMessages.AbstractInstance(SymbolPath(type)[^1]) : null;
 
+    // "Member 'Slime.Hit(int)' cannot be accessed with an instance reference; qualify it with a type name instead".
+    // Only the player's own members: `text.Format(...)` is a library mistake with its own advice.
+    private static LocalizedText? ExplainStaticViaInstance(Diagnostic diagnostic, IReadOnlySet<string> playerMembers)
+    {
+        if (QuotedNames(diagnostic) is not [var symbol, ..])
+        {
+            return null;
+        }
+
+        var path = SymbolPath(symbol);
+        var isPlayers = symbol.Contains('(')
+            ? playerMembers.Contains(path[^1])
+            : path is [.., var type, var name] && playerMembers.Contains($"{type}.{name}");
+        return isPlayers ? PlayerMessages.StaticMemberViaInstance(path[^1]) : null;
+    }
+
     // "Dictionary<string, int>.ContainsKey(string)" -> ["Dictionary", "ContainsKey"].
-    private static string[] SymbolPath(string symbol) => WithoutTypeArguments(symbol.Split('(')[0]).Split('.');
+    private static string[] SymbolPath(string symbol) => WithoutTypeArguments(symbol).Split('(')[0].Split('.');
 
     // "Box<List<int>>.Get" -> "Box.Get".
     private static string WithoutTypeArguments(string text)

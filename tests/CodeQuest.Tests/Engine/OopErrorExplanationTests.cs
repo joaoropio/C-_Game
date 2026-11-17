@@ -64,8 +64,8 @@ public class OopErrorExplanationTests
         string playerCode, string probe, string countEn, string countPt) =>
         AssertExplained(
             Explained(playerCode, probe, insidePlayerCode: false),
-            $"The class \"Golem\" has no constructor that takes {countEn}.",
-            $"A classe \"Golem\" não tem um construtor que receba {countPt}.");
+            $"\"Golem\" has no constructor that takes {countEn}.",
+            $"\"Golem\" não tem um construtor que receba {countPt}.");
 
     [Fact]
     public void ConstructorWithWrongArgumentCount_InPlayerCode_ExplainedWithLine()
@@ -77,8 +77,8 @@ public class OopErrorExplanationTests
 
         AssertExplained(
             error,
-            "The class \"Golem\" has no constructor that takes 2 arguments.",
-            "A classe \"Golem\" não tem um construtor que receba 2 argumentos.");
+            "\"Golem\" has no constructor that takes 2 arguments.",
+            "\"Golem\" não tem um construtor que receba 2 argumentos.");
         Assert.Equal(2, error.Line);
     }
 
@@ -86,7 +86,7 @@ public class OopErrorExplanationTests
     public void ConstructorMissingArgument_UsedByValidation_Explained() =>
         AssertExplained(
             Explained("class Golem { public Golem(int hp, int armor) { } }", "return new Golem(1);", insidePlayerCode: false),
-            "Missing the value of \"armor\" when creating \"Golem\".",
+            "No value for \"armor\" when creating \"Golem\".",
             "Falta o valor de \"armor\" ao criar \"Golem\".");
 
     [Fact]
@@ -99,7 +99,7 @@ public class OopErrorExplanationTests
 
         AssertExplained(
             error,
-            "Missing the value of \"armor\" when creating \"Golem\".",
+            "No value for \"armor\" when creating \"Golem\".",
             "Falta o valor de \"armor\" ao criar \"Golem\".");
         Assert.Equal(2, error.Line);
     }
@@ -117,8 +117,8 @@ public class OopErrorExplanationTests
     public void PrivateMember_UsedByValidation_Explained(string playerCode, string probe) =>
         AssertExplained(
             Explained(playerCode, probe, insidePlayerCode: false),
-            "\"Armor\" is private: it can only be used inside the class \"Golem\".",
-            "\"Armor\" é private: só se pode usar dentro da classe \"Golem\".");
+            "\"Armor\" isn't public, so it can't be used here, outside the class \"Golem\". Is public missing?",
+            "\"Armor\" não é public, por isso não se pode usar aqui, fora da classe \"Golem\". Falta public?");
 
     [Fact]
     public void PrivateMember_InPlayerCode_ExplainedWithLine()
@@ -130,8 +130,8 @@ public class OopErrorExplanationTests
 
         AssertExplained(
             error,
-            "\"Armor\" is private: it can only be used inside the class \"Golem\".",
-            "\"Armor\" é private: só se pode usar dentro da classe \"Golem\".");
+            "\"Armor\" isn't public, so it can't be used here, outside the class \"Golem\". Is public missing?",
+            "\"Armor\" não é public, por isso não se pode usar aqui, fora da classe \"Golem\". Falta public?");
         Assert.Equal(2, error.Line);
     }
 
@@ -140,20 +140,25 @@ public class OopErrorExplanationTests
     {
         var error = Explained("class Golem { Golem() { } }", "return new Golem();", insidePlayerCode: false);
 
-        Assert.DoesNotContain("é private", error.Explanation!.Pt);
+        Assert.DoesNotContain("não é public", error.Explanation!.Pt);
     }
 
-    [Theory]
-    [InlineData("class Golem { public int Armor { get; } = 3; }")]
-    [InlineData("class Golem { public int Armor { get; private set; } }")]
-    public void PropertyAssignedFromOutside_UsedByValidation_Explained(string playerCode) =>
+    [Fact]
+    public void PropertyWithoutSet_AssignedByValidation_Explained() =>
         AssertExplained(
-            Explained(playerCode, "var g = new Golem(); g.Armor = 5; return 1;", insidePlayerCode: false),
+            Explained("class Golem { public int Armor { get; } = 3; }", "var g = new Golem(); g.Armor = 5; return 1;", insidePlayerCode: false),
+            "\"Armor\" can't be changed here: it has no set (or its set is private).",
+            "\"Armor\" não se pode mudar aqui: não tem set (ou o set é private).");
+
+    [Fact]
+    public void PropertyWithPrivateSet_AssignedByValidation_Explained() =>
+        AssertExplained(
+            Explained("class Golem { public int Armor { get; private set; } }", "var g = new Golem(); g.Armor = 5; return 1;", insidePlayerCode: false),
             "\"Armor\" can't be changed from outside the class (its set is private or missing).",
             "\"Armor\" não se pode mudar de fora da classe (o set é private ou não existe).");
 
     [Fact]
-    public void PropertyAssignedFromOutside_InPlayerCode_ExplainedWithLine()
+    public void PropertyWithoutSet_AssignedInPlayerCode_ExplainedWithLine()
     {
         var error = Explained(
             "class Golem { public int Armor { get; } }\nclass Hero { void F(Golem g) { g.Armor = 5; } }",
@@ -162,25 +167,89 @@ public class OopErrorExplanationTests
 
         AssertExplained(
             error,
-            "\"Armor\" can't be changed from outside the class (its set is private or missing).",
-            "\"Armor\" não se pode mudar de fora da classe (o set é private ou não existe).");
+            "\"Armor\" can't be changed here: it has no set (or its set is private).",
+            "\"Armor\" não se pode mudar aqui: não tem set (ou o set é private).");
+        Assert.Equal(2, error.Line);
+    }
+
+    [Fact]
+    public void PropertyWithoutSet_AssignedInsideItsOwnClass_ExplainedNeutrally() =>
+        AssertExplained(
+            Explained("class Golem { public int Armor { get; } void F() { Armor = 5; } }", "return 1;", insidePlayerCode: true),
+            "\"Armor\" can't be changed here: it has no set (or its set is private).",
+            "\"Armor\" não se pode mudar aqui: não tem set (ou o set é private).");
+
+    [Theory]
+    [InlineData("class Beast { }\nclass Griffin : Beast { public override string Speak() => \"x\"; }", "Speak")]
+    [InlineData("class Beast { }\nclass Griffin : Beast { public override int Level { get => 1; } }", "Level")]
+    [InlineData("class Beast { public virtual string Speak() => \"a\"; }\nclass Griffin { public override string Speak() => \"x\"; }", "Speak")]
+    [InlineData("class Beast { public virtual string Speak() => \"a\"; }\nclass Griffin : Beast { public override string Speak(int n) => \"x\"; }", "Speak")]
+    public void OverrideWithoutBaseMember_Explained(string playerCode, string name)
+    {
+        var error = Explained(playerCode, "return 1;", insidePlayerCode: true);
+
+        AssertExplained(
+            error,
+            $"There is no \"{name}\" in the base class to override: check the name, the parameters and that the class inherits from the base (\": Base\").",
+            $"Não há nenhum \"{name}\" na classe base para substituir: verifica o nome, os parâmetros e se a classe herda da base (\": Base\").");
         Assert.Equal(2, error.Line);
     }
 
     [Theory]
-    [InlineData("class Beast { }\nclass Griffin : Beast { public override string Speak() => \"x\"; }")]
-    [InlineData("class Beast { }\nclass Griffin : Beast { public override int Level { get => 1; } }")]
-    public void OverrideWithoutBaseMember_Explained(string playerCode)
+    [InlineData("class Creature { public Creature(string name) { } }\nclass Dragon : Creature { public Dragon() { } }", 2)]
+    [InlineData("class Creature { public Creature(string name) { } }\nclass Dragon : Creature { }", 2)]
+    [InlineData("class Creature { public Creature(string name, int hp) { } }\nclass Dragon : Creature { public Dragon() : base(\"a\") { } }", 2)]
+    public void MissingBaseConstructorArgument_ExplainedWithDerivedClass(string playerCode, int line)
     {
         var error = Explained(playerCode, "return 1;", insidePlayerCode: true);
 
-        var name = playerCode.Contains("Speak", StringComparison.Ordinal) ? "Speak" : "Level";
+        var parameter = playerCode.Contains("int hp", StringComparison.Ordinal) ? "hp" : "name";
         AssertExplained(
             error,
-            $"There is no method \"{name}\" to override: is virtual missing in the base class?",
-            $"Não há nenhum método \"{name}\" para substituir: falta virtual na classe base?");
-        Assert.Equal(2, error.Line);
+            $"\"{parameter}\" must be passed to the constructor of \"Creature\": use : base(...) in the constructor of \"Dragon\".",
+            $"Falta passar \"{parameter}\" ao construtor de \"Creature\": usa : base(...) no construtor de \"Dragon\".");
+        Assert.Equal(line, error.Line);
     }
+
+    // Indexing a string is a World 1-2 mistake, not an encapsulation one.
+    [Fact]
+    public void AssigningToStringIndexer_HasNoObjectOrientedExplanation()
+    {
+        var error = Explained("class Hero { void F() { string s = \"ab\"; s[0] = 'c'; } }", "return 1;", insidePlayerCode: true);
+
+        Assert.Null(error.Explanation);
+    }
+
+    [Fact]
+    public void ProtectedMember_UsedOutside_Explained()
+    {
+        var error = Explained(
+            "class Golem { protected int Armor = 3; }\nclass Hero { object V = new Golem().Armor; }",
+            "return 1;",
+            insidePlayerCode: true);
+
+        AssertExplained(
+            error,
+            "\"Armor\" isn't public, so it can't be used here, outside the class \"Golem\". Is public missing?",
+            "\"Armor\" não é public, por isso não se pode usar aqui, fora da classe \"Golem\". Falta public?");
+    }
+
+    [Fact]
+    public void InstanceFieldUsedByValidation_ExplainedAsMissingStatic() =>
+        AssertExplained(
+            Explained("class Golem { public static int Hits = 1; public int Armor = 2; }", "return Golem.Armor;", insidePlayerCode: false),
+            "\"Armor\" needs to be static.",
+            "Falta static em \"Armor\".");
+
+    [Fact]
+    public void TupleTypeArgumentsInSignature_DoNotBreakTheName() =>
+        AssertExplained(
+            Explained(
+                "class Golem<T> { public Golem(T v, int armor) { } }",
+                "return new Golem<(int, int)>((1, 2));",
+                insidePlayerCode: false),
+            "No value for \"armor\" when creating \"Golem\".",
+            "Falta o valor de \"armor\" ao criar \"Golem\".");
 
     [Fact]
     public void OverrideOfNonVirtualMember_Explained()
@@ -208,8 +277,8 @@ public class OopErrorExplanationTests
 
         AssertExplained(
             error,
-            $"The class \"Griffin\" doesn't implement \"{member}\" yet (required by \"{required}\").",
-            $"A classe \"Griffin\" ainda não implementa \"{member}\" (pedido por \"{required}\").");
+            $"\"Griffin\" doesn't implement \"{member}\" yet (required by \"{required}\").",
+            $"\"Griffin\" ainda não implementa \"{member}\" (pedido por \"{required}\").");
         Assert.Equal(2, error.Line);
     }
 
@@ -249,8 +318,8 @@ public class OopErrorExplanationTests
 
         AssertExplained(
             error,
-            "\"hp\" belongs to each object: a static method can't use it without an object (or make \"hp\" static).",
-            "\"hp\" pertence a cada objeto: um método static não lhe pode aceder sem um objeto (ou \"hp\" tem de ser static).");
+            "\"hp\" belongs to each object: a static member can't use it without an object (or make \"hp\" static).",
+            "\"hp\" pertence a cada objeto: um membro static não lhe pode aceder sem um objeto (ou \"hp\" tem de ser static).");
         Assert.Equal(4, error.Line);
     }
 
@@ -271,6 +340,42 @@ public class OopErrorExplanationTests
     {
         var error = Explained(
             "class Hero\n{\n    int Length = 3;\n    static int F() { return string.Length; }\n}",
+            "return 1;",
+            insidePlayerCode: true);
+
+        Assert.Null(error.Explanation);
+    }
+
+    [Theory]
+    [InlineData("class Slime { public static int Hit(int n) => n; }", "return new Slime().Hit(1);")]
+    [InlineData("class Slime { public static int Hp = 3; }", "return new Slime().Hp;")]
+    public void StaticMemberUsedThroughObject_UsedByValidation_Explained(string playerCode, string probe)
+    {
+        var name = probe.Contains("Hit", StringComparison.Ordinal) ? "Hit" : "Hp";
+
+        AssertExplained(
+            Explained(playerCode, probe, insidePlayerCode: false),
+            $"\"{name}\" is static: it belongs to the class, not to each object. Remove the static.",
+            $"\"{name}\" é static: pertence à classe e não a cada objeto. Tira o static.");
+    }
+
+    [Fact]
+    public void StaticMemberUsedThroughObject_InPlayerCode_ExplainedWithLine()
+    {
+        var error = Explained(
+            "class Slime { public static int Hit(int n) => n; }\nclass Hero { object V = new Slime().Hit(1); }",
+            "return 1;",
+            insidePlayerCode: true);
+
+        Assert.Equal("Tira o static.", error.Explanation!.Pt[^14..]);
+        Assert.Equal(2, error.Line);
+    }
+
+    [Fact]
+    public void LibraryStaticMemberUsedThroughObject_HasNoExplanation()
+    {
+        var error = Explained(
+            "class Hero { int IsNullOrEmpty = 1; bool F(string s) => s.IsNullOrEmpty(s); }",
             "return 1;",
             insidePlayerCode: true);
 

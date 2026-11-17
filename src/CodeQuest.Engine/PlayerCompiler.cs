@@ -200,7 +200,8 @@ internal sealed partial class PlayerCompiler
             DuplicateMethodErrorId => ExplainDuplicateMethod(diagnostic),
             DuplicateDefinitionErrorId => ExplainDuplicateDefinition(diagnostic),
             InstanceMemberInStaticClassErrorId => ExplainMissingStaticAtDeclaration(diagnostic),
-            ObjectReferenceRequiredErrorId => ExplainObjectReferenceRequired(diagnostic, playerMembers),
+            ObjectReferenceRequiredErrorId => ExplainObjectReferenceRequired(diagnostic, insidePlayerCode, playerMembers),
+            StaticMemberViaInstanceErrorId => ExplainStaticViaInstance(diagnostic, playerMembers),
             _ => ExplainObjectOrientedError(diagnostic, insidePlayerCode),
         };
 
@@ -304,10 +305,32 @@ internal sealed partial class PlayerCompiler
 
         var path = SymbolPath(signature);
         var name = path[^1];
-        return name.Length == 0 ? null
-            : path is [.., var type, _] && type == name ? PlayerMessages.MissingConstructorArguments(type, parameter)
-            : PlayerMessages.MissingArguments(name, parameter);
+        if (name.Length == 0)
+        {
+            return null;
+        }
+
+        if (path is not [.., var type, _] || type != name)
+        {
+            return PlayerMessages.MissingArguments(name, parameter);
+        }
+
+        // Outside an object creation the call is the implicit or explicit `base(...)` of a derived class.
+        return EnclosingTypeName(diagnostic) is { } derived && !IsObjectCreation(diagnostic)
+            ? PlayerMessages.MissingBaseConstructorArgument(parameter, type, derived)
+            : PlayerMessages.MissingConstructorArguments(type, parameter);
     }
+
+    private static bool IsObjectCreation(Diagnostic diagnostic) => diagnostic.Location.SourceTree!.GetRoot()
+        .FindNode(diagnostic.Location.SourceSpan)
+        .AncestorsAndSelf()
+        .Any(node => node is BaseObjectCreationExpressionSyntax);
+
+    private static string? EnclosingTypeName(Diagnostic diagnostic) => diagnostic.Location.SourceTree!.GetRoot()
+        .FindNode(diagnostic.Location.SourceSpan)
+        .AncestorsAndSelf()
+        .OfType<TypeDeclarationSyntax>()
+        .FirstOrDefault()?.Identifier.Text;
 
     // "Spell.Heal<T>(T, T)" or "Dictionary<string, int>.ContainsKey(string)" -> "Heal" / "ContainsKey".
     private static string MethodNameOf(string signature) => SymbolPath(signature)[^1];
@@ -332,7 +355,10 @@ internal sealed partial class PlayerCompiler
     // "An object reference is required for the non-static field, method, or property 'Spell.Heal(int)'": only a
     // method written by the player is "missing static"; `string.Length` or `List<int>.Count` are not the player's.
     // A field or property of the player's ("Hero.hp") is an instance member used without an object.
-    private static LocalizedText? ExplainObjectReferenceRequired(Diagnostic diagnostic, IReadOnlySet<string> playerMembers)
+    private static LocalizedText? ExplainObjectReferenceRequired(
+        Diagnostic diagnostic,
+        bool insidePlayerCode,
+        IReadOnlySet<string> playerMembers)
     {
         if (QuotedNames(diagnostic) is not [var symbol, ..])
         {
@@ -345,9 +371,14 @@ internal sealed partial class PlayerCompiler
             return playerMembers.Contains(path[^1]) ? PlayerMessages.MissingStatic(path[^1]) : null;
         }
 
-        return path is [.., var type, var member] && playerMembers.Contains($"{type}.{member}")
-            ? PlayerMessages.InstanceMemberInStaticMethod(member)
-            : null;
+        if (path is not [.., var type, var member] || !playerMembers.Contains($"{type}.{member}"))
+        {
+            return null;
+        }
+
+        return insidePlayerCode
+            ? PlayerMessages.InstanceMemberInStaticMember(member)
+            : PlayerMessages.MissingStaticMember(member);
     }
 
     private static List<string> QuotedNames(Diagnostic diagnostic) => QuotedName()
