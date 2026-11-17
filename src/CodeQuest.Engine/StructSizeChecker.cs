@@ -83,9 +83,12 @@ internal sealed class StructSizeChecker
             VariableDeclaratorSyntax or SingleVariableDesignationSyntax or ForEachStatementSyntax or ParameterSyntax =>
                 model.GetDeclaredSymbol(node) switch { ILocalSymbol local => local.Type, IParameterSymbol parameter => parameter.Type, _ => null },
             ExpressionSyntax expression when !NamesLocalParameterOrType(model, expression) => model.GetTypeInfo(expression).Type,
+            PatternSyntax pattern => model.GetTypeInfo(pattern).Type,
             _ => null,
         };
-        return BytesOf(type) + (node is CommonForEachStatementSyntax loop ? ForEachHiddenBytes(model, loop) : 0);
+        // A property subpattern (`P: ...`) copies the member's value into a hidden temporary of its own.
+        var member = node is SubpatternSyntax { ExpressionColon: { } colon } ? MemberType(model, colon.Expression) : null;
+        return BytesOf(member) + BytesOf(type) + (node is CommonForEachStatementSyntax loop ? ForEachHiddenBytes(model, loop) : 0);
     }
 
     // A foreach keeps the enumerator and a copy of the current element on the stack, and neither has an expression node.
@@ -94,6 +97,13 @@ internal sealed class StructSizeChecker
         var info = model.GetForEachStatementInfo(loop);
         return BytesOf(info.ElementType) + BytesOf(info.GetEnumeratorMethod?.ReturnType);
     }
+
+    private static ITypeSymbol? MemberType(SemanticModel model, ExpressionSyntax name) => model.GetSymbolInfo(name).Symbol switch
+    {
+        IPropertySymbol property => property.Type,
+        IFieldSymbol field => field.Type,
+        _ => null,
+    };
 
     private long BytesOf(ITypeSymbol? type) =>
         type is { IsValueType: true, SpecialType: not SpecialType.System_Void } ? SizeOf(type, depth: 0) : 0;

@@ -199,6 +199,16 @@ public class StructSizeTests
         Assert.IsType<Passed>(await Run(RecursiveMethodRepeating("s += o.P.a.a.a; ", 3)));
 
 
+    // Each nested property subpattern copies the member into a hidden temporary that has no expression node.
+    [Fact]
+    public async Task Run_ManyNestedPropertyPatterns_Rejected() => AssertFrameTooBig(await Run(RecursiveMethodRepeating(
+        "if (o is { P: { a: { a: { a: 0 } } } }) s++; ", 800)));
+
+    [Fact]
+    public async Task Run_NormalPropertyPatternsAndSwitchOnSmallStruct_Passed() => Assert.IsType<Passed>(await Run(
+        "struct P { public int X; public string Name; }\nclass O { public P Item { get; set; } }\n"
+        + "class A { public static int F(O o) { if (o is { Item: { Name: \"x\" } }) { return 1; } return o.Item switch { { X: 0 } => 2, { Name: null } => 3, _ => 4 }; } }"));
+
     // A foreach holds the enumerator and a copy of the current element on the stack, with no expression node for either.
     [Fact]
     public async Task Run_ManyDeconstructingForeachOverStructList_Rejected() => AssertFrameTooBig(await Run(
