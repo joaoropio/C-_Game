@@ -1397,7 +1397,7 @@ public class LevelSolutionTests
 
         var error = Assert.Single(result.Errors);
         Assert.Equal(3, error.Line);
-        Assert.Equal("\"Speak\" is virtual (or override), so it must be public.", error.Explanation!.En);
+        Assert.Equal("\"Speak\" is virtual, abstract or override, so it must be public.", error.Explanation!.En);
     }
 
     // Accepted: the base field plus base.Speak() is real overriding (each class still has its own override), it only
@@ -1511,6 +1511,258 @@ public class LevelSolutionTests
 
         Assert.Contains(new CheckOutcome("creatures[1].Speak()", "\"Meow\"", "\"...\""), result.Checks);
         Assert.Contains(new CheckOutcome("Cat.Speak", "override", "inherited (missing override)"), result.Checks);
+    }
+
+    private const string FlyerInterface = "interface IFlyer\n{\n    int FlySpeed();\n}";
+
+    private const string AbstractBeast =
+        "abstract class Beast\n{\n    public abstract string Sound();\n\n    public string Roar()\n    {\n        return Sound().ToUpper() + \"!\";\n    }\n}";
+
+    private static string Griffins(
+        string flyer = FlyerInterface,
+        string beast = AbstractBeast,
+        string griffin = "class Griffin : Beast, IFlyer\n{\n    public override string Sound()\n    {\n        return \"screech\";\n    }\n\n    public int FlySpeed()\n    {\n        return 30;\n    }\n}") =>
+        $"{flyer}\n\n{beast}\n\n{griffin}";
+
+    private static string GriffinWith(string header = "class Griffin : Beast, IFlyer", string sound = "public override string Sound() { return \"screech\"; }", string speed = "public int FlySpeed() { return 30; }") =>
+        $"{header}\n{{\n    {sound}\n\n    {speed}\n}}";
+
+    [Fact]
+    public async Task Level16_Solution_RunsTheTenMenagerieChecksWithinTheStarLimit()
+    {
+        var level = Find("16-interfaces");
+
+        var result = Assert.IsType<Passed>(await Run(level, level.Solution));
+
+        Assert.Equal(
+            [
+                "typeof(Beast)",
+                "typeof(IFlyer)",
+                "typeof(Griffin)",
+                "typeof(Griffin).BaseType",
+                "new Griffin() is IFlyer",
+                "Beast.Sound",
+                "typeof(Griffin).GetMethod(\"Roar\").DeclaringType",
+                "new Griffin().Sound()",
+                "new Griffin().Roar()",
+                "((IFlyer)new Griffin()).FlySpeed()",
+            ],
+            result.Checks.Select(check => check.Case));
+        Assert.Equal(["abstract class", "interface", "class", "Beast", "true", "abstract", "Beast", "\"screech\"", "\"SCREECH!\"", "30"], result.Checks.Select(check => check.Expected));
+        Assert.Equal(3, level.MaxStatementsForThreeStars);
+        Assert.True(result.StatementCount <= level.MaxStatementsForThreeStars);
+    }
+
+    [Fact]
+    public async Task Level16_ProtectedSound_Passes()
+    {
+        var level = Find("16-interfaces");
+        var code = Griffins(
+            beast: AbstractBeast.Replace("public abstract", "protected abstract", StringComparison.Ordinal),
+            griffin: GriffinWith(sound: "protected override string Sound() { return \"screech\"; }"));
+
+        Assert.IsType<Passed>(await Run(level, code));
+    }
+
+    [Fact]
+    public async Task Level16_ConcreteBeast_IsRejected()
+    {
+        var level = Find("16-interfaces");
+        var concrete = AbstractBeast.Replace("abstract class", "class", StringComparison.Ordinal)
+            .Replace("public abstract string Sound();", "public virtual string Sound() { return \"\"; }", StringComparison.Ordinal);
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Griffins(beast: concrete, griffin: GriffinWith(sound: "public override string Sound() { return \"screech\"; }"))));
+
+        Assert.Contains(new CheckOutcome("typeof(Beast)", "abstract class", "class"), result.Checks);
+        Assert.Contains(new CheckOutcome("Beast.Sound", "abstract", "virtual"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level16_VirtualSoundInAnAbstractBeast_IsRejected()
+    {
+        var level = Find("16-interfaces");
+        var virtualSound = AbstractBeast.Replace("public abstract string Sound();", "public virtual string Sound() { return \"\"; }", StringComparison.Ordinal);
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Griffins(beast: virtualSound)));
+
+        Assert.Contains(new CheckOutcome("Beast.Sound", "abstract", "virtual"), result.Checks);
+        Assert.Contains(new CheckOutcome("typeof(Beast)", "abstract class", "abstract class"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level16_SoundWithoutAbstractAndWithoutBody_Explains()
+    {
+        var level = Find("16-interfaces");
+        var bodiless = AbstractBeast.Replace("public abstract string Sound();", "public string Sound();", StringComparison.Ordinal);
+
+        var result = Assert.IsType<CompilationFailed>(await Run(level, Griffins(beast: bodiless)));
+
+        Assert.All(result.Errors, error => Assert.NotNull(error.Explanation));
+    }
+
+    [Fact]
+    public async Task Level16_AbstractMemberInANonAbstractClass_Explains()
+    {
+        var level = Find("16-interfaces");
+        var notAbstract = AbstractBeast.Replace("abstract class", "class", StringComparison.Ordinal);
+
+        var result = Assert.IsType<CompilationFailed>(await Run(level, Griffins(beast: notAbstract)));
+
+        var error = Assert.Single(result.Errors);
+        Assert.Equal(8, error.Line);
+        Assert.Contains("abstract", error.Explanation!.En, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Level16_AbstractSoundWithoutPublic_Explains()
+    {
+        var level = Find("16-interfaces");
+        var hidden = AbstractBeast.Replace("public abstract string Sound();", "abstract string Sound();", StringComparison.Ordinal);
+
+        var result = Assert.IsType<CompilationFailed>(await Run(level, Griffins(beast: hidden)));
+
+        Assert.NotEmpty(result.Errors);
+        Assert.All(result.Errors, error => Assert.Equal("\"Sound\" is virtual, abstract or override, so it must be public.", error.Explanation!.En));
+        Assert.Equal(8, Assert.Single(result.Errors).Line);
+    }
+
+    [Theory]
+    [InlineData("abstract class IFlyer\n{\n    public abstract int FlySpeed();\n}", "class Griffin : Beast")]
+    [InlineData("class IFlyer\n{\n    public int FlySpeed() { return 30; }\n}", "class Griffin : Beast")]
+    public async Task Level16_FlyerAsAClass_IsRejected(string flyer, string header)
+    {
+        var level = Find("16-interfaces");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Griffins(flyer: flyer, griffin: GriffinWith(header: header, speed: "public int FlySpeed() { return 30; }"))));
+
+        Assert.Single(result.Checks, check => check.Case == "typeof(IFlyer)" && check.Expected == "interface" && check.Actual != "interface");
+        Assert.Contains(new CheckOutcome("((IFlyer)new Griffin()).FlySpeed()", "30", "not an IFlyer"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level16_FlyerAsAClassListedAsBase_Explains()
+    {
+        var level = Find("16-interfaces");
+        var result = Assert.IsType<CompilationFailed>(await Run(level, Griffins(flyer: "abstract class IFlyer\n{\n    public abstract int FlySpeed();\n}")));
+
+        Assert.Equal("A class inherits from a single base, and \"IFlyer\" is a class: to list it after the base, \"IFlyer\" must be an interface.", Assert.Single(result.Errors).Explanation!.En);
+    }
+
+    [Fact]
+    public async Task Level16_GriffinNotImplementingTheInterface_IsToldSo()
+    {
+        var level = Find("16-interfaces");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Griffins(griffin: GriffinWith(header: "class Griffin : Beast"))));
+
+        Assert.Contains(new CheckOutcome("new Griffin() is IFlyer", "true", "false"), result.Checks);
+        Assert.Contains(new CheckOutcome("((IFlyer)new Griffin()).FlySpeed()", "30", "not an IFlyer"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level16_RoarOverriddenInGriffin_IsRejected()
+    {
+        var level = Find("16-interfaces");
+        var virtualRoar = AbstractBeast.Replace("public string Roar", "public virtual string Roar", StringComparison.Ordinal);
+        var griffin = GriffinWith(sound: "public override string Sound() { return \"screech\"; }\n\n    public override string Roar() { return \"SCREECH!\"; }");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Griffins(beast: virtualRoar, griffin: griffin)));
+
+        Assert.Contains(new CheckOutcome("typeof(Griffin).GetMethod(\"Roar\").DeclaringType", "Beast", "Griffin"), result.Checks);
+        Assert.Contains(new CheckOutcome("new Griffin().Roar()", "\"SCREECH!\"", "\"SCREECH!\""), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level16_RoarHiddenInGriffin_IsRejected()
+    {
+        var level = Find("16-interfaces");
+        var griffin = GriffinWith(sound: "public override string Sound() { return \"screech\"; }\n\n    public new string Roar() { return \"SCREECH!\"; }");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Griffins(griffin: griffin)));
+
+        Assert.Contains(new CheckOutcome("typeof(Griffin).GetMethod(\"Roar\").DeclaringType", "Beast", "Griffin"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level16_RoarMissing_IsReportedNotThrown()
+    {
+        var level = Find("16-interfaces");
+        var noRoar = "abstract class Beast\n{\n    public abstract string Sound();\n}";
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Griffins(beast: noRoar)));
+
+        Assert.Contains(new CheckOutcome("new Griffin().Roar()", "\"SCREECH!\"", "no public Roar()"), result.Checks);
+        Assert.Contains(new CheckOutcome("typeof(Griffin).GetMethod(\"Roar\").DeclaringType", "Beast", "no public Roar()"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level16_RoarNotUsingSound_ReportsExpectedAndObtained()
+    {
+        var level = Find("16-interfaces");
+        var lower = AbstractBeast.Replace("Sound().ToUpper() + \"!\"", "Sound() + \"!\"", StringComparison.Ordinal);
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Griffins(beast: lower)));
+
+        Assert.Contains(new CheckOutcome("new Griffin().Roar()", "\"SCREECH!\"", "\"screech!\""), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level16_WrongFlySpeed_ReportsExpectedAndObtained()
+    {
+        var level = Find("16-interfaces");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Griffins(griffin: GriffinWith(speed: "public int FlySpeed() { return 31; }"))));
+
+        Assert.Contains(new CheckOutcome("((IFlyer)new Griffin()).FlySpeed()", "30", "31"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level16_GriffinAsAStruct_IsRejected()
+    {
+        var level = Find("16-interfaces");
+        var griffin = "struct Griffin : IFlyer\n{\n    public string Sound() { return \"screech\"; }\n\n    public int FlySpeed() { return 30; }\n}";
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Griffins(griffin: griffin)));
+
+        Assert.Contains(new CheckOutcome("typeof(Griffin)", "class", "struct"), result.Checks);
+        Assert.Contains(new CheckOutcome("new Griffin().Roar()", "\"SCREECH!\"", "not a Beast"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level16_MissingImplementation_Explains()
+    {
+        var level = Find("16-interfaces");
+
+        var noSound = Assert.IsType<CompilationFailed>(await Run(level, Griffins(griffin: GriffinWith(sound: ""))));
+        var noSpeed = Assert.IsType<CompilationFailed>(await Run(level, Griffins(griffin: GriffinWith(speed: ""))));
+
+        Assert.Equal("\"Griffin\" doesn't implement \"Sound\" yet (required by \"Beast\").", Assert.Single(noSound.Errors).Explanation!.En);
+        Assert.Equal("\"Griffin\" doesn't implement \"FlySpeed\" yet (required by \"IFlyer\").", Assert.Single(noSpeed.Errors).Explanation!.En);
+    }
+
+    [Fact]
+    public async Task Level16_InterfaceMethodWithoutPublic_Explains()
+    {
+        var level = Find("16-interfaces");
+
+        var result = Assert.IsType<CompilationFailed>(await Run(level, Griffins(griffin: GriffinWith(speed: "int FlySpeed() { return 30; }"))));
+
+        var error = Assert.Single(result.Errors);
+        Assert.Equal("\"FlySpeed\" comes from an interface, so it must be public.", error.Explanation!.En);
+        Assert.Equal("\"FlySpeed\" vem de uma interface, por isso tem de ser public.", error.Explanation.Pt);
+        Assert.Equal(16, error.Line);
+    }
+
+    [Fact]
+    public async Task Level16_NewAbstract_Explains()
+    {
+        var level = Find("16-interfaces");
+        var abstractGriffin = GriffinWith(header: "abstract class Griffin : Beast, IFlyer");
+
+        var result = Assert.IsType<CompilationFailed>(await Run(level, Griffins(griffin: abstractGriffin)));
+
+        var error = Assert.Single(result.Errors);
+        Assert.Equal("You can't use new on \"Griffin\": it is abstract (or an interface).", error.Explanation!.En);
     }
 
     [Fact]

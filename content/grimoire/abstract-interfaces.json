@@ -1,0 +1,29 @@
+{
+  "id": "abstract-interfaces",
+  "world": 3,
+  "title": { "pt": "Classes abstratas e interfaces", "en": "Abstract classes and interfaces" },
+  "whatItIs": {
+    "pt": "Uma classe abstract é um molde incompleto: não se pode fazer new dela, serve de base a outras classes. Pode ter métodos normais, que todas partilham, e métodos abstract, sem corpo (terminam em ;), que cada classe concreta é obrigada a escrever com override. Uma classe com um método abstract tem de ser abstract. Uma interface é um contrato: lista métodos sem corpo e a classe que a implementa tem de os escrever todos, com public. Uma classe só herda de uma base, mas pode implementar várias interfaces, separadas por vírgulas (a base vem primeiro). Usa uma classe abstract quando as classes são variações da mesma coisa e partilham código; usa uma interface para uma capacidade que classes sem relação podem ter. Por convenção, os nomes de interfaces começam por I.",
+    "en": "An abstract class is an incomplete mould: you cannot use new on it, it is a base for other classes. It can have normal methods, which all share, and abstract methods, without a body (they end in ;), which every concrete class must write with override. A class with an abstract method has to be abstract. An interface is a contract: it lists methods without a body and the class that implements it must write them all, with public. A class only inherits from one base, but it can implement several interfaces, separated by commas (the base comes first). Use an abstract class when the classes are variations of the same thing and share code; use an interface for an ability that unrelated classes can have. By convention, interface names start with I."
+  },
+  "syntax": {
+    "pt": "abstract class Forma\n{\n    public abstract int Area();\n\n    public string Mostrar()\n    {\n        return \"Area \" + Area();\n    }\n}\n\ninterface IImprimivel\n{\n    string Imprimir();\n}\n\nclass Quadrado : Forma, IImprimivel\n{\n    public override int Area()\n    {\n        return 4;\n    }\n\n    public string Imprimir()\n    {\n        return Mostrar();\n    }\n}",
+    "en": "abstract class Shape\n{\n    public abstract int Area();\n\n    public string Show()\n    {\n        return \"Area \" + Area();\n    }\n}\n\ninterface IPrintable\n{\n    string Print();\n}\n\nclass Square : Shape, IPrintable\n{\n    public override int Area()\n    {\n        return 4;\n    }\n\n    public string Print()\n    {\n        return Show();\n    }\n}"
+  },
+  "example": "abstract class Potion\n{\n    public abstract int Dose();\n\n    public string Label()\n    {\n        return \"Dose \" + Dose();\n    }\n}\n\nclass Elixir : Potion\n{\n    public override int Dose()\n    {\n        return 3;\n    }\n}\n\ninterface IPoisonous\n{\n    int Danger();\n}\n\nclass Venom : IPoisonous\n{\n    public int Danger()\n    {\n        return 9;\n    }\n}\n\nclass Shelf\n{\n    public string Describe()\n    {\n        Potion potion = new Elixir();\n        IPoisonous poison = new Venom();\n        return potion.Label() + \" / danger \" + poison.Danger();\n    }\n}",
+  "commonMistakes": [
+    {
+      "pt": "Fazer new de uma classe abstract ou de uma interface: o compilador recusa. Faz new de uma classe concreta que a herda ou implementa.",
+      "en": "Using new on an abstract class or an interface: the compiler refuses. Use new on a concrete class that inherits or implements it."
+    },
+    {
+      "pt": "Esquecer de escrever um método abstract ou um método da interface na classe concreta: o compilador diz que a classe não o implementa.",
+      "en": "Forgetting to write an abstract method or a method of the interface in the concrete class: the compiler says the class does not implement it."
+    },
+    {
+      "pt": "Esquecer o public ao implementar um método de uma interface (ou ao declarar um abstract): os métodos de interface e abstract têm de ser public (o abstract também pode ser protected).",
+      "en": "Forgetting public when implementing a method of an interface (or when declaring an abstract one): interface and abstract methods must be public (an abstract one can also be protected)."
+    }
+  ],
+  "learnUrl": "https://learn.microsoft.com/dotnet/csharp/fundamentals/types/interfaces"
+}

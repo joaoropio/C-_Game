@@ -295,8 +295,8 @@ public class OopErrorExplanationTests
 
         AssertExplained(
             error,
-            "\"Speak\" is virtual (or override), so it must be public.",
-            "\"Speak\" é virtual (ou override), por isso tem de ser public.");
+            "\"Speak\" is virtual, abstract or override, so it must be public.",
+            "\"Speak\" é virtual, abstract ou override, por isso tem de ser public.");
         Assert.Equal(1, error.Line);
     }
 
@@ -328,7 +328,7 @@ public class OopErrorExplanationTests
 
         var error = Assert.Single(errors);
         Assert.Equal(2, error.Line);
-        Assert.Equal("\"Speak\" is virtual (or override), so it must be public.", error.Explanation!.En);
+        Assert.Equal("\"Speak\" is virtual, abstract or override, so it must be public.", error.Explanation!.En);
     }
     // The base method is private, so the override finds nothing to override; only the missing public is worth saying.
     [Fact]
@@ -341,7 +341,7 @@ public class OopErrorExplanationTests
 
         var error = Assert.Single(errors);
         Assert.Equal(1, error.Line);
-        Assert.Equal("\"Speak\" is virtual (or override), so it must be public.", error.Explanation!.En);
+        Assert.Equal("\"Speak\" is virtual, abstract or override, so it must be public.", error.Explanation!.En);
     }
 
     [Theory]

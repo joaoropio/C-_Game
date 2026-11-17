@@ -197,8 +197,8 @@ internal static class PlayerMessages
         $"\"{name}\" in the base class is neither virtual nor abstract, so it can't be overridden.");
 
     public static LocalizedText VirtualNotPublic(string name) => new(
-        $"\"{name}\" é virtual (ou override), por isso tem de ser public.",
-        $"\"{name}\" is virtual (or override), so it must be public.");
+        $"\"{name}\" é virtual, abstract ou override, por isso tem de ser public.",
+        $"\"{name}\" is virtual, abstract or override, so it must be public.");
 
     public static LocalizedText OverrideChangesAccess(string name, string access) => new(
         $"O override de \"{name}\" tem de ter o mesmo acesso que o da classe base ({access}).",
@@ -207,6 +207,22 @@ internal static class PlayerMessages
     public static LocalizedText MissingImplementation(string type, string member, string required) => new(
         $"\"{type}\" ainda não implementa \"{member}\" (pedido por \"{required}\").",
         $"\"{type}\" doesn't implement \"{member}\" yet (required by \"{required}\").");
+
+    public static LocalizedText InterfaceMemberNotPublic(string name) => new(
+        $"\"{name}\" vem de uma interface, por isso tem de ser public.",
+        $"\"{name}\" comes from an interface, so it must be public.");
+
+    public static LocalizedText AbstractInNonAbstractClass(string name, string type) => new(
+        $"\"{name}\" é abstract, por isso \"{type}\" também tem de ser: escreve abstract class {type}.",
+        $"\"{name}\" is abstract, so \"{type}\" must be abstract too: write abstract class {type}.");
+
+    public static LocalizedText MissingBody(string name) => new(
+        $"\"{name}\" não tem corpo: escreve {{ ... }} ou, numa classe abstract, marca-o com abstract.",
+        $"\"{name}\" has no body: write {{ ... }} or, in an abstract class, mark it abstract.");
+
+    public static LocalizedText SecondBaseClass(string name) => new(
+        $"Uma classe só herda de uma base, e \"{name}\" é uma classe: para a pôr a seguir à base, \"{name}\" tem de ser uma interface.",
+        $"A class inherits from a single base, and \"{name}\" is a class: to list it after the base, \"{name}\" must be an interface.");
 
     public static LocalizedText AbstractInstance(string type) => new(
         $"Não se pode fazer new de \"{type}\": é abstrata (ou uma interface).",

@@ -20,6 +20,10 @@ internal sealed partial class PlayerCompiler
     private const string OverrideChangesAccessErrorId = "CS0507";
     private const string MissingAbstractImplementationErrorId = "CS0534";
     private const string MissingInterfaceImplementationErrorId = "CS0535";
+    private const string InterfaceMemberNotPublicErrorId = "CS0737";
+    private const string AbstractInNonAbstractClassErrorId = "CS0513";
+    private const string MissingBodyErrorId = "CS0501";
+    private const string SecondBaseClassErrorId = "CS1721";
     private const string AbstractInstanceErrorId = "CS0144";
     private const string StaticMemberViaInstanceErrorId = "CS0176";
     private const string MemberNamedLikeItsTypeErrorId = "CS0542";
@@ -39,6 +43,10 @@ internal sealed partial class PlayerCompiler
             MissingAbstractImplementationErrorId or MissingInterfaceImplementationErrorId =>
                 ExplainMissingImplementation(diagnostic),
             AbstractInstanceErrorId => ExplainAbstractInstance(diagnostic),
+            InterfaceMemberNotPublicErrorId => ExplainInterfaceMemberNotPublic(diagnostic),
+            AbstractInNonAbstractClassErrorId => ExplainAbstractInNonAbstractClass(diagnostic),
+            MissingBodyErrorId => ExplainMissingBody(diagnostic),
+            SecondBaseClassErrorId => ExplainSecondBaseClass(diagnostic),
             _ => null,
         };
 
@@ -128,7 +136,7 @@ internal sealed partial class PlayerCompiler
     private static LocalizedText? ExplainOverrideChangesAccess(Diagnostic diagnostic) =>
         QuotedNames(diagnostic) is [var symbol, var access, ..] ? PlayerMessages.OverrideChangesAccess(MethodNameOf(symbol), access) : null;
 
-    // A virtual or override method without `public` is reported on its own (CS0621), and then again by the
+    // A virtual, abstract or override method without `public` is reported on its own (CS0621), and then again by the
     // overrides that cannot see it (CS0115) or by the access mismatch (CS0507). Once the missing `public` is
     // explained, those follow-ups for the same method name only mislead, e.g. "check that the class inherits".
     private static List<Diagnostic> DropFollowUpsOfMissingPublic(List<Diagnostic> diagnostics)
@@ -140,11 +148,17 @@ internal sealed partial class PlayerCompiler
         return notPublic.Count == 0
             ? diagnostics
             : diagnostics
-                .Where(d => !(d.Id is NothingToOverrideErrorId or OverrideChangesAccessErrorId
-                    && QuotedNames(d) is [var symbol, ..]
-                    && notPublic.Contains(MethodNameOf(symbol))))
+                .Where(d => !(FollowUpMember(d) is { } member && notPublic.Contains(member)))
                 .ToList();
     }
+
+    // The member named by the follow-up errors: CS0115 and CS0507 name it first; CS0534 names the type first.
+    private static string? FollowUpMember(Diagnostic diagnostic) => (diagnostic.Id, QuotedNames(diagnostic)) switch
+    {
+        (NothingToOverrideErrorId or OverrideChangesAccessErrorId, [var symbol, ..]) => MethodNameOf(symbol),
+        (MissingAbstractImplementationErrorId, [_, var symbol, ..]) => MethodNameOf(symbol),
+        _ => null,
+    };
 
     // "'Griffin' does not implement inherited abstract member 'Beast.Sound()'"; for a property the member is
     // "Beast.Sound.get".
@@ -168,6 +182,25 @@ internal sealed partial class PlayerCompiler
 
     private static LocalizedText? ExplainAbstractInstance(Diagnostic diagnostic) =>
         QuotedNames(diagnostic) is [var type, ..] ? PlayerMessages.AbstractInstance(SymbolPath(type)[^1]) : null;
+
+    // "'Griffin' does not implement interface member 'IFlyer.FlySpeed()'. 'Griffin.FlySpeed()' cannot implement an
+    // interface member because it is not public."
+    private static LocalizedText? ExplainInterfaceMemberNotPublic(Diagnostic diagnostic) =>
+        QuotedNames(diagnostic) is [_, var member, ..] ? PlayerMessages.InterfaceMemberNotPublic(MethodNameOf(member)) : null;
+
+    // "'Beast.Sound()' is abstract but it is contained in non-abstract type 'Beast'".
+    private static LocalizedText? ExplainAbstractInNonAbstractClass(Diagnostic diagnostic) =>
+        QuotedNames(diagnostic) is [var member, var type, ..]
+            ? PlayerMessages.AbstractInNonAbstractClass(MethodNameOf(member), SymbolPath(type)[^1])
+            : null;
+
+    // "'Beast.Sound()' must declare a body because it is not marked abstract, extern, or partial".
+    private static LocalizedText? ExplainMissingBody(Diagnostic diagnostic) =>
+        QuotedNames(diagnostic) is [var member, ..] ? PlayerMessages.MissingBody(MethodNameOf(member)) : null;
+
+    // "Class 'Griffin' cannot have multiple base classes: 'Beast' and 'IFlyer'": the second one was meant as an interface.
+    private static LocalizedText? ExplainSecondBaseClass(Diagnostic diagnostic) =>
+        QuotedNames(diagnostic) is [_, _, var second, ..] ? PlayerMessages.SecondBaseClass(SymbolPath(second)[^1]) : null;
 
     // "Member 'Slime.Hit(int)' cannot be accessed with an instance reference; qualify it with a type name instead".
     // Only the player's own members: `text.Format(...)` is a library mistake with its own advice.
