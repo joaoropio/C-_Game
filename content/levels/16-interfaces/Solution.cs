@@ -25,3 +25,11 @@ class Griffin : Beast, IFlyer
         return 30;
     }
 }
+
+class Wyvern : Beast
+{
+    public override string Sound()
+    {
+        return "growl";
+    }
+}

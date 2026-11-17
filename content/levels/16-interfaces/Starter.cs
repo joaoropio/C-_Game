@@ -17,3 +17,11 @@ class Griffin
         return "";
     }
 }
+
+class Wyvern
+{
+    public string Sound()
+    {
+        return "";
+    }
+}

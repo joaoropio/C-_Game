@@ -1518,17 +1518,20 @@ public class LevelSolutionTests
     private const string AbstractBeast =
         "abstract class Beast\n{\n    public abstract string Sound();\n\n    public string Roar()\n    {\n        return Sound().ToUpper() + \"!\";\n    }\n}";
 
+    private const string WyvernClass = "class Wyvern : Beast\n{\n    public override string Sound()\n    {\n        return \"growl\";\n    }\n}";
+
     private static string Griffins(
         string flyer = FlyerInterface,
         string beast = AbstractBeast,
-        string griffin = "class Griffin : Beast, IFlyer\n{\n    public override string Sound()\n    {\n        return \"screech\";\n    }\n\n    public int FlySpeed()\n    {\n        return 30;\n    }\n}") =>
-        $"{flyer}\n\n{beast}\n\n{griffin}";
+        string griffin = "class Griffin : Beast, IFlyer\n{\n    public override string Sound()\n    {\n        return \"screech\";\n    }\n\n    public int FlySpeed()\n    {\n        return 30;\n    }\n}",
+        string wyvern = WyvernClass) =>
+        $"{flyer}\n\n{beast}\n\n{griffin}\n\n{wyvern}";
 
     private static string GriffinWith(string header = "class Griffin : Beast, IFlyer", string sound = "public override string Sound() { return \"screech\"; }", string speed = "public int FlySpeed() { return 30; }") =>
         $"{header}\n{{\n    {sound}\n\n    {speed}\n}}";
 
     [Fact]
-    public async Task Level16_Solution_RunsTheTenMenagerieChecksWithinTheStarLimit()
+    public async Task Level16_Solution_RunsTheMenagerieChecksWithinTheStarLimit()
     {
         var level = Find("16-interfaces");
 
@@ -1540,16 +1543,23 @@ public class LevelSolutionTests
                 "typeof(IFlyer)",
                 "typeof(Griffin)",
                 "typeof(Griffin).BaseType",
+                "typeof(Wyvern).BaseType",
                 "new Griffin() is IFlyer",
+                "new Wyvern() is IFlyer",
                 "Beast.Sound",
+                "IFlyer.FlySpeed",
+                "IFlyer.FlySpeed implemented in",
                 "typeof(Griffin).GetMethod(\"Roar\").DeclaringType",
                 "new Griffin().Sound()",
                 "new Griffin().Roar()",
+                "new Wyvern().Roar()",
                 "((IFlyer)new Griffin()).FlySpeed()",
             ],
             result.Checks.Select(check => check.Case));
-        Assert.Equal(["abstract class", "interface", "class", "Beast", "true", "abstract", "Beast", "\"screech\"", "\"SCREECH!\"", "30"], result.Checks.Select(check => check.Expected));
-        Assert.Equal(3, level.MaxStatementsForThreeStars);
+        Assert.Equal(
+            ["abstract class", "interface", "class", "Beast", "Beast", "true", "false", "abstract", "abstract", "Griffin", "Beast", "\"screech\"", "\"SCREECH!\"", "\"GROWL!\"", "30"],
+            result.Checks.Select(check => check.Expected));
+        Assert.Equal(4, level.MaxStatementsForThreeStars);
         Assert.True(result.StatementCount <= level.MaxStatementsForThreeStars);
     }
 
@@ -1559,9 +1569,106 @@ public class LevelSolutionTests
         var level = Find("16-interfaces");
         var code = Griffins(
             beast: AbstractBeast.Replace("public abstract", "protected abstract", StringComparison.Ordinal),
-            griffin: GriffinWith(sound: "protected override string Sound() { return \"screech\"; }"));
+            griffin: GriffinWith(sound: "protected override string Sound() { return \"screech\"; }"),
+            wyvern: WyvernClass.Replace("public override", "protected override", StringComparison.Ordinal));
 
         Assert.IsType<Passed>(await Run(level, code));
+    }
+
+    [Fact]
+    public async Task Level16_InterfaceMethodWithBody_IsRejected()
+    {
+        var level = Find("16-interfaces");
+        var withBody = "interface IFlyer\n{\n    int FlySpeed() => 30;\n}";
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Griffins(flyer: withBody, griffin: GriffinWith(speed: ""))));
+
+        Assert.Contains(new CheckOutcome("IFlyer.FlySpeed", "abstract", "not abstract"), result.Checks);
+        Assert.Contains(new CheckOutcome("IFlyer.FlySpeed implemented in", "Griffin", "IFlyer"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level16_BeastImplementsIFlyer_IsRejected()
+    {
+        var level = Find("16-interfaces");
+        var flyingBeast = AbstractBeast.Replace("abstract class Beast", "abstract class Beast : IFlyer", StringComparison.Ordinal)
+            .Replace("public string Roar", "public int FlySpeed() { return 30; }\n\n    public string Roar", StringComparison.Ordinal);
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Griffins(beast: flyingBeast, griffin: GriffinWith(header: "class Griffin : Beast", speed: ""))));
+
+        Assert.Contains(new CheckOutcome("IFlyer.FlySpeed implemented in", "Griffin", "Beast"), result.Checks);
+        Assert.Contains(new CheckOutcome("new Wyvern() is IFlyer", "false", "true"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level16_WyvernAlsoFlying_IsRejected()
+    {
+        var level = Find("16-interfaces");
+        var flyingWyvern = WyvernClass.Replace("Wyvern : Beast", "Wyvern : Beast, IFlyer", StringComparison.Ordinal)
+            .Replace("\n}", "\n\n    public int FlySpeed() { return 5; }\n}", StringComparison.Ordinal);
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Griffins(wyvern: flyingWyvern)));
+
+        Assert.Contains(new CheckOutcome("new Wyvern() is IFlyer", "false", "true"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level16_WyvernNotABeast_IsToldSo()
+    {
+        var level = Find("16-interfaces");
+        var loose = "class Wyvern\n{\n    public string Sound() { return \"growl\"; }\n}";
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Griffins(wyvern: loose)));
+
+        Assert.Contains(new CheckOutcome("typeof(Wyvern).BaseType", "Beast", "Object"), result.Checks);
+        Assert.Contains(new CheckOutcome("new Wyvern().Roar()", "\"GROWL!\"", "not a Beast"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level16_RoarHardCodedInBeast_IsRejected()
+    {
+        var level = Find("16-interfaces");
+        var hardCoded = AbstractBeast.Replace("Sound().ToUpper() + \"!\"", "\"SCREECH!\"", StringComparison.Ordinal);
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Griffins(beast: hardCoded)));
+
+        Assert.Contains(new CheckOutcome("new Wyvern().Roar()", "\"GROWL!\"", "\"SCREECH!\""), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level16_RoarWithAStaticField_IsRejected()
+    {
+        var level = Find("16-interfaces");
+        var shared = AbstractBeast.Replace("    public abstract string Sound();", "    public static string Last = \"SCREECH!\";\n\n    public abstract string Sound();", StringComparison.Ordinal)
+            .Replace("return Sound().ToUpper() + \"!\";", "return Last;", StringComparison.Ordinal);
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Griffins(beast: shared)));
+
+        Assert.Contains(new CheckOutcome("new Wyvern().Roar()", "\"GROWL!\"", "\"SCREECH!\""), result.Checks);
+    }
+
+    // Accepted as a residual: a type switch inside Roar passes (Sound is still overridden by each beast), the same way
+    // Level 15 accepts a base.Speak() variant; telling it apart would need a third beast.
+    [Fact]
+    public async Task Level16_RoarWithATypeSwitch_IsAccepted()
+    {
+        var level = Find("16-interfaces");
+        var typeSwitch = AbstractBeast.Replace("Sound().ToUpper() + \"!\"", "this is Griffin ? \"SCREECH!\" : \"GROWL!\"", StringComparison.Ordinal);
+
+        Assert.IsType<Passed>(await Run(level, Griffins(beast: typeSwitch)));
+    }
+
+    [Fact]
+    public async Task Level16_InterfaceListedBeforeTheBaseClass_Explains()
+    {
+        var level = Find("16-interfaces");
+
+        var result = Assert.IsType<CompilationFailed>(await Run(level, Griffins(griffin: GriffinWith(header: "class Griffin : IFlyer, Beast"))));
+
+        var error = Assert.Single(result.Errors);
+        Assert.Equal("The base class comes first, then the interfaces: write \": Beast, IFlyer\".", error.Explanation!.En);
+        Assert.Equal("A classe base vem primeiro e só depois as interfaces: escreve \": Beast, IFlyer\".", error.Explanation.Pt);
+        Assert.Equal(16, error.Line);
     }
 
     [Fact]

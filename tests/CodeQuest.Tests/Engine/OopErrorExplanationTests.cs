@@ -286,6 +286,20 @@ public class OopErrorExplanationTests
     }
 
     [Fact]
+    public void InterfaceListedBeforeTheBaseClass_Explained()
+    {
+        var error = Explained(
+            "interface IFlyer { } class Beast { } class Griffin : IFlyer, Beast { }",
+            "return 1;",
+            insidePlayerCode: true);
+
+        AssertExplained(
+            error,
+            "The base class comes first, then the interfaces: write \": Beast, IFlyer\".",
+            "A classe base vem primeiro e só depois as interfaces: escreve \": Beast, IFlyer\".");
+    }
+
+    [Fact]
     public void VirtualWithoutPublic_Explained()
     {
         var error = Explained(

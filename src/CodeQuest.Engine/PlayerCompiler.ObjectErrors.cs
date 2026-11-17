@@ -24,6 +24,7 @@ internal sealed partial class PlayerCompiler
     private const string AbstractInNonAbstractClassErrorId = "CS0513";
     private const string MissingBodyErrorId = "CS0501";
     private const string SecondBaseClassErrorId = "CS1721";
+    private const string BaseClassNotFirstErrorId = "CS1722";
     private const string AbstractInstanceErrorId = "CS0144";
     private const string StaticMemberViaInstanceErrorId = "CS0176";
     private const string MemberNamedLikeItsTypeErrorId = "CS0542";
@@ -47,6 +48,7 @@ internal sealed partial class PlayerCompiler
             AbstractInNonAbstractClassErrorId => ExplainAbstractInNonAbstractClass(diagnostic),
             MissingBodyErrorId => ExplainMissingBody(diagnostic),
             SecondBaseClassErrorId => ExplainSecondBaseClass(diagnostic),
+            BaseClassNotFirstErrorId => ExplainBaseClassNotFirst(diagnostic),
             _ => null,
         };
 
@@ -201,6 +203,21 @@ internal sealed partial class PlayerCompiler
     // "Class 'Griffin' cannot have multiple base classes: 'Beast' and 'IFlyer'": the second one was meant as an interface.
     private static LocalizedText? ExplainSecondBaseClass(Diagnostic diagnostic) =>
         QuotedNames(diagnostic) is [_, _, var second, ..] ? PlayerMessages.SecondBaseClass(SymbolPath(second)[^1]) : null;
+
+    // "Base class 'Beast' must come first in the base class list": the fix lists the base, then the interfaces.
+    private static LocalizedText? ExplainBaseClassNotFirst(Diagnostic diagnostic)
+    {
+        if (QuotedNames(diagnostic) is not [var baseClass, ..]
+            || diagnostic.Location.SourceTree!.GetRoot().FindNode(diagnostic.Location.SourceSpan)
+                .AncestorsAndSelf().OfType<BaseListSyntax>().FirstOrDefault() is not { } list)
+        {
+            return null;
+        }
+
+        var written = list.Types.Select(type => type.Type.ToString()).ToList();
+        var first = written.FirstOrDefault(name => WithoutTypeArguments(name) == baseClass) ?? baseClass;
+        return PlayerMessages.BaseClassNotFirst(string.Join(", ", written.Where(name => name != first).Prepend(first)));
+    }
 
     // "Member 'Slime.Hit(int)' cannot be accessed with an instance reference; qualify it with a type name instead".
     // Only the player's own members: `text.Format(...)` is a library mistake with its own advice.

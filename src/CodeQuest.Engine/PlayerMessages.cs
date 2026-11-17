@@ -224,6 +224,10 @@ internal static class PlayerMessages
         $"Uma classe só herda de uma base, e \"{name}\" é uma classe: para a pôr a seguir à base, \"{name}\" tem de ser uma interface.",
         $"A class inherits from a single base, and \"{name}\" is a class: to list it after the base, \"{name}\" must be an interface.");
 
+    public static LocalizedText BaseClassNotFirst(string list) => new(
+        $"A classe base vem primeiro e só depois as interfaces: escreve \": {list}\".",
+        $"The base class comes first, then the interfaces: write \": {list}\".");
+
     public static LocalizedText AbstractInstance(string type) => new(
         $"Não se pode fazer new de \"{type}\": é abstrata (ou uma interface).",
         $"You can't use new on \"{type}\": it is abstract (or an interface).");

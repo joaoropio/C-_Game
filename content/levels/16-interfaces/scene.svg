@@ -10,6 +10,9 @@
 <path d="M262 84l-6-14 12 6M278 84l6-14-12 6" fill="none" stroke="#d9b680" stroke-width="4" stroke-linejoin="round"/>
 <path d="M263 92h.01M277 92h.01" stroke="#2a231c" stroke-width="5" stroke-linecap="round"/>
 <path d="M270 96l-4 5h8z" fill="#f4c06a"/>
+<path d="M360 186c0-16 12-26 28-26 10 0 16 6 28 6 10 0 14-8 22-10l-4 12c8 2 12 10 8 18z" fill="#4f6f4a" stroke="#8fb585" stroke-width="4" stroke-linejoin="round"/>
+<path d="M404 160l-2-12 10 6M444 158l8-8" fill="none" stroke="#8fb585" stroke-width="3" stroke-linecap="round"/>
+<path d="M424 164h.01" stroke="#f4c06a" stroke-width="5" stroke-linecap="round"/>
 <path d="M120 60c4-6 4-12 0-18M420 50c4-6 4-12 0-18" fill="none" stroke="#f4c06a" stroke-width="2" stroke-linecap="round"/>
 <path d="M60 56v14M53 63h14M476 52v12M470 58h12" stroke="#f4c06a" stroke-width="2" stroke-linecap="round"/>
 </svg>
