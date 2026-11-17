@@ -1,0 +1,29 @@
+{
+  "id": "constructors",
+  "world": 3,
+  "title": { "pt": "Construtores e encapsulamento", "en": "Constructors and encapsulation" },
+  "whatItIs": {
+    "pt": "Um construtor é o método especial que corre quando crias um objeto com new: tem o nome da classe, não tem tipo de retorno e recebe os valores iniciais, para o objeto nascer sempre pronto. Se não escreveres nenhum, a classe tem um construtor sem parâmetros; se escreveres um com parâmetros, new tem de os receber. As propriedades guardam os dados com controlo: { get; } só se lê, e { get; private set; } lê-se de fora mas só a própria classe a muda. Esconder o que não deve ser mexido de fora chama-se encapsulamento.",
+    "en": "A constructor is the special method that runs when you create an object with new: it has the name of the class, no return type, and receives the starting values, so the object is always born ready. If you write none, the class has a parameterless constructor; if you write one with parameters, new has to receive them. Properties hold data under control: { get; } can only be read, and { get; private set; } can be read from outside but only changed by the class itself. Hiding what must not be touched from outside is called encapsulation."
+  },
+  "syntax": {
+    "pt": "class Lanterna\n{\n    public int Oleo { get; private set; }\n\n    public Lanterna(int oleo)\n    {\n        Oleo = oleo;\n    }\n}\n\nLanterna candeeiro = new Lanterna(5);",
+    "en": "class Lantern\n{\n    public int Oil { get; private set; }\n\n    public Lantern(int oil)\n    {\n        Oil = oil;\n    }\n}\n\nLantern lamp = new Lantern(5);"
+  },
+  "example": "class Bell\n{\n    public string Tone { get; }\n    public int Rings { get; private set; }\n\n    public Bell(string tone)\n    {\n        Tone = tone;\n    }\n\n    public void Ring()\n    {\n        Rings = Rings + 1;\n    }\n}\n\nclass Tower\n{\n    public int Toll()\n    {\n        Bell small = new Bell(\"high\");\n        small.Ring();\n        small.Ring();\n        return small.Rings;\n    }\n}",
+  "commonMistakes": [
+    {
+      "pt": "Esquecer o public no construtor: sem ele o construtor é privado e new não funciona fora da classe.",
+      "en": "Forgetting public on the constructor: without it the constructor is private and new does not work outside the class."
+    },
+    {
+      "pt": "Pôr um tipo de retorno no construtor (public void Lanterna(...)): passa a ser um método normal, não um construtor.",
+      "en": "Giving the constructor a return type (public void Lantern(...)): it becomes an ordinary method, not a constructor."
+    },
+    {
+      "pt": "Tentar mudar de fora uma propriedade com private set (lamp.Oil = 9;): só o código dentro da classe a pode mudar.",
+      "en": "Trying to change a property with a private set from outside (lamp.Oil = 9;): only code inside the class can change it."
+    }
+  ],
+  "learnUrl": "https://learn.microsoft.com/dotnet/csharp/programming-guide/classes-and-structs/constructors"
+}

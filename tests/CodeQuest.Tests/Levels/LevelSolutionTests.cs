@@ -902,4 +902,164 @@ public class LevelSolutionTests
         Assert.All(result.Errors, error => Assert.Equal("\"Hit\" é static: pertence à classe e não a cada objeto. Tira o static.", error.Explanation!.Pt));
         Assert.All(result.Errors, error => Assert.Null(error.Line));
     }
+
+    private const string GolemName = "public string Name { get; }";
+    private const string GolemArmor = "public int Armor { get; private set; }";
+    private const string GolemConstructorBody = "Name = name;\n        Armor = armor < 0 ? 0 : armor;";
+    private const string GolemCrackBody = "if (Armor > 0)\n        {\n            Armor--;\n        }";
+
+    private static string Golem(
+        string name = GolemName,
+        string armor = GolemArmor,
+        string constructorBody = GolemConstructorBody,
+        string crackBody = GolemCrackBody,
+        string crackModifier = "public") =>
+        $"class Golem\n{{\n    {name}\n    {armor}\n\n    public Golem(string name, int armor)\n    {{\n        {constructorBody}\n    }}\n\n    {crackModifier} void Crack()\n    {{\n        {crackBody}\n    }}\n}}";
+
+    [Fact]
+    public async Task Level13_Solution_RunsTheThirteenGolemChecksWithinTheStarLimit()
+    {
+        var level = Find("13-constructors");
+
+        var result = Assert.IsType<Passed>(await Run(level, level.Solution));
+
+        Assert.Equal(
+            [
+                "new Golem(\"Rocky\", 3); Armor",
+                "new Golem(\"Pebble\", 5); Armor",
+                "new Golem(\"Pebble\", -2); Armor",
+                "new Golem(\"Rocky\", 3); Name",
+                "new Golem(\"Pebble\", 5); Name",
+                "new Golem(\"Rocky\", 3); Crack(); Armor",
+                "new Golem(\"Pebble\", 5); Crack(); Crack(); Armor",
+                "new Golem(\"Rocky\", 3); Crack() x4; Armor",
+                "new Golem(\"Chip\", 0); Crack(); Armor",
+                "a = new Golem(\"A\", 4), b = new Golem(\"B\", 4); a.Crack(); a.Armor",
+                "a = new Golem(\"A\", 4), b = new Golem(\"B\", 4); a.Crack(); b.Armor",
+                "Armor setter",
+                "Name setter",
+            ],
+            result.Checks.Select(check => check.Case));
+        Assert.Equal(["3", "5", "0", "\"Rocky\"", "\"Pebble\"", "2", "3", "0", "0", "3", "4", "private set", "no public set"], result.Checks.Select(check => check.Expected));
+        Assert.Equal(4, level.MaxStatementsForThreeStars);
+        Assert.True(result.StatementCount <= level.MaxStatementsForThreeStars);
+    }
+
+    [Fact]
+    public async Task Level13_MathMaxSolution_Passes()
+    {
+        var level = Find("13-constructors");
+
+        var result = Assert.IsType<Passed>(await Run(level, Golem(constructorBody: "Name = name;\n        Armor = Math.Max(0, armor);", crackBody: "Armor = Math.Max(0, Armor - 1);")));
+
+        Assert.Equal(3, result.StatementCount);
+    }
+
+    [Fact]
+    public async Task Level13_NegativeArmorKept_ReportsExpectedAndObtained()
+    {
+        var level = Find("13-constructors");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Golem(constructorBody: "Name = name;\n        Armor = armor;")));
+
+        Assert.Contains(new CheckOutcome("new Golem(\"Pebble\", -2); Armor", "0", "-2"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level13_PublicSetter_IsRejected()
+    {
+        var level = Find("13-constructors");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Golem(armor: "public int Armor { get; set; }")));
+
+        Assert.Contains(new CheckOutcome("Armor setter", "private set", "public set"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level13_PublicNameSetter_IsRejected()
+    {
+        var level = Find("13-constructors");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Golem(name: "public string Name { get; set; }")));
+
+        Assert.Contains(new CheckOutcome("Name setter", "no public set", "public set"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level13_PublicFieldsInsteadOfProperties_AreReported()
+    {
+        var level = Find("13-constructors");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Golem(name: "public string Name;", armor: "public int Armor;")));
+
+        Assert.Contains(new CheckOutcome("Armor setter", "private set", "no property Armor"), result.Checks);
+        Assert.Contains(new CheckOutcome("new Golem(\"Rocky\", 3); Armor", "3", "no public property Armor"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level13_ConstructorIgnoringItsArguments_IsRejected()
+    {
+        var level = Find("13-constructors");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Golem(constructorBody: "Name = \"Rocky\";\n        Armor = 3;")));
+
+        Assert.Contains(result.Checks, check => check.Case == "new Golem(\"Pebble\", 5); Armor" && !check.Passed);
+        Assert.Contains(result.Checks, check => check.Case == "new Golem(\"Pebble\", 5); Name" && !check.Passed);
+    }
+
+    [Fact]
+    public async Task Level13_CrackIgnoringCurrentArmor_IsRejected()
+    {
+        var level = Find("13-constructors");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Golem(crackBody: "Armor = 2;")));
+
+        Assert.Contains(result.Checks, check => check.Case == "new Golem(\"Pebble\", 5); Crack(); Crack(); Armor" && !check.Passed);
+        Assert.Contains(result.Checks, check => check.Case == "new Golem(\"Rocky\", 3); Crack() x4; Armor" && !check.Passed);
+    }
+
+    [Fact]
+    public async Task Level13_CrackWithoutFloor_ReportsExpectedAndObtained()
+    {
+        var level = Find("13-constructors");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Golem(crackBody: "Armor--;")));
+
+        Assert.Contains(new CheckOutcome("new Golem(\"Rocky\", 3); Crack() x4; Armor", "0", "-1"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level13_StaticArmor_IsRejected()
+    {
+        var level = Find("13-constructors");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Golem(armor: "public static int Armor { get; private set; }")));
+
+        Assert.Contains(new CheckOutcome("a = new Golem(\"A\", 4), b = new Golem(\"B\", 4); a.Crack(); b.Armor", "4", "3"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level13_MissingConstructor_Explains()
+    {
+        var level = Find("13-constructors");
+
+        var result = Assert.IsType<CompilationFailed>(await Run(level, "class Golem\n{\n    public string Name { get; }\n    public int Armor { get; private set; }\n\n    public void Crack()\n    {\n    }\n}"));
+
+        Assert.All(result.Errors, error =>
+        {
+            Assert.Equal("\"Golem\" has no constructor that takes 2 arguments.", error.Explanation!.En);
+            Assert.Equal("\"Golem\" não tem um construtor que receba 2 argumentos.", error.Explanation.Pt);
+        });
+    }
+
+    [Fact]
+    public async Task Level13_PrivateMemberUsedOutside_Explains()
+    {
+        var level = Find("13-constructors");
+
+        var result = Assert.IsType<CompilationFailed>(await Run(level, Golem(crackModifier: "")));
+
+        Assert.NotEmpty(result.Errors);
+        Assert.All(result.Errors, error => Assert.Equal("\"Crack\" não é public, por isso não se pode usar aqui, fora da classe \"Golem\". Falta public?", error.Explanation!.Pt));
+    }
 }
