@@ -314,11 +314,12 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan, SemanticModel mode
             $"[global::System.Runtime.CompilerServices.CompilerGenerated] {modifiers} global::__Entered {name}{_guardFields++} = global::{GuardTypeName}.EnterValue();")!
         .WithTrailingTrivia(SyntaxFactory.Space);
 
-    // A class always has a constructor (written or implicit) unless it is static; a struct only runs field
+    // A class always has a constructor (written or implicit) unless it is static (on any of its partial parts,
+    // hence the symbol); a struct only runs field
     // initializers through a written or primary constructor (and may not declare them otherwise).
-    private static bool HasInstanceConstructor(TypeDeclarationSyntax type) => type switch
+    private bool HasInstanceConstructor(TypeDeclarationSyntax type) => type switch
     {
-        ClassDeclarationSyntax => !type.Modifiers.Any(SyntaxKind.StaticKeyword),
+        ClassDeclarationSyntax => model.GetDeclaredSymbol(type) is { IsStatic: false },
         StructDeclarationSyntax => type.ParameterList is not null
             || type.Members.OfType<ConstructorDeclarationSyntax>().Any(constructor => !constructor.Modifiers.Any(SyntaxKind.StaticKeyword)),
         _ => false,
@@ -333,19 +334,26 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan, SemanticModel mode
     };
 
     // The arguments of `this(...)` run before the body, and no field initializer runs on that path, so the
-    // first argument is entered through the guard: `this(Entering() ? (arg) : default, ...)`. Arguments are
-    // evaluated left to right, so nothing of the player's runs before the guard.
+    // first argument that is not a constant is entered through the guard:
+    // `this(Entering() ? (arg) : default, ...)`. Arguments are evaluated left to right and a constant cannot run
+    // player code, so nothing of the player's runs before the guard. Constants stay untouched, or a conditional
+    // would turn `this(5)` into a non-constant and lose its implicit conversion to `byte`.
     public override SyntaxNode? VisitConstructorInitializer(ConstructorInitializerSyntax node)
     {
         var visited = (ConstructorInitializerSyntax)base.VisitConstructorInitializer(node)!;
-        if (!guardedSpan.Contains(node.SpanStart)
-            || !node.IsKind(SyntaxKind.ThisConstructorInitializer)
-            || visited.ArgumentList.Arguments is not [var first, ..])
+        if (!guardedSpan.Contains(node.SpanStart) || !node.IsKind(SyntaxKind.ThisConstructorInitializer))
         {
             return visited;
         }
 
-        var value = first.Expression;
+        var index = node.ArgumentList.Arguments.IndexOf(argument => !model.GetConstantValue(argument.Expression).HasValue);
+        if (index < 0)
+        {
+            return visited;
+        }
+
+        var target = visited.ArgumentList.Arguments[index];
+        var value = target.Expression;
         var entered = SyntaxFactory.ConditionalExpression(
             SyntaxFactory.ParseExpression($"global::{GuardTypeName}.Entering()")
                 .WithLeadingTrivia(value.GetLeadingTrivia())
@@ -355,7 +363,7 @@ internal sealed class LoopGuardRewriter(TextSpan guardedSpan, SemanticModel mode
             SyntaxFactory.Token(SyntaxKind.ColonToken).WithLeadingTrivia(SyntaxFactory.Space).WithTrailingTrivia(SyntaxFactory.Space),
             SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression, SyntaxFactory.Token(SyntaxKind.DefaultKeyword)))
             .WithTrailingTrivia(value.GetTrailingTrivia());
-        var arguments = visited.ArgumentList.Arguments.Replace(first, first.WithExpression(entered));
+        var arguments = visited.ArgumentList.Arguments.Replace(target, target.WithExpression(entered));
         return visited.WithArgumentList(visited.ArgumentList.WithArguments(arguments));
     }
 

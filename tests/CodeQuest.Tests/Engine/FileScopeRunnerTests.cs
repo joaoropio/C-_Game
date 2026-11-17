@@ -425,4 +425,37 @@ public class FileScopeRunnerTests
 
         Assert.Equal(PlayerMessages.DividedByZero, result.Explanation);
     }
+
+    [Theory]
+    [InlineData("class A { public A() : this(5) { } public A(byte b) { V = b; } public int V; }")]
+    [InlineData("class A { public A() : this(5) { } public A(short b) { V = b; } public int V; }")]
+    [InlineData("class A { public A() : this(5) { } public A(uint b) { V = (int)b; } public int V; }")]
+    [InlineData("class A { public A() : this(-1 + 6) { } public A(short b) { V = b; } public int V; }")]
+    [InlineData("class A { const int K = 5; public A() : this(K) { } public A(byte b) { V = b; } public int V; }")]
+    [InlineData("class A { public A() : this(5, 6) { int q = 0; } public A(byte b, sbyte c) { V = b; } public int V; }")]
+    public async Task Run_ConstantArgumentsInThisInitializer_KeepTheirImplicitConversions(string playerCode) =>
+        Assert.IsType<Passed>(await Run(playerCode, "return new A().V;", "5"));
+
+    [Fact]
+    public async Task Run_ConstantFirstArgumentThenANewObject_StillGuarded()
+    {
+        var result = Assert.IsType<RuntimeError>(await Run(
+            "class A { public A() : this(5, new A()) { } public A(byte b, A a) { } }", "return new A();"));
+
+        Assert.Equal(Recursion, result.Explanation.En);
+    }
+
+    [Fact]
+    public async Task Run_ErrorAfterAConstantThisInitializer_KeepsItsColumn()
+    {
+        const string code = "class A { public A() : this(5) { return y; } public A(byte b) { } }";
+        var result = Assert.IsType<CompilationFailed>(await Run(code));
+
+        Assert.Equal(code.IndexOf("y;", StringComparison.Ordinal) + 1, Assert.Single(result.Errors).Column);
+    }
+
+    [Fact]
+    public async Task Run_StaticPartialClassWithAnotherPart_Passed() =>
+        Assert.IsType<Passed>(await Run(
+            "static partial class P { public static int X = 1; }\npartial class P { }", "return P.X;", "1"));
 }
