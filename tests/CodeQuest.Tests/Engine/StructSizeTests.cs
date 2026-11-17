@@ -35,9 +35,6 @@ public class StructSizeTests
     private Task<RunResult> Run(string playerCode) =>
         _runner.RunAsync(new RunRequest(Template, playerCode, ValidationSource), Language.En, CancellationToken.None);
 
-    private static string Nested(string element, int levels) =>
-        string.Concat(Enumerable.Repeat("S<", levels)) + element + new string('>', levels);
-
     private static string NestedTuple(int levels) =>
         levels == 0 ? "long" : $"({NestedTuple(levels - 1)}, {NestedTuple(levels - 1)})";
 
@@ -52,16 +49,6 @@ public class StructSizeTests
             $"The struct \"{name}\" is too big (over 16 KB) and would blow the stack: use a class or fewer fields.",
             rejected.Reason.En);
     }
-
-    [Fact]
-    public async Task Run_GenericStructNestedEighteenDeepAsLocal_Rejected() => AssertTooBig(
-        await Run(
-            "struct S<T> { public T a; public T b; }\n"
-            + "class A\n{\n    public static int F()\n    {\n"
-            + $"        {Nested("long", 18)} x = default;\n"
-            + "        return 1;\n    }\n}"),
-        "S",
-        6);
 
     [Fact]
     public async Task Run_NonGenericStructsEightFieldsPerLevelAsLocal_RejectedAtTheFirstOversizedDeclaration() => AssertTooBig(
@@ -96,25 +83,14 @@ public class StructSizeTests
 
     [Fact]
     public async Task Run_OversizedGenericUsedOnlyAsTypeArgumentOfAReferenceType_Rejected() => AssertTooBig(
-        await Run(
-            "struct S<T> { public T a; public T b; }\n"
-            + $"class A {{ public static int F() {{ var list = new List<{Nested("long", 18)}>(); return list.Count; }} }}"),
-        "S",
-        2);
-
-    [Fact]
-    public async Task Run_SelfReferencingGenericStruct_NeverRunsAndDoesNotHang()
-    {
-        var result = await Run(
-            "struct S<T> { public S<S<T>> next; }\nclass A { public static int F() { S<int> x = default; return 1; } }");
-
-        Assert.True(result is CodeRejected or CompilationFailed);
-    }
+        await Run($"class A {{ public static int F() {{ var list = new List<{NestedTuple(12)}>(); return list.Count; }} }}"),
+        "ValueTuple",
+        1);
 
     [Theory]
     [InlineData("struct Rune { public int Power; public string Name; }", "Rune r = default; return 1;")]
     [InlineData("struct P { public long a, b, c, d; public double e; public bool f; }", "P p = default; return 1;")]
-    [InlineData("struct Box<T> { public T Value; }\nstruct Pair { public Box<int> a; public Box<long> b; public Box<string> c; }", "Pair p = default; return 1;")]
+    [InlineData("struct Pair { public KeyValuePair<int, long> a; public KeyValuePair<string, int> b; public List<int> c; }", "Pair p = default; return 1;")]
     [InlineData("enum Color { Red }\nstruct Tile { public Color C; public int? Hp; public (int, int) Pos; public decimal Cost; }", "Tile t = default; return 1;")]
     public async Task Run_NormalStructs_Passed(string declaration, string body) =>
         Assert.IsType<Passed>(await Run($"{declaration}\nclass A {{ public static int F() {{ {body} }} }}"));
@@ -124,4 +100,83 @@ public class StructSizeTests
         Assert.IsType<Passed>(await Run(
             Levels.Split('\n')[..3].Aggregate((a, b) => a + "\n" + b)
             + "\nclass A { public static int F() { L2 x = default; return 1; } }"));
+
+    // Polymorphic recursion: the struct grows with every call, so no static size is ever big. Generics are not
+    // taught before World 4, so declaring them is what gets rejected (these programs never run).
+    [Theory]
+    [InlineData("struct P<T> { public T a; public T b; }\nclass A { public static int F<T>(int n) { P<T> x = default; return n == 0 ? 1 : F<P<T>>(n - 1) + (x.Equals(x) ? 0 : 1); } }")]
+    [InlineData("struct P<T> { public T a; public T b; }\nstatic class H<T> { public static int G(int n) { P<T> x = default; return n == 0 ? 1 : H<P<T>>.G(n - 1) + (x.Equals(x) ? 0 : 1); } }")]
+    [InlineData("struct P<T> { public T a; public T b; }\nclass A { public static int F<T>(T v, int n) { var x = new P<T> { a = v, b = v }; return n == 0 ? 1 : F(x, n - 1); } }")]
+    public async Task Run_GenericRecursionThatGrowsTheStruct_RejectedBecauseOfTheGenericDeclaration(string playerCode)
+    {
+        var rejected = Assert.IsType<CodeRejected>(await Run(playerCode));
+
+        Assert.Equal(1, rejected.Line);
+        Assert.Equal("Ainda não podes escrever genéricos (<T>): chegam no Mundo 4.", rejected.Reason.Pt);
+        Assert.Equal("You can't write generics (<T>) yet: they arrive in World 4.", rejected.Reason.En);
+    }
+
+    private static string ManyLocals(int count, string type) =>
+        Levels.Split('\n')[..3].Aggregate((a, b) => a + "\n" + b)
+        + $"\nclass A {{ public static long F(int n) {{ long s = 0; "
+        + string.Concat(Enumerable.Range(0, count).Select(i => $"{type} v{i} = default; s += v{i}.a.a.a; "))
+        + "return n == 0 ? s : F(n - 1) + s; } }";
+
+    [Fact]
+    public async Task Run_ManyFourKilobyteLocalsInOneRecursiveMethod_RejectedBeforeRunning()
+    {
+        var rejected = Assert.IsType<CodeRejected>(await Run(ManyLocals(100, "L2")));
+
+        Assert.Equal(4, rejected.Line);
+        Assert.Equal(
+            "O método \"F\" guarda demasiado na pilha (mais de 32 KB em structs): usa class ou menos variáveis.",
+            rejected.Reason.Pt);
+        Assert.Equal(
+            "The method \"F\" keeps too much on the stack (over 32 KB of structs): use a class or fewer variables.",
+            rejected.Reason.En);
+    }
+
+    [Fact]
+    public async Task Run_FewFourKilobyteLocals_Passed() =>
+        Assert.IsType<Passed>(await Run(ManyLocals(3, "L2")));
+
+    [Fact]
+    public async Task Run_ManyBigParameters_Rejected() =>
+        Assert.IsType<CodeRejected>(await Run(
+            Levels.Split('\n')[..3].Aggregate((a, b) => a + "\n" + b)
+            + "\nclass A { static long H(" + string.Join(", ", Enumerable.Range(0, 60).Select(i => $"L2 p{i}"))
+            + ") => p0.a.a.a; public static long F(int n) => n == 0 ? 0 : F(n - 1); }"));
+
+    [Fact]
+    public async Task Run_TemporariesCountTowardsTheBudget_Rejected() =>
+        Assert.IsType<CodeRejected>(await Run(
+            Levels.Split('\n')[..3].Aggregate((a, b) => a + "\n" + b)
+            + "\nclass A { static L2 Make() => default; public static long F() { long s = 0; "
+            + string.Concat(Enumerable.Repeat("s += Make().a.a.a; ", 12)) + "return s; } }"));
+
+    [Fact]
+    public async Task Run_BigLocalInALambda_BudgetIsPerBodyNotPerMethod() =>
+        Assert.IsType<Passed>(await Run(
+            Levels.Split('\n')[..3].Aggregate((a, b) => a + "\n" + b)
+            + "\nclass A { public static long F() { System.Func<long> a = () => { L2 x = default; return x.a.a.a; };"
+            + " System.Func<long> b = () => { L2 y = default; return y.a.a.a; }; System.Func<long> c = () => { L2 z = default; return z.a.a.a; };"
+            + " return a() + b() + c(); } }"));
+
+    [Theory]
+    [InlineData("class Box<T> { public T Value; }")]
+    [InlineData("struct Box<T> { public T Value; }")]
+    [InlineData("interface IBox<T> { }")]
+    [InlineData("class A { public static T Id<T>(T x) => x; }")]
+    [InlineData("class A { public static int F() { void G<T>() { } return 1; } }")]
+    public async Task Run_PlayerGenericDeclarations_Rejected(string playerCode)
+    {
+        var rejected = Assert.IsType<CodeRejected>(await Run(playerCode));
+
+        Assert.Equal("You can't write generics (<T>) yet: they arrive in World 4.", rejected.Reason.En);
+    }
+
+    [Fact]
+    public async Task Run_LibraryGenerics_StillAllowed() =>
+        Assert.IsType<Passed>(await Run(
+            "class A { public static int F() { var d = new Dictionary<string, List<int>>(); d[\"a\"] = new List<int> { 1 }; return d.Count + d[\"a\"].Select(x => x).Count(); } }"));
 }

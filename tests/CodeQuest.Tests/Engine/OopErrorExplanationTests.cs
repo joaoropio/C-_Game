@@ -264,8 +264,8 @@ public class OopErrorExplanationTests
     public void TupleTypeArgumentsInSignature_DoNotBreakTheName() =>
         AssertExplained(
             Explained(
-                "class Golem<T> { public Golem(T v, int armor) { } }",
-                "return new Golem<(int, int)>((1, 2));",
+                "class Golem { public Golem((int, int) v, int armor) { } }",
+                "return new Golem((1, 2));",
                 insidePlayerCode: false),
             "No value for \"armor\" when creating \"Golem\".",
             "Falta o valor de \"armor\" ao criar \"Golem\".");
@@ -362,7 +362,7 @@ public class OopErrorExplanationTests
     [InlineData("abstract class Beast { public abstract string Sound(); }\nclass Griffin : Beast { }", "Sound", "Beast")]
     [InlineData("abstract class Beast { public abstract string Sound { get; } }\nclass Griffin : Beast { }", "Sound", "Beast")]
     [InlineData("interface IFlyer { void Fly(); }\nclass Griffin : IFlyer { }", "Fly", "IFlyer")]
-    [InlineData("interface IBox<T> { T Get(); }\nclass Griffin : IBox<int> { }", "Get", "IBox")]
+    [InlineData("struct Spare { }\nclass Griffin : IComparable<Griffin> { }", "CompareTo", "IComparable")]
     public void MissingImplementation_Explained(string playerCode, string member, string required)
     {
         var error = Explained(playerCode, "return 1;", insidePlayerCode: true);

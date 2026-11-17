@@ -219,17 +219,6 @@ public class MethodErrorExplanationTests
     }
 
     [Fact]
-    public void MissingArgumentsOfGenericMethod_NameKeepsNoTypeParameters()
-    {
-        var error = Single(
-            Errors("public static T Heal<T>(T a, T b) => a;"),
-            insidePlayerCode: false);
-
-        Assert.Contains("\"Heal\"", error.Explanation!.En);
-        Assert.DoesNotContain("<", error.Explanation.En);
-    }
-
-    [Fact]
     public void InstanceMethodCalledByValidation_Explained()
     {
         const string template = "public class Spell\n{\n    // {{PLAYER_CODE}}\n}";

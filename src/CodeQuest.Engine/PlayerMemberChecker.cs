@@ -10,6 +10,8 @@ namespace CodeQuest.Engine;
 // (World 3) the player writes types: whatever has no guarded body or could kill the process is rejected.
 // An async void method throws on the thread pool and would kill the process, and extern methods have no
 // guarded body, so neither modifier is allowed anywhere in the player code.
+// Generics are not taught before World 4, and a recursive generic method can grow a struct on every call (a frame
+// size no static check sees), so no type parameter list is allowed on any player type, method or local function.
 internal static class PlayerMemberChecker
 {
     private const string InvalidTokenInMemberErrorId = "CS1519";
@@ -87,6 +89,7 @@ internal static class PlayerMemberChecker
     private static LocalizedText? ReasonToReject(SyntaxNode node, int playerLine) => node switch
     {
         BaseNamespaceDeclarationSyntax => PlayerMessages.NamespaceNotAllowed,
+        TypeParameterListSyntax => PlayerMessages.GenericsNotYet,
         ConstructorDeclarationSyntax { Body: null, ExpressionBody: null } => PlayerMessages.StatementsBelongInMethods,
         ConstructorDeclarationSyntax constructor when IsNotNamedAfterItsClass(constructor)
             => PlayerMessages.MissingReturnType(constructor.Identifier.Text),
@@ -104,6 +107,7 @@ internal static class PlayerMemberChecker
     private static LocalizedText? FileReasonToReject(SyntaxNode node, int playerLine) => node switch
     {
         BaseNamespaceDeclarationSyntax => PlayerMessages.NamespaceNotAllowed,
+        TypeParameterListSyntax => PlayerMessages.GenericsNotYet,
         GlobalStatementSyntax => PlayerMessages.OnlyTypesAtFileLevel,
         RecordDeclarationSyntax => PlayerMessages.NotYetInThisWorld("records", "records"),
         DelegateDeclarationSyntax => PlayerMessages.NotYetInThisWorld("delegates", "delegates"),

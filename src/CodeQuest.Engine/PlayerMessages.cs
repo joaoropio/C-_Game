@@ -116,6 +116,14 @@ internal static class PlayerMessages
         $"A struct \"{name}\" é grande demais (mais de 16 KB) e rebentaria a pilha: usa uma class ou menos campos.",
         $"The struct \"{name}\" is too big (over 16 KB) and would blow the stack: use a class or fewer fields.");
 
+    public static LocalizedText FrameTooBig(string method) => new(
+        $"O método \"{method}\" guarda demasiado na pilha (mais de 32 KB em structs): usa class ou menos variáveis.",
+        $"The method \"{method}\" keeps too much on the stack (over 32 KB of structs): use a class or fewer variables.");
+
+    public static readonly LocalizedText GenericsNotYet = new(
+        "Ainda não podes escrever genéricos (<T>): chegam no Mundo 4.",
+        "You can't write generics (<T>) yet: they arrive in World 4.");
+
     public static readonly LocalizedText TypesNotAllowed = new(
         "Ainda não podes criar tipos: escreve só métodos static.",
         "You can't create types yet: write only static methods.");
