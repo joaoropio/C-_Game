@@ -638,4 +638,72 @@ public class OopErrorExplanationTests
 
         Assert.Equal("\"Math\" é static: não se cria com new; chama os seus métodos pelo nome da classe (Math.Método(...)).", error.Explanation!.Pt);
     }
+
+    // A player method named like a library method must not make the library call "static" advice.
+    [Theory]
+    [InlineData("class Hero { string Join(string a) => a; string F() { string s = \"x\"; return s.Join(\",\", new[] { \"a\" }); } }")]
+    [InlineData("class Hero { string ToUpper() => \"\"; static string F() { return string.ToUpper(); } }")]
+    public void PlayerMethodNamedLikeALibraryMethod_LibraryCallGetsNoStaticAdvice(string playerCode) =>
+        Assert.Null(Explained(playerCode, "return 1;", insidePlayerCode: true).Explanation);
+
+    [Fact]
+    public void PlayerMethodOfAnotherClassWithTheSameName_StillExplainedForItsOwnClass() =>
+        AssertExplained(
+            Explained("class Slime { public static int Hit(int n) => n; }\nclass Hero { int Hit() => 1; object V = new Slime().Hit(1); }", "return 1;", insidePlayerCode: true),
+            "\"Hit\" is static: use it through the class name (\"Slime.Hit\"), not through an object, or remove the static.",
+            "\"Hit\" é static: usa-o pelo nome da classe (\"Slime.Hit\") e não por um objeto, ou tira o static.");
+
+    [Fact]
+    public void MissingArgumentInThisInitializer_UsesThePlainConstructorMessage() =>
+        AssertExplained(
+            Explained("class Hero { public Hero(int a, int b) { } public Hero() : this(1) { } }", "return 1;", insidePlayerCode: true),
+            "No value for \"b\" when creating \"Hero\".",
+            "Falta o valor de \"b\" ao criar \"Hero\".");
+
+    // A class that only lists interfaces still calls the constructor of object.
+    [Fact]
+    public void BaseCallInAClassWithOnlyInterfaces_DoesNotClaimThereIsNoBaseClass() =>
+        AssertExplained(
+            Explained("interface IFlyer { }\nclass Dragon : IFlyer { public Dragon() : base(1) { } }", "return 1;", insidePlayerCode: true),
+            "\"object\" has no constructor that takes 1 argument.",
+            "\"object\" não tem um construtor que receba 1 argumento.");
+
+    // `: base(new object(5))`: the creation inside is its own mistake, the outer base(...) is still the missing base class.
+    [Fact]
+    public void BaseCallWithABadCreationInsideItsArguments_CreationGetsThePlainMessage()
+    {
+        var errors = _compiler.Compile(new RunRequest(
+            Template, "class Dragon { public Dragon() : base(new object(5)) { } }", Validation("return 1;"))).Errors;
+
+        Assert.Equal(
+            ["\"Dragon\" doesn't inherit from any class yet, so base(...) has nowhere to go: add \": BaseClass\" after its name.",
+             "\"object\" has no constructor that takes 1 argument."],
+            errors.OrderBy(error => error.Column).Select(error => error.Explanation!.En));
+    }
+
+    [Theory]
+    [InlineData("sealed class Creature { }\nclass Dragon : Creature { }")]
+    [InlineData("struct Creature { }\nclass Dragon : Creature { }")]
+    public void DerivingFromASealedClassOrStruct_Explained(string playerCode)
+    {
+        var error = Explained(playerCode, "return 1;", insidePlayerCode: true);
+
+        AssertExplained(
+            error,
+            "\"Creature\" can't be inherited from (it is sealed or a struct): use a class without sealed as the base.",
+            "\"Creature\" não pode ser herdada (é sealed ou struct): usa uma class sem sealed como base.");
+        Assert.Equal(2, error.Line);
+    }
+
+    // Two different hidden-validation mistakes without a line are two errors: only identical ones collapse.
+    [Fact]
+    public void TwoDifferentNonPublicMembersUsedByValidation_AreTwoErrors()
+    {
+        var errors = _compiler.Compile(new RunRequest(
+            Template, "class Golem { int a = 1; int b = 2; }", Validation("var g = new Golem(); return g.a + g.b;"))).Errors;
+
+        Assert.Equal(2, errors.Count);
+        Assert.All(errors, error => Assert.Null(error.Line));
+        Assert.Equal(2, errors.Select(error => error.Explanation!.En).Distinct().Count());
+    }
 }

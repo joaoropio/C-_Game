@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using CodeQuest.Core;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace CodeQuest.Engine;
@@ -31,6 +32,7 @@ internal sealed partial class PlayerCompiler
     private const string StaticClassInstanceErrorId = "CS0712";
     private const string StaticClassVariableErrorId = "CS0723";
     private const string StructInitializerWithoutConstructorErrorId = "CS8983";
+    private const string SealedBaseErrorId = "CS0509";
 
     private static LocalizedText? ExplainObjectOrientedError(Diagnostic diagnostic, bool insidePlayerCode) =>
         diagnostic.Id switch
@@ -55,6 +57,7 @@ internal sealed partial class PlayerCompiler
             StaticClassInstanceErrorId => ExplainStaticClass(diagnostic, PlayerMessages.StaticClassInstance),
             StaticClassVariableErrorId => ExplainStaticClass(diagnostic, PlayerMessages.StaticClassVariable),
             StructInitializerWithoutConstructorErrorId => PlayerMessages.StructInitializerWithoutConstructor,
+            SealedBaseErrorId => ExplainSealedBase(diagnostic),
             _ => null,
         };
 
@@ -92,14 +95,14 @@ internal sealed partial class PlayerCompiler
             : null;
     }
 
-    // A `: base(...)` in a class that has no base class calls the constructor of object.
-    private static string? BaseCallOwner(Diagnostic diagnostic)
-    {
-        var node = diagnostic.Location.SourceTree!.GetRoot().FindNode(diagnostic.Location.SourceSpan);
-        return node.AncestorsAndSelf().Any(ancestor => ancestor is ConstructorInitializerSyntax)
-            ? EnclosingTypeName(diagnostic)
+    // A `: base(...)` initializer in a class with no base list calls the constructor of object. An argument inside
+    // the initializer (`: base(new object(5))`) is another call, and a class with only interfaces is not "without a base".
+    private static string? BaseCallOwner(Diagnostic diagnostic) =>
+        diagnostic.Location.SourceTree!.GetRoot().FindNode(diagnostic.Location.SourceSpan)
+            is ConstructorInitializerSyntax { Parent: ConstructorDeclarationSyntax { Parent: TypeDeclarationSyntax { BaseList: null } type } } initializer
+            && initializer.IsKind(SyntaxKind.BaseConstructorInitializer)
+            ? type.Identifier.Text
             : null;
-    }
 
     // "'Golem.Armor' is inaccessible due to its protection level"; for a constructor the member is named like its
     // type ("'Golem.Golem(string, int)'").
@@ -210,6 +213,9 @@ internal sealed partial class PlayerCompiler
     private static LocalizedText? ExplainSecondBaseClass(Diagnostic diagnostic) =>
         QuotedNames(diagnostic) is [_, _, var second, ..] ? PlayerMessages.SecondBaseClass(SymbolPath(second)[^1]) : null;
 
+    // "'Dragon': cannot derive from sealed type 'Creature'" (a struct is sealed too).
+    private static LocalizedText? ExplainSealedBase(Diagnostic diagnostic) =>
+        QuotedNames(diagnostic) is [_, var baseType, ..] ? PlayerMessages.SealedBase(SymbolPath(baseType)[^1]) : null;
     // "Base class 'Beast' must come first in the base class list": the fix lists the base, then the interfaces.
     private static LocalizedText? ExplainBaseClassNotFirst(Diagnostic diagnostic)
     {
@@ -235,9 +241,7 @@ internal sealed partial class PlayerCompiler
         }
 
         var path = SymbolPath(symbol);
-        var isPlayers = symbol.Contains('(')
-            ? playerMembers.Contains(path[^1])
-            : path is [.., var type, var name] && playerMembers.Contains($"{type}.{name}");
+        var isPlayers = IsPlayersMember(playerMembers, path);
         if (path is [.., var enumName, var value] && playerMembers.Contains(EnumKey(enumName)))
         {
             return PlayerMessages.EnumMemberViaValue(enumName, value);

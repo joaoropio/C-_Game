@@ -169,8 +169,8 @@ internal sealed partial class PlayerCompiler
         return new CompilationError(null, null, message, explanation ?? PlayerMessages.UnreadableSpell);
     }
 
-    // What the player declared: method names, and "Type.Member" for fields and properties (a bare name could also be
-    // a library member, like string.Length).
+    // What the player declared: "Type.Member" for methods, fields and properties (a bare name could also be a library
+    // member, like string.Join or string.Length), and the enum names and members.
     private static HashSet<string> PlayerMemberNames(SyntaxTree tree, int lineOffset, int playerLineCount)
     {
         bool IsPlayers(SyntaxToken identifier) => identifier.GetLocation().GetLineSpan().StartLinePosition.Line is var line
@@ -180,7 +180,7 @@ internal sealed partial class PlayerCompiler
         var nodes = tree.GetRoot().DescendantNodes().ToList();
         var methods = nodes.OfType<MethodDeclarationSyntax>()
             .Where(method => IsPlayers(method.Identifier))
-            .Select(method => method.Identifier.Text);
+            .Select(method => QualifiedName(method, method.Identifier.Text));
         var properties = nodes.OfType<PropertyDeclarationSyntax>()
             .Where(property => IsPlayers(property.Identifier))
             .Select(property => QualifiedName(property, property.Identifier.Text));
@@ -195,6 +195,14 @@ internal sealed partial class PlayerCompiler
 
     private static string QualifiedName(SyntaxNode member, string name) =>
         member.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault() is { } type ? $"{type.Identifier.Text}.{name}" : name;
+
+    // "Spell.Heal(int)" -> ["Spell", "Heal"]: the player's member is the last two names of the path.
+    private static bool IsPlayersMember(IReadOnlySet<string> playerMembers, string[] path) =>
+        path is [.., var type, var member] && playerMembers.Contains($"{type}.{member}");
+
+    // For calls whose message names only the method (no type): the hidden validation calling the player's version.
+    private static bool DeclaresMethodNamed(IReadOnlySet<string> playerMembers, string method) =>
+        playerMembers.Any(member => member.EndsWith("." + method, StringComparison.Ordinal));
 
     private static LocalizedText? Explain(
         Diagnostic diagnostic,
@@ -290,7 +298,7 @@ internal sealed partial class PlayerCompiler
             MemberAccessExpressionSyntax access => access.Name.Identifier.Text,
             _ => null,
         };
-        return method is not null && playerMembers.Contains(method) && QuotedNames(diagnostic) is [var type, ..]
+        return method is not null && DeclaresMethodNamed(playerMembers, method) && QuotedNames(diagnostic) is [var type, ..]
             ? PlayerMessages.MissingOverloadForType(method, type)
             : null;
     }
@@ -307,7 +315,7 @@ internal sealed partial class PlayerCompiler
         }
 
         var count = int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
-        return !insidePlayerCode && playerMembers.Contains(method)
+        return !insidePlayerCode && DeclaresMethodNamed(playerMembers, method)
             ? PlayerMessages.MissingOverloadForCount(method, count)
             : PlayerMessages.WrongArgumentCount(method, count);
     }
@@ -333,8 +341,8 @@ internal sealed partial class PlayerCompiler
             return PlayerMessages.MissingArguments(name, parameter);
         }
 
-        // Outside an object creation the call is the implicit or explicit `base(...)` of a derived class.
-        return EnclosingTypeName(diagnostic) is { } derived && !IsObjectCreation(diagnostic)
+        // Outside an object creation (and not a `this(...)`) the call is the implicit or explicit `base(...)` of a derived class.
+        return EnclosingTypeName(diagnostic) is { } derived && !IsObjectCreation(diagnostic) && !IsInThisInitializer(diagnostic)
             ? PlayerMessages.MissingBaseConstructorArgument(parameter, type, derived)
             : PlayerMessages.MissingConstructorArguments(type, parameter);
     }
@@ -343,6 +351,11 @@ internal sealed partial class PlayerCompiler
         .FindNode(diagnostic.Location.SourceSpan)
         .AncestorsAndSelf()
         .Any(node => node is BaseObjectCreationExpressionSyntax);
+
+    private static bool IsInThisInitializer(Diagnostic diagnostic) => diagnostic.Location.SourceTree!.GetRoot()
+        .FindNode(diagnostic.Location.SourceSpan)
+        .AncestorsAndSelf()
+        .Any(node => node.IsKind(SyntaxKind.ThisConstructorInitializer));
 
     private static string? EnclosingTypeName(Diagnostic diagnostic) => diagnostic.Location.SourceTree!.GetRoot()
         .FindNode(diagnostic.Location.SourceSpan)
@@ -399,14 +412,15 @@ internal sealed partial class PlayerCompiler
         var path = SymbolPath(symbol);
         if (symbol.Contains('('))
         {
-            return playerMembers.Contains(path[^1]) ? PlayerMessages.MissingStatic(path[^1]) : null;
+            return IsPlayersMember(playerMembers, path) ? PlayerMessages.MissingStatic(path[^1]) : null;
         }
 
-        if (path is not [.., var type, var member] || !playerMembers.Contains($"{type}.{member}"))
+        if (!IsPlayersMember(playerMembers, path))
         {
             return null;
         }
 
+        var member = path[^1];
         return insidePlayerCode
             ? PlayerMessages.InstanceMemberInStaticMember(member)
             : PlayerMessages.MissingStaticMember(member);
