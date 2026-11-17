@@ -168,6 +168,14 @@ internal static class PlayerMessages
         $"\"{member}\" não é public, por isso não se pode usar aqui, fora da classe \"{type}\". Falta public?",
         $"\"{member}\" isn't public, so it can't be used here, outside the class \"{type}\". Is public missing?");
 
+    public static LocalizedText ConstructorNotPublic(string type) => new(
+        $"O construtor de \"{type}\" não é public, por isso new não o pode usar fora da classe. Põe public antes de {type}(...).",
+        $"The constructor of \"{type}\" isn't public, so new can't use it outside the class. Put public before {type}(...).");
+
+    public static LocalizedText ConstructorWithReturnType(string type) => new(
+        $"Um construtor não tem tipo de retorno: tira o void (ou o tipo) antes de \"{type}\".",
+        $"A constructor has no return type: remove the void (or the type) before \"{type}\".");
+
     public static LocalizedText CannotAssignHere(string member) => new(
         $"\"{member}\" não se pode mudar aqui: não tem set (ou o set é private).",
         $"\"{member}\" can't be changed here: it has no set (or its set is private).");

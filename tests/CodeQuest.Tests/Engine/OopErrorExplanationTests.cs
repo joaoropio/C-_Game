@@ -136,12 +136,24 @@ public class OopErrorExplanationTests
     }
 
     [Fact]
-    public void PrivateConstructor_HasNoMisleadingExplanation()
-    {
-        var error = Explained("class Golem { Golem() { } }", "return new Golem();", insidePlayerCode: false);
+    public void PrivateConstructor_UsedByValidation_Explained() =>
+        AssertExplained(
+            Explained("class Golem { Golem() { } }", "return new Golem();", insidePlayerCode: false),
+            "The constructor of \"Golem\" isn't public, so new can't use it outside the class. Put public before Golem(...).",
+            "O construtor de \"Golem\" não é public, por isso new não o pode usar fora da classe. Põe public antes de Golem(...).");
 
-        Assert.DoesNotContain("não é public", error.Explanation!.Pt);
-    }
+    [Fact]
+    public void PrivateConstructor_UsedTwiceByValidation_IsReportedOnce() =>
+        Assert.Equal(
+            "O construtor de \"Golem\" não é public, por isso new não o pode usar fora da classe. Põe public antes de Golem(...).",
+            Explained("class Golem { Golem() { } }", "var a = new Golem(); var b = new Golem(); return 1;", insidePlayerCode: false).Explanation!.Pt);
+
+    [Fact]
+    public void ConstructorWithAReturnType_Explained() =>
+        AssertExplained(
+            Explained("class Golem { public void Golem() { } }", "return 1;", insidePlayerCode: true),
+            "A constructor has no return type: remove the void (or the type) before \"Golem\".",
+            "Um construtor não tem tipo de retorno: tira o void (ou o tipo) antes de \"Golem\".");
 
     [Fact]
     public void PropertyWithoutSet_AssignedByValidation_Explained() =>

@@ -2,6 +2,8 @@ public static class Validation
 {
     public static global::System.Collections.Generic.IEnumerable<(string Case, string Expected, string Actual)> Run()
     {
+        yield return ("typeof(Golem)", "class", typeof(Golem).IsValueType ? "struct" : "class");
+
         yield return ("new Golem(\"Rocky\", 3); Armor", "3", Read(new Golem("Rocky", 3), "Armor"));
         yield return ("new Golem(\"Pebble\", 5); Armor", "5", Read(new Golem("Pebble", 5), "Armor"));
         yield return ("new Golem(\"Pebble\", -2); Armor", "0", Read(new Golem("Pebble", -2), "Armor"));
@@ -34,9 +36,11 @@ public static class Validation
         a.Crack();
         yield return ("a = new Golem(\"A\", 4), b = new Golem(\"B\", 4); a.Crack(); a.Armor", "3", Read(a, "Armor"));
         yield return ("a = new Golem(\"A\", 4), b = new Golem(\"B\", 4); a.Crack(); b.Armor", "4", Read(b, "Armor"));
+        yield return ("a = new Golem(\"A\", 4), b = new Golem(\"B\", 4); a.Crack(); a.Name", "\"A\"", Read(a, "Name"));
 
         yield return ("Armor setter", "private set", ArmorSetter());
         yield return ("Name setter", "no public set", NameSetter());
+        yield return ("public fields", "none", PublicFields());
     }
 
     // Properties are read by reflection so that a field or a missing property is reported by a check.
@@ -61,6 +65,21 @@ public static class Validation
             { IsPrivate: true } => "private set",
             _ => "set that is neither public nor private",
         };
+    }
+
+    // A public field would let anyone change Armor; the engine's own __ fields are not the player's.
+    private static string PublicFields()
+    {
+        var names = new global::System.Collections.Generic.List<string>();
+        foreach (var field in typeof(Golem).GetFields(global::System.Reflection.BindingFlags.Public | global::System.Reflection.BindingFlags.Instance | global::System.Reflection.BindingFlags.Static))
+        {
+            if (!field.Name.StartsWith("__", global::System.StringComparison.Ordinal))
+            {
+                names.Add(field.Name);
+            }
+        }
+
+        return names.Count == 0 ? "none" : string.Join(", ", names);
     }
 
     private static string NameSetter()

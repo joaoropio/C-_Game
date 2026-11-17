@@ -20,6 +20,7 @@ internal sealed partial class PlayerCompiler
     private const string MissingInterfaceImplementationErrorId = "CS0535";
     private const string AbstractInstanceErrorId = "CS0144";
     private const string StaticMemberViaInstanceErrorId = "CS0176";
+    private const string MemberNamedLikeItsTypeErrorId = "CS0542";
 
     private static LocalizedText? ExplainObjectOrientedError(Diagnostic diagnostic, bool insidePlayerCode) =>
         diagnostic.Id switch
@@ -28,6 +29,7 @@ internal sealed partial class PlayerCompiler
             NoConstructorForArgumentCountErrorId => ExplainNoConstructorForArgumentCount(diagnostic),
             InaccessibleMemberErrorId => ExplainInaccessibleMember(diagnostic),
             ReadOnlyMemberErrorId or InaccessibleSetterErrorId => ExplainAssignment(diagnostic),
+            MemberNamedLikeItsTypeErrorId => ExplainConstructorWithReturnType(diagnostic),
             NothingToOverrideErrorId => ExplainNothingToOverride(diagnostic),
             NotOverridableErrorId => ExplainNotOverridable(diagnostic),
             MissingAbstractImplementationErrorId or MissingInterfaceImplementationErrorId =>
@@ -65,12 +67,16 @@ internal sealed partial class PlayerCompiler
             : null;
     }
 
-    // "'Golem.Armor' is inaccessible due to its protection level". A private constructor is left alone: "Golem is
-    // private inside Golem" would only confuse.
+    // "'Golem.Armor' is inaccessible due to its protection level"; for a constructor the member is named like its
+    // type ("'Golem.Golem(string, int)'").
     private static LocalizedText? ExplainInaccessibleMember(Diagnostic diagnostic) =>
-        QuotedNames(diagnostic) is [var symbol, ..] && SymbolPath(symbol) is [.., var owner, var member] && owner != member
-            ? PlayerMessages.NotPublic(member, owner)
+        QuotedNames(diagnostic) is [var symbol, ..] && SymbolPath(symbol) is [.., var owner, var member]
+            ? (owner == member ? PlayerMessages.ConstructorNotPublic(owner) : PlayerMessages.NotPublic(member, owner))
             : null;
+
+    // "'Golem': member names cannot be the same as their enclosing type": `public void Golem(...)` in class Golem.
+    private static LocalizedText? ExplainConstructorWithReturnType(Diagnostic diagnostic) =>
+        QuotedNames(diagnostic) is [var name, ..] ? PlayerMessages.ConstructorWithReturnType(name) : null;
 
     // "Property or indexer 'Golem.Armor' cannot be assigned to -- it is read only" (the set may also be missing from
     // inside the class) and, for a private set, "...because the set accessor is inaccessible". An indexer such as

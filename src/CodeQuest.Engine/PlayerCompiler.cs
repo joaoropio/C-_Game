@@ -86,7 +86,7 @@ internal sealed partial class PlayerCompiler
             .Where(d => d.Severity == DiagnosticSeverity.Error)
             .Select(d => ToCompilationError(d, written, markerIndex, playerLineCount, playerMembers))
             .ToList();
-        writtenErrors = DropErrorsWithoutLineWhenThePlayerHasOne(writtenErrors);
+        writtenErrors = CollapseRepeatedErrorsWithoutLine(DropErrorsWithoutLineWhenThePlayerHasOne(writtenErrors));
         if (writtenErrors.Count > 0)
         {
             return new CompileOutcome(null, null, writtenErrors, markerIndex, playerLineCount, null, scope);
@@ -106,6 +106,7 @@ internal sealed partial class PlayerCompiler
             .Where(d => d.Severity == DiagnosticSeverity.Error)
             .Select(d => ToCompilationError(d, playerTree, markerIndex, playerLineCount, playerMembers))
             .ToList();
+        errors = CollapseRepeatedErrorsWithoutLine(errors);
 
         return emitResult.Success
             ? new CompileOutcome(assembly.ToArray(), pdb.ToArray(), errors, markerIndex, playerLineCount, null, scope)
@@ -116,6 +117,13 @@ internal sealed partial class PlayerCompiler
     // line, naming internals). When the player has a line to look at, the line-less errors only add noise.
     private static List<CompilationError> DropErrorsWithoutLineWhenThePlayerHasOne(List<CompilationError> errors) =>
         errors.Any(error => error.Line is not null) ? errors.Where(error => error.Line is not null).ToList() : errors;
+
+    // The same mistake in the hidden validation is reported at every use (11 checks, 11 identical errors); once is enough.
+    private static List<CompilationError> CollapseRepeatedErrorsWithoutLine(List<CompilationError> errors)
+    {
+        var seen = new HashSet<CompilationError>();
+        return errors.Where(error => error.Line is not null || seen.Add(error)).ToList();
+    }
 
     private static CSharpCompilation CreateCompilation(IEnumerable<SyntaxTree> trees) => CSharpCompilation.Create(
         "PlayerAssembly_" + Guid.NewGuid().ToString("N"),
