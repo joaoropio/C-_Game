@@ -50,6 +50,8 @@ public class ContentTests
         }
         """;
 
+    private const string FileScopeTemplate = "// {{PLAYER_CODE}}";
+
     private static readonly string ContentDirectory = Path.Combine(AppContext.BaseDirectory, "content");
 
     private static readonly IReadOnlyList<GrimoirePage> Pages =
@@ -185,9 +187,12 @@ public class ContentTests
     public async Task EveryPage_ExampleCompiles(string id)
     {
         var page = Find(id);
-        var request = page.World >= 2
-            ? new RunRequest(ClassScopeTemplate, page.Example, NestedEmptyValidation)
-            : new RunRequest(NeutralTemplate, page.Example, EmptyValidation);
+        var request = page.World switch
+        {
+            >= 3 => new RunRequest(FileScopeTemplate, page.Example, EmptyValidation),
+            2 => new RunRequest(ClassScopeTemplate, page.Example, NestedEmptyValidation),
+            _ => new RunRequest(NeutralTemplate, page.Example, EmptyValidation),
+        };
 
         var result = await new RoslynCodeRunner().RunAsync(request, Language.En, CancellationToken.None);
 

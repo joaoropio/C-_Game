@@ -755,4 +755,101 @@ public class LevelSolutionTests
         Assert.Equal("You asked for a key the dictionary does not have. Check with ContainsKey or TryGetValue before reading it.", result.Explanation.En);
         Assert.Equal(6, result.Line);
     }
+
+    private const string StaticHealthSlime = "class Slime\n{\n    public string Name;\n    public static int Health;\n\n    public void Hit(int damage)\n    {\n        Health -= damage;\n        if (Health < 0)\n        {\n            Health = 0;\n        }\n    }\n\n    public bool IsAlive()\n    {\n        return Health > 0;\n    }\n}";
+
+    [Fact]
+    public async Task Level12_Solution_RunsTheSevenSlimeChecksWithinTheStarLimit()
+    {
+        var level = Find("12-classes");
+
+        var result = Assert.IsType<Passed>(await Run(level, level.Solution));
+
+        Assert.Equal(
+            [
+                "Slime { Health = 10 }, Hit(3): Health",
+                "Slime { Health = 10 }, Hit(20): Health",
+                "Slime { Health = 0 }.IsAlive()",
+                "Slime { Health = 4 }.IsAlive()",
+                "Slimes a and b with Health 10, a.Hit(5): a.Health",
+                "Slimes a and b with Health 10, a.Hit(5): b.Health",
+                "Slime { Name = \"Blob\" }.Name",
+            ],
+            result.Checks.Select(check => check.Case));
+        Assert.Equal(["7", "0", "false", "true", "5", "10", "\"Blob\""], result.Checks.Select(check => check.Expected));
+        Assert.Equal(4, level.MaxStatementsForThreeStars);
+        Assert.True(result.StatementCount <= level.MaxStatementsForThreeStars);
+    }
+
+    [Fact]
+    public async Task Level12_MathMaxSolution_Passes()
+    {
+        var level = Find("12-classes");
+
+        var result = Assert.IsType<Passed>(await Run(
+            level,
+            "class Slime\n{\n    public string Name;\n    public int Health;\n\n    public void Hit(int damage)\n    {\n        Health = Math.Max(0, Health - damage);\n    }\n\n    public bool IsAlive() => Health > 0;\n}"));
+
+        Assert.Equal(2, result.StatementCount);
+    }
+
+    [Fact]
+    public async Task Level12_HitWithoutClamp_ReportsExpectedAndObtained()
+    {
+        var level = Find("12-classes");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(
+            level,
+            "class Slime\n{\n    public string Name;\n    public int Health;\n\n    public void Hit(int damage)\n    {\n        Health -= damage;\n    }\n\n    public bool IsAlive()\n    {\n        return Health > 0;\n    }\n}"));
+
+        Assert.Contains(new CheckOutcome("Slime { Health = 10 }, Hit(20): Health", "0", "-10"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level12_StaticHealth_IsRejected()
+    {
+        var level = Find("12-classes");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, StaticHealthSlime));
+
+        Assert.Contains(new CheckOutcome("Slimes a and b with Health 10, a.Hit(5): b.Health", "10", "5"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level12_IsAliveAlwaysTrue_IsRejected()
+    {
+        var level = Find("12-classes");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(
+            level,
+            "class Slime\n{\n    public string Name;\n    public int Health;\n\n    public void Hit(int damage)\n    {\n        Health = Math.Max(0, Health - damage);\n    }\n\n    public bool IsAlive()\n    {\n        return true;\n    }\n}"));
+
+        Assert.Contains(new CheckOutcome("Slime { Health = 0 }.IsAlive()", "false", "true"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level12_PrivateFields_AreReportedAsNotPublic()
+    {
+        var level = Find("12-classes");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(
+            level,
+            "class Slime\n{\n    string Name;\n    int Health;\n\n    public void Hit(int damage)\n    {\n        Health = Math.Max(0, Health - damage);\n    }\n\n    public bool IsAlive()\n    {\n        return Health > 0;\n    }\n}"));
+
+        Assert.Contains(result.Checks, check => check.Actual == "no public field Health");
+    }
+
+    [Fact]
+    public async Task Level12_MissingClass_Explains()
+    {
+        var level = Find("12-classes");
+
+        var result = Assert.IsType<CompilationFailed>(await Run(level, "class Blob\n{\n    public int Health;\n}"));
+
+        Assert.All(result.Errors, error =>
+        {
+            Assert.Equal("The class \"Slime\" is missing.", error.Explanation!.En);
+            Assert.Equal("Falta a classe \"Slime\".", error.Explanation.Pt);
+        });
+    }
 }

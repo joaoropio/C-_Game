@@ -1,0 +1,14 @@
+<svg viewBox="0 0 540 210" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+<rect width="540" height="210" fill="#2a231c"/>
+<path d="M0 0H540M0 42H540M0 84H540M0 126H540M0 168H540M60 0V42M180 0V42M300 0V42M420 0V42M120 42V84M240 42V84M360 42V84M480 42V84M60 84V126M180 84V126M300 84V126M420 84V126M120 126V168M240 126V168M360 126V168M480 126V168" stroke="#352c23" stroke-width="2"/>
+<circle cx="270" cy="110" r="95" fill="#8fd69a" fill-opacity="0.08"/>
+<path d="M150 190h240" fill="none" stroke="#5e3f24" stroke-width="10" stroke-linecap="round"/>
+<path d="M222 40h96v14c24 10 36 30 36 62v50c0 14-10 24-24 24H210c-14 0-24-10-24-24v-50c0-32 12-52 36-62z" fill="#8cc0ee" fill-opacity="0.14" stroke="#8cc0ee" stroke-width="4" stroke-linejoin="round"/>
+<path d="M214 34h112v10H214z" fill="#7a5230" stroke="#b58a5a" stroke-width="3" stroke-linejoin="round"/>
+<path d="M222 176c-6-30 6-52 48-52s54 22 48 52c0 6-12 10-48 10s-48-4-48-10z" fill="#3f8a4a" fill-opacity="0.85" stroke="#8fd69a" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="252" cy="152" r="6" fill="#2a231c"/>
+<circle cx="288" cy="152" r="6" fill="#2a231c"/>
+<path d="M258 166c8 6 16 6 24 0" fill="none" stroke="#2a231c" stroke-width="3" stroke-linecap="round"/>
+<path d="M236 84c0 8-6 12-6 18M300 76v10M330 120c0 8 4 12 4 18" fill="none" stroke="#8cc0ee" stroke-width="3" stroke-linecap="round" stroke-opacity="0.6"/>
+<path d="M424 60v14M417 67h14M96 130v12M90 136h12" stroke="#f4c06a" stroke-width="2" stroke-linecap="round"/>
+</svg>

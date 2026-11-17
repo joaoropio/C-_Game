@@ -1,0 +1,29 @@
+{
+  "id": "classes",
+  "world": 3,
+  "title": { "pt": "Classes e objetos: class", "en": "Classes and objects: class" },
+  "whatItIs": {
+    "pt": "Uma classe é um molde que descreve uma coisa: os campos guardam os seus dados e os métodos são o que ela sabe fazer. Com new crias objetos a partir do molde, e cada objeto tem a sua própria cópia dos campos: mudar um não muda os outros. O ponto (objeto.campo, objeto.Metodo()) entra no objeto. Só o que é public se vê de fora da classe; o resto é privado. Um campo static é diferente: existe uma só vez e é partilhado por todos os objetos.",
+    "en": "A class is a mould that describes a thing: its fields hold its data and its methods are what it can do. With new you create objects from the mould, and each object has its own copy of the fields: changing one does not change the others. The dot (object.field, object.Method()) goes inside the object. Only what is public can be seen from outside the class; the rest is private. A static field is different: it exists only once and is shared by all objects."
+  },
+  "syntax": {
+    "pt": "class Tocha\n{\n    public int Combustivel;\n\n    public void Arder()\n    {\n        Combustivel = Combustivel - 1;\n    }\n}\n\nTocha candeeiro = new Tocha();\ncandeeiro.Combustivel = 5;\ncandeeiro.Arder();",
+    "en": "class Torch\n{\n    public int Fuel;\n\n    public void Burn()\n    {\n        Fuel = Fuel - 1;\n    }\n}\n\nTorch lamp = new Torch();\nlamp.Fuel = 5;\nlamp.Burn();"
+  },
+  "example": "class Torch\n{\n    public string Label;\n    public int Fuel;\n\n    public void Burn()\n    {\n        Fuel = Fuel - 1;\n    }\n}\n\nclass Camp\n{\n    public int Light()\n    {\n        Torch north = new Torch();\n        north.Label = \"North\";\n        north.Fuel = 5;\n        north.Burn();\n\n        Torch south = new Torch();\n        south.Fuel = 9;\n        return north.Fuel + south.Fuel;\n    }\n}",
+  "commonMistakes": [
+    {
+      "pt": "Esquecer o public: sem ele o campo ou o método é privado e não o consegues usar fora da classe.",
+      "en": "Forgetting public: without it the field or method is private and you cannot use it outside the class."
+    },
+    {
+      "pt": "Pôr static num campo: passa a existir uma só vez, partilhado por todos os objetos, e deixam de ser independentes.",
+      "en": "Putting static on a field: it then exists only once, shared by all objects, and they stop being independent."
+    },
+    {
+      "pt": "Usar o nome da classe em vez do objeto: Torch.Fuel não funciona, usa o objeto que criaste com new (lamp.Fuel).",
+      "en": "Using the class name instead of the object: Torch.Fuel does not work, use the object you created with new (lamp.Fuel)."
+    }
+  ],
+  "learnUrl": "https://learn.microsoft.com/dotnet/csharp/fundamentals/types/classes"
+}
