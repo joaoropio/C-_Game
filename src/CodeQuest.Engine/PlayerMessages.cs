@@ -253,8 +253,12 @@ internal static class PlayerMessages
         $"\"{value}\" is a value of the enum \"{enumName}\": write {enumName}.{value}, not a variable followed by .{value}.");
 
     public static LocalizedText StaticClassInstance(string name) => new(
-        $"\"{name}\" é static: não se cria com new; chama {name}.Total(...) diretamente.",
-        $"\"{name}\" is static: you can't create it with new; call {name}.Total(...) directly.");
+        $"\"{name}\" é static: não se cria com new; chama os seus métodos pelo nome da classe ({name}.Método(...)).",
+        $"\"{name}\" is static: you don't create it with new; call its methods through the class name ({name}.Method(...)).");
+
+    public static LocalizedText StaticClassVariable(string name) => new(
+        $"\"{name}\" é static: não se declaram variáveis desse tipo; usa {name}.Método(...) diretamente.",
+        $"\"{name}\" is static: you can't declare variables of that type; use {name}.Method(...) directly.");
 
     public static LocalizedText EnumComparedWithText(string enumName, string member) => new(
         $"\"{enumName}\" é um enum, não um texto: compara com {enumName}.{member}.",

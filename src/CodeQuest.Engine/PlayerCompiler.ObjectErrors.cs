@@ -52,7 +52,8 @@ internal sealed partial class PlayerCompiler
             MissingBodyErrorId => ExplainMissingBody(diagnostic),
             SecondBaseClassErrorId => ExplainSecondBaseClass(diagnostic),
             BaseClassNotFirstErrorId => ExplainBaseClassNotFirst(diagnostic),
-            StaticClassInstanceErrorId or StaticClassVariableErrorId => ExplainStaticClassInstance(diagnostic),
+            StaticClassInstanceErrorId => ExplainStaticClass(diagnostic, PlayerMessages.StaticClassInstance),
+            StaticClassVariableErrorId => ExplainStaticClass(diagnostic, PlayerMessages.StaticClassVariable),
             StructInitializerWithoutConstructorErrorId => PlayerMessages.StructInitializerWithoutConstructor,
             _ => null,
         };
@@ -253,8 +254,8 @@ internal sealed partial class PlayerCompiler
     }
 
     // "Cannot create an instance of the static class 'RuneMath'" and "Cannot declare a variable of static type 'RuneMath'".
-    private static LocalizedText? ExplainStaticClassInstance(Diagnostic diagnostic) =>
-        QuotedNames(diagnostic) is [var type, ..] ? PlayerMessages.StaticClassInstance(SymbolPath(type)[^1]) : null;
+    private static LocalizedText? ExplainStaticClass(Diagnostic diagnostic, Func<string, LocalizedText> message) =>
+        QuotedNames(diagnostic) is [var type, ..] ? message(SymbolPath(type)[^1]) : null;
 
     // "Operator '==' cannot be applied to operands of type 'Element' and 'string'": a player's enum compared with its name as a text.
     private static LocalizedText? ExplainEnumComparedWithText(Diagnostic diagnostic, IReadOnlySet<string> playerMembers)

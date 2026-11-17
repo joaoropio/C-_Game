@@ -570,8 +570,8 @@ public class OopErrorExplanationTests
 
         AssertExplained(
             error,
-            "\"RuneMath\" is static: you can't create it with new; call RuneMath.Total(...) directly.",
-            "\"RuneMath\" é static: não se cria com new; chama RuneMath.Total(...) diretamente.");
+            "\"RuneMath\" is static: you don't create it with new; call its methods through the class name (RuneMath.Method(...)).",
+            "\"RuneMath\" é static: não se cria com new; chama os seus métodos pelo nome da classe (RuneMath.Método(...)).");
         Assert.Equal(2, error.Line);
     }
 
@@ -609,10 +609,33 @@ public class OopErrorExplanationTests
     public void VariableOfAStaticClass_InPlayerCode_Explained()
     {
         var error = Explained(
-            "static class RuneMath { public static int Total() => 1; }\nclass Hero { RuneMath math; }",
+            "static class Tools { public static int Total() => 1; }\nclass Hero { Tools tools; }",
             "return 1;",
             insidePlayerCode: true);
 
-        Assert.Equal("\"RuneMath\" é static: não se cria com new; chama RuneMath.Total(...) diretamente.", error.Explanation!.Pt);
+        AssertExplained(
+            error,
+            "\"Tools\" is static: you can't declare variables of that type; use Tools.Method(...) directly.",
+            "\"Tools\" é static: não se declaram variáveis desse tipo; usa Tools.Método(...) diretamente.");
+    }
+
+    [Fact]
+    public void NewOfAStaticClassOtherThanRuneMath_AdviceDoesNotMentionTotal()
+    {
+        var error = Explained(
+            "static class Tools { public static int Hit() => 1; }\nclass Hero { object V = new Tools(); }",
+            "return 1;",
+            insidePlayerCode: true);
+
+        Assert.DoesNotContain("Total", error.Explanation!.Pt, StringComparison.Ordinal);
+        Assert.Contains("Tools.Método(...)", error.Explanation.Pt, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void NewOfALibraryStaticClass_AdviceDoesNotMentionTotal()
+    {
+        var error = Explained("class Hero { object V = new Math(); }", "return 1;", insidePlayerCode: true);
+
+        Assert.Equal("\"Math\" é static: não se cria com new; chama os seus métodos pelo nome da classe (Math.Método(...)).", error.Explanation!.Pt);
     }
 }

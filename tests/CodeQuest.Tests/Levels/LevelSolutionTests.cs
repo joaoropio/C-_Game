@@ -2076,7 +2076,19 @@ public class LevelSolutionTests
 
         var result = Assert.IsType<ChecksFailed>(await Run(level, code));
 
-        Assert.Contains(new CheckOutcome("var a = new Rune { Power = 1 }; var b = a; b.Power = 9; a.Power", "1", "no public Power"), result.Checks);
+        Assert.Contains(new CheckOutcome("var a = new Rune { Power = 1 }; var b = a; b.Power = 9; a.Power", "1", "no public int Power"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level17_PowerAsLong_IsReported()
+    {
+        var level = Find("17-static-enum-struct");
+        var code = EnumAndStruct.Replace("public int Power;", "public long Power;", StringComparison.Ordinal) +
+            "static class RuneMath\n{\n    public static int Total(Rune[] runes) { return 0; }\n\n    public static Element Strongest(Rune[] runes) { return Element.Fire; }\n}";
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, code));
+
+        Assert.Contains(new CheckOutcome("var a = new Rune { Power = 1 }; var b = a; b.Power = 9; a.Power", "1", "no public int Power"), result.Checks);
     }
 
     [Fact]
@@ -2100,7 +2112,12 @@ public class LevelSolutionTests
 
         var result = Assert.IsType<CompilationFailed>(await Run(level, code));
 
-        Assert.All(result.Errors, error => Assert.Equal("\"RuneMath\" é static: não se cria com new; chama RuneMath.Total(...) diretamente.", error.Explanation!.Pt));
+        Assert.Equal(
+            [
+                "\"RuneMath\" é static: não se cria com new; chama os seus métodos pelo nome da classe (RuneMath.Método(...)).",
+                "\"RuneMath\" é static: não se declaram variáveis desse tipo; usa RuneMath.Método(...) diretamente.",
+            ],
+            result.Errors.Select(error => error.Explanation!.Pt).Order(StringComparer.Ordinal));
     }
 
     [Fact]

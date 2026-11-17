@@ -38,7 +38,7 @@ public static class Validation
         object boxedB = b;
         if (!Set(boxedB, "Power", 9))
         {
-            return "no public Power";
+            return "no public int Power";
         }
 
         object boxedA = a;
