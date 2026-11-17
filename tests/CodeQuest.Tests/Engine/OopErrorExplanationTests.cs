@@ -149,6 +149,13 @@ public class OopErrorExplanationTests
             Explained("class Golem { Golem() { } }", "var a = new Golem(); var b = new Golem(); return 1;", insidePlayerCode: false).Explanation!.Pt);
 
     [Fact]
+    public void BaseCallWithoutABaseClass_Explained() =>
+        AssertExplained(
+            Explained("class Dragon { public Dragon(string name, int health) : base(name, health) { } }", "return 1;", insidePlayerCode: true),
+            "\"Dragon\" doesn't inherit from any class yet, so base(...) has nowhere to go: add \": BaseClass\" after its name.",
+            "\"Dragon\" ainda não herda de nenhuma classe, por isso base(...) não tem para onde ir: acrescenta \": ClasseBase\" depois do nome.");
+
+    [Fact]
     public void ConstructorWithAReturnType_Explained() =>
         AssertExplained(
             Explained("class Golem { public void Golem() { } }", "return 1;", insidePlayerCode: true),

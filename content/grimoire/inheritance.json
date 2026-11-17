@@ -10,7 +10,7 @@
     "pt": "class Ferramenta\n{\n    public string Nome { get; }\n\n    public Ferramenta(string nome)\n    {\n        Nome = nome;\n    }\n}\n\nclass Martelo : Ferramenta\n{\n    public Martelo(string nome) : base(nome)\n    {\n    }\n}",
     "en": "class Tool\n{\n    public string Label { get; }\n\n    public Tool(string label)\n    {\n        Label = label;\n    }\n}\n\nclass Hammer : Tool\n{\n    public Hammer(string label) : base(label)\n    {\n    }\n}"
   },
-  "example": "class Tool\n{\n    public string Label { get; }\n\n    public Tool(string label)\n    {\n        Label = label;\n    }\n\n    public string Show()\n    {\n        return \"Tool \" + Label;\n    }\n}\n\nclass Hammer : Tool\n{\n    public int Weight { get; }\n\n    public Hammer(string label, int weight) : base(label)\n    {\n        Weight = weight;\n    }\n\n    public int Smash()\n    {\n        return Weight * 3;\n    }\n}\n\nclass Shed\n{\n    public string Check()\n    {\n        Hammer old = new Hammer(\"Old\", 4);\n        return old.Show() + \" \" + old.Smash();\n    }\n}",
+  "example": "class Tool\n{\n    public string Label { get; }\n\n    public Tool(string label)\n    {\n        Label = label;\n    }\n\n    public string Show()\n    {\n        return \"Tool \" + Label;\n    }\n}\n\nclass Hammer : Tool\n{\n    public Hammer(string label) : base(label)\n    {\n    }\n\n    public string Strike()\n    {\n        return Label + \" strikes\";\n    }\n}\n\nclass Shed\n{\n    public string Check()\n    {\n        Hammer old = new Hammer(\"Old\");\n        return old.Show() + \", \" + old.Strike();\n    }\n}",
   "commonMistakes": [
     {
       "pt": "Esquecer o : base(...) quando a base tem um construtor com parâmetros: o compilador diz que falta um argumento ao construtor da base.",
@@ -21,9 +21,9 @@
       "en": "Copying the members of the base into the derived class instead of inheriting: the code repeats itself and the derived class stops being a base (is Creature gives false)."
     },
     {
-      "pt": "Tentar usar na derivada um membro private da base: só os membros public (ou protected) passam para a derivada.",
-      "en": "Trying to use a private member of the base in the derived class: only public (or protected) members pass down to the derived class."
+      "pt": "Tentar usar na derivada um membro private da base: a derivada não o vê, só os membros public.",
+      "en": "Trying to use a private member of the base in the derived class: the derived class can't see it, only the public members."
     }
   ],
-  "learnUrl": "https://learn.microsoft.com/dotnet/csharp/fundamentals/tutorials/inheritance"
+  "learnUrl": "https://learn.microsoft.com/dotnet/csharp/fundamentals/object-oriented/inheritance"
 }

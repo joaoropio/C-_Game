@@ -168,6 +168,10 @@ internal static class PlayerMessages
         $"\"{member}\" não é public, por isso não se pode usar aqui, fora da classe \"{type}\". Falta public?",
         $"\"{member}\" isn't public, so it can't be used here, outside the class \"{type}\". Is public missing?");
 
+    public static LocalizedText BaseCallWithoutBaseClass(string type) => new(
+        $"\"{type}\" ainda não herda de nenhuma classe, por isso base(...) não tem para onde ir: acrescenta \": ClasseBase\" depois do nome.",
+        $"\"{type}\" doesn't inherit from any class yet, so base(...) has nowhere to go: add \": BaseClass\" after its name.");
+
     public static LocalizedText ConstructorNotPublic(string type) => new(
         $"O construtor de \"{type}\" não é public, por isso new não o pode usar fora da classe. Põe public antes de {type}(...).",
         $"The constructor of \"{type}\" isn't public, so new can't use it outside the class. Put public before {type}(...).");

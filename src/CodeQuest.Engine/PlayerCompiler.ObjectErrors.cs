@@ -59,11 +59,25 @@ internal sealed partial class PlayerCompiler
     // "'Golem' does not contain a constructor that takes 2 arguments".
     private static LocalizedText? ExplainNoConstructorForArgumentCount(Diagnostic diagnostic)
     {
+        if (QuotedNames(diagnostic) is ["object", ..] && BaseCallOwner(diagnostic) is { } derived)
+        {
+            return PlayerMessages.BaseCallWithoutBaseClass(derived);
+        }
+
         var match = ArgumentCount().Match(diagnostic.GetMessage(MessageCulture));
         return QuotedNames(diagnostic) is [var type, ..] && match.Success
             ? PlayerMessages.NoConstructorForCount(
                 WithoutTypeArguments(type),
                 int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture))
+            : null;
+    }
+
+    // A `: base(...)` in a class that has no base class calls the constructor of object.
+    private static string? BaseCallOwner(Diagnostic diagnostic)
+    {
+        var node = diagnostic.Location.SourceTree!.GetRoot().FindNode(diagnostic.Location.SourceSpan);
+        return node.AncestorsAndSelf().Any(ancestor => ancestor is ConstructorInitializerSyntax)
+            ? EnclosingTypeName(diagnostic)
             : null;
     }
 
