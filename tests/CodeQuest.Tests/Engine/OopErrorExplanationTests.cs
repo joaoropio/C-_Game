@@ -445,7 +445,10 @@ public class OopErrorExplanationTests
             "return 1;",
             insidePlayerCode: true);
 
-        Assert.Equal("Tira o static.", error.Explanation!.Pt[^14..]);
+        AssertExplained(
+            error,
+            "\"Hit\" is static: use it through the class name (\"Slime.Hit\"), not through an object, or remove the static.",
+            "\"Hit\" é static: usa-o pelo nome da classe (\"Slime.Hit\") e não por um objeto, ou tira o static.");
         Assert.Equal(2, error.Line);
     }
 
@@ -458,5 +461,48 @@ public class OopErrorExplanationTests
             insidePlayerCode: true);
 
         Assert.Null(error.Explanation);
+    }
+
+    [Fact]
+    public void StaticFieldUsedThroughObject_InPlayerCode_NamesTheClass()
+    {
+        var error = Explained(
+            "class Slime { public static int Hp = 3; }\nclass Hero { object V = new Slime().Hp; }",
+            "return 1;",
+            insidePlayerCode: true);
+
+        AssertExplained(
+            error,
+            "\"Hp\" is static: use it through the class name (\"Slime.Hp\"), not through an object, or remove the static.",
+            "\"Hp\" é static: usa-o pelo nome da classe (\"Slime.Hp\") e não por um objeto, ou tira o static.");
+    }
+
+    [Fact]
+    public void InstanceMethodInAStaticClass_InPlayerCode_Explained()
+    {
+        var error = Explained(
+            "static class RuneMath\n{\n    public int Total(int[] runes) => 0;\n}",
+            "return 1;",
+            insidePlayerCode: true);
+
+        AssertExplained(
+            error,
+            "\"Total\" is in a static class, so it has to be static too.",
+            "\"Total\" está numa classe static, por isso também tem de ser static.");
+        Assert.Equal(3, error.Line);
+    }
+
+    [Fact]
+    public void InstanceFieldInAStaticClass_InPlayerCode_Explained()
+    {
+        var error = Explained(
+            "static class RuneMath\n{\n    public int total;\n}",
+            "return 1;",
+            insidePlayerCode: true);
+
+        AssertExplained(
+            error,
+            "\"total\" is in a static class, so it has to be static too.",
+            "\"total\" está numa classe static, por isso também tem de ser static.");
     }
 }

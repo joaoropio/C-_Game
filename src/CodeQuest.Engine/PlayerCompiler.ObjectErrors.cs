@@ -204,7 +204,7 @@ internal sealed partial class PlayerCompiler
 
     // "Member 'Slime.Hit(int)' cannot be accessed with an instance reference; qualify it with a type name instead".
     // Only the player's own members: `text.Format(...)` is a library mistake with its own advice.
-    private static LocalizedText? ExplainStaticViaInstance(Diagnostic diagnostic, IReadOnlySet<string> playerMembers)
+    private static LocalizedText? ExplainStaticViaInstance(Diagnostic diagnostic, bool insidePlayerCode, IReadOnlySet<string> playerMembers)
     {
         if (QuotedNames(diagnostic) is not [var symbol, ..])
         {
@@ -215,7 +215,14 @@ internal sealed partial class PlayerCompiler
         var isPlayers = symbol.Contains('(')
             ? playerMembers.Contains(path[^1])
             : path is [.., var type, var name] && playerMembers.Contains($"{type}.{name}");
-        return isPlayers ? PlayerMessages.StaticMemberViaInstance(path[^1]) : null;
+        if (!isPlayers)
+        {
+            return null;
+        }
+
+        return insidePlayerCode && path is [.., var owner, _]
+            ? PlayerMessages.StaticMemberViaInstanceByName(owner, path[^1])
+            : PlayerMessages.StaticMemberViaInstance(path[^1]);
     }
 
     // "Dictionary<string, int>.ContainsKey(string)" -> ["Dictionary", "ContainsKey"].

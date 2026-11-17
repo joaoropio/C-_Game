@@ -158,7 +158,7 @@ internal sealed partial class PlayerCompiler
         var insidePlayerCode = diagnostic.Location.SourceTree == playerTree
             && playerLine >= 1
             && playerLine <= playerLineCount;
-        var explanation = Explain(diagnostic, insidePlayerCode, playerMembers);
+        var explanation = Explain(diagnostic, insidePlayerCode, playerMembers, DeclaredInPlayerType(diagnostic, lineOffset, playerLineCount));
         if (insidePlayerCode)
         {
             return new CompilationError(playerLine, position.Character + 1, message, explanation);
@@ -191,7 +191,11 @@ internal sealed partial class PlayerCompiler
     private static string QualifiedName(SyntaxNode member, string name) =>
         member.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault() is { } type ? $"{type.Identifier.Text}.{name}" : name;
 
-    private static LocalizedText? Explain(Diagnostic diagnostic, bool insidePlayerCode, IReadOnlySet<string> playerMembers) =>
+    private static LocalizedText? Explain(
+        Diagnostic diagnostic,
+        bool insidePlayerCode,
+        IReadOnlySet<string> playerMembers,
+        bool declaredInPlayerType) =>
         diagnostic.Id switch
         {
             MissingNameErrorId => ExplainMissingName(diagnostic),
@@ -207,9 +211,9 @@ internal sealed partial class PlayerCompiler
             MissingArgumentErrorId => ExplainMissingArguments(diagnostic),
             DuplicateMethodErrorId => ExplainDuplicateMethod(diagnostic),
             DuplicateDefinitionErrorId => ExplainDuplicateDefinition(diagnostic),
-            InstanceMemberInStaticClassErrorId => ExplainMissingStaticAtDeclaration(diagnostic),
+            InstanceMemberInStaticClassErrorId => ExplainMissingStaticAtDeclaration(diagnostic, declaredInPlayerType),
             ObjectReferenceRequiredErrorId => ExplainObjectReferenceRequired(diagnostic, insidePlayerCode, playerMembers),
-            StaticMemberViaInstanceErrorId => ExplainStaticViaInstance(diagnostic, playerMembers),
+            StaticMemberViaInstanceErrorId => ExplainStaticViaInstance(diagnostic, insidePlayerCode, playerMembers),
             _ => ExplainObjectOrientedError(diagnostic, insidePlayerCode),
         };
 
@@ -354,11 +358,24 @@ internal sealed partial class PlayerCompiler
             : null;
 
     // The span is the declared method name.
-    private static LocalizedText? ExplainMissingStaticAtDeclaration(Diagnostic diagnostic)
+    private static LocalizedText? ExplainMissingStaticAtDeclaration(Diagnostic diagnostic, bool declaredInPlayerType)
     {
         var name = SpanText(diagnostic);
-        return IsIdentifier(name) ? PlayerMessages.MissingStatic(name) : null;
+        if (!IsIdentifier(name))
+        {
+            return null;
+        }
+
+        return declaredInPlayerType ? PlayerMessages.MemberInStaticClass(name) : PlayerMessages.MissingStatic(name);
     }
+
+    // A static class the player wrote (World 3), as opposed to the template class of World 2 that holds the player's methods.
+    private static bool DeclaredInPlayerType(Diagnostic diagnostic, int lineOffset, int playerLineCount) =>
+        diagnostic.Id == InstanceMemberInStaticClassErrorId
+        && diagnostic.Location.SourceTree?.GetRoot().FindNode(diagnostic.Location.SourceSpan).AncestorsAndSelf().OfType<TypeDeclarationSyntax>().FirstOrDefault() is { } type
+        && type.Identifier.GetLocation().GetLineSpan().StartLinePosition.Line is var line
+        && line >= lineOffset
+        && line < lineOffset + playerLineCount;
 
     // "An object reference is required for the non-static field, method, or property 'Spell.Heal(int)'": only a
     // method written by the player is "missing static"; `string.Length` or `List<int>.Count` are not the player's.

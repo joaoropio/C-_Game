@@ -1765,6 +1765,158 @@ public class LevelSolutionTests
         Assert.Equal("You can't use new on \"Griffin\": it is abstract (or an interface).", error.Explanation!.En);
     }
 
+
+    private static string RuneMathWith(string total, string strongest) =>
+        $"static class RuneMath\n{{\n    public static int Total(Rune[] runes)\n    {{\n        {total}\n    }}\n\n    public static Element Strongest(Rune[] runes)\n    {{\n        {strongest}\n    }}\n}}";
+
+    private const string EnumAndStruct =
+        "enum Element { Fire, Water, Earth }\n\nstruct Rune\n{\n    public Element Element;\n    public int Power;\n}\n\n";
+
+    private const string SumRunes = "int total = 0; foreach (Rune rune in runes) { total += rune.Power; } return total;";
+
+    private const string PickStrongest =
+        "Rune best = runes[0]; foreach (Rune rune in runes) { if (rune.Power > best.Power) { best = rune; } } return best.Element;";
+
+    [Fact]
+    public async Task Level17_Solution_RunsTheThirteenRuneChecksWithinTheStarLimit()
+    {
+        var level = Find("17-static-enum-struct");
+
+        var result = Assert.IsType<Passed>(await Run(level, level.Solution));
+
+        Assert.Equal(13, result.Checks.Count);
+        Assert.Equal(
+            ["enum", "struct", "static class", "1", "10", "4", "20", "0", "Element.Water", "Element.Fire", "Element.Earth", "Element.Fire", "Element.Water"],
+            result.Checks.Select(check => check.Expected));
+        Assert.Equal(9, level.MaxStatementsForThreeStars);
+        Assert.True(result.StatementCount <= level.MaxStatementsForThreeStars);
+    }
+
+    [Fact]
+    public async Task Level17_RuneAsClass_IsRejected()
+    {
+        var level = Find("17-static-enum-struct");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, level.Solution.Replace("struct Rune", "class Rune")));
+
+        Assert.Contains(new CheckOutcome("typeof(Rune)", "struct", "class"), result.Checks);
+        Assert.Contains(new CheckOutcome("var a = new Rune { Power = 1 }; var b = a; b.Power = 9; a.Power", "1", "9"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level17_RuneMathNotStatic_IsRejected()
+    {
+        var level = Find("17-static-enum-struct");
+        var code = level.Solution.Replace("static class RuneMath", "class RuneMath").Replace("public static ", "public ");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, code));
+
+        Assert.Contains(new CheckOutcome("typeof(RuneMath)", "static class", "class"), result.Checks);
+        Assert.Contains(new CheckOutcome("RuneMath.Total([Earth 4])", "4", "Total is not static"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level17_ElementAsAClassOfConstants_IsRejected()
+    {
+        var level = Find("17-static-enum-struct");
+        var code = level.Solution.Replace(
+            "enum Element\n{\n    Fire,\n    Water,\n    Earth,\n}",
+            "class Element\n{\n    public static Element Fire = new Element();\n    public static Element Water = new Element();\n    public static Element Earth = new Element();\n}");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, code));
+
+        Assert.Contains(new CheckOutcome("typeof(Element)", "enum", "class"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level17_StrongestReturningAFixedElement_IsRejected()
+    {
+        var level = Find("17-static-enum-struct");
+        var code = EnumAndStruct + RuneMathWith(SumRunes, "return Element.Water;");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, code));
+
+        Assert.Contains(new CheckOutcome("RuneMath.Strongest([Fire 7, Water 2, Earth 4])", "Element.Fire", "Element.Water"), result.Checks);
+        Assert.Contains(new CheckOutcome("RuneMath.Strongest([Fire 1, Earth 9, Water 4])", "Element.Earth", "Element.Water"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level17_TotalIgnoringTheInput_IsRejected()
+    {
+        var level = Find("17-static-enum-struct");
+        var code = EnumAndStruct + RuneMathWith("return 10;", PickStrongest);
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, code));
+
+        Assert.Contains(new CheckOutcome("RuneMath.Total([Earth 4])", "4", "10"), result.Checks);
+        Assert.Contains(new CheckOutcome("RuneMath.Total([])", "0", "10"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level17_TieGoingToTheLastRune_IsRejected()
+    {
+        var level = Find("17-static-enum-struct");
+        var code = EnumAndStruct + RuneMathWith(SumRunes, PickStrongest.Replace(">", ">="));
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, code));
+
+        Assert.Contains(new CheckOutcome("RuneMath.Strongest([Earth 1, Fire 8, Water 8])", "Element.Fire", "Element.Water"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level17_StaticMethodCalledThroughAnObject_Explains()
+    {
+        var level = Find("17-static-enum-struct");
+        var code = level.Solution.Replace("public int Power;", "public int Power;\n    public static int Twice(int n) { return n * 2; }")
+            .Replace("return best.Element;", "int unused = best.Twice(1);\n        return best.Element;");
+
+        var result = Assert.IsType<CompilationFailed>(await Run(level, code));
+
+        var error = Assert.Single(result.Errors);
+        Assert.Equal("\"Twice\" é static: usa-o pelo nome da classe (\"Rune.Twice\") e não por um objeto, ou tira o static.", error.Explanation!.Pt);
+        Assert.NotNull(error.Line);
+    }
+
+    [Fact]
+    public async Task Level17_InstanceMethodInTheStaticClass_Explains()
+    {
+        var level = Find("17-static-enum-struct");
+
+        var result = Assert.IsType<CompilationFailed>(await Run(level, level.Solution.Replace("public static int Total", "public int Total")));
+
+        var error = Assert.Single(result.Errors);
+        Assert.Equal("\"Total\" está numa classe static, por isso também tem de ser static.", error.Explanation!.Pt);
+        Assert.NotNull(error.Line);
+    }
+
+
+    [Fact]
+    public async Task Level17_ElementAsIntConstants_IsRejected()
+    {
+        var level = Find("17-static-enum-struct");
+        var code = level.Solution
+            .Replace("enum Element\n{\n    Fire,\n    Water,\n    Earth,\n}", "static class Element\n{\n    public const int Fire = 0;\n    public const int Water = 1;\n    public const int Earth = 2;\n}")
+            .Replace("public Element Element;", "public int Element;")
+            .Replace("Element Strongest", "int Strongest");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, code));
+
+        Assert.Contains(new CheckOutcome("typeof(Element)", "enum", "static class"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level17_ElementAsStrings_IsRejected()
+    {
+        var level = Find("17-static-enum-struct");
+        var code = level.Solution
+            .Replace("enum Element\n{\n    Fire,\n    Water,\n    Earth,\n}\n\n", "")
+            .Replace("public Element Element;", "public string Element;")
+            .Replace("Element Strongest", "string Strongest");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, code));
+
+        Assert.Contains(new CheckOutcome("typeof(Element)", "enum", "no Element"), result.Checks);
+    }
     [Fact]
     public async Task Level13_PrivateConstructor_Explains()
     {

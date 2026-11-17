@@ -240,6 +240,14 @@ internal static class PlayerMessages
         $"\"{name}\" é static: pertence à classe e não a cada objeto. Tira o static.",
         $"\"{name}\" is static: it belongs to the class, not to each object. Remove the static.");
 
+    public static LocalizedText StaticMemberViaInstanceByName(string type, string name) => new(
+        $"\"{name}\" é static: usa-o pelo nome da classe (\"{type}.{name}\") e não por um objeto, ou tira o static.",
+        $"\"{name}\" is static: use it through the class name (\"{type}.{name}\"), not through an object, or remove the static.");
+
+    public static LocalizedText MemberInStaticClass(string name) => new(
+        $"\"{name}\" está numa classe static, por isso também tem de ser static.",
+        $"\"{name}\" is in a static class, so it has to be static too.");
+
     public static readonly LocalizedText DividedByZero = new(
         "Dividiste por zero.",
         "You divided by zero.");

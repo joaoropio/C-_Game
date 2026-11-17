@@ -1,0 +1,27 @@
+{
+  "id": "17-static-enum-struct",
+  "world": 3,
+  "number": 17,
+  "title": { "pt": "A Pedra das Runas", "en": "The Rune Stone" },
+  "story": {
+    "pt": "No fundo do Bestiário há uma pedra com três runas gravadas: fogo, água e terra. O mago quer descobrir qual delas é a mais forte. Primeiro, os nomes das runas: são só três, fixos, por isso formam um enum. Escreve enum Element { Fire, Water, Earth }. Cada runa guarda um elemento e um poder, uma pequena porção de dados que se copia por inteiro, por isso é uma struct: escreve struct Rune com os campos public Element Element; e public int Power;. Por fim, contas que não precisam de nenhum objeto: escreve static class RuneMath com dois métodos static, public static int Total(Rune[] runes), que soma o poder de todas as runas, e public static Element Strongest(Rune[] runes), que devolve o elemento da runa com mais poder (se duas empatarem, fica a primeira). Por exemplo, com as runas Fire 3, Water 5 e Earth 2, RuneMath.Total(runes) dá 10 e RuneMath.Strongest(runes) dá Element.Water. E, como Rune é uma struct, depois de var b = a; b.Power = 9; a mantém o seu poder.",
+    "en": "Deep in the Bestiary there is a stone with three runes carved on it: fire, water and earth. The mage wants to find out which of them is the strongest. First, the names of the runes: there are only three, fixed, so they form an enum. Write enum Element { Fire, Water, Earth }. Each rune keeps an element and a power, a small portion of data that is copied whole, so it is a struct: write struct Rune with the fields public Element Element; and public int Power;. Finally, calculations that need no object at all: write static class RuneMath with two static methods, public static int Total(Rune[] runes), which adds up the power of every rune, and public static Element Strongest(Rune[] runes), which returns the element of the rune with the most power (if two tie, the first one wins). For example, with the runes Fire 3, Water 5 and Earth 2, RuneMath.Total(runes) gives 10 and RuneMath.Strongest(runes) gives Element.Water. And, because Rune is a struct, after var b = a; b.Power = 9; a keeps its own power."
+  },
+  "concept": {
+    "pt": "Três ferramentas novas. Um enum é um conjunto fixo de nomes: enum Mood { Calm, Angry }, usado como Mood.Calm. Uma struct é como uma classe, mas é um valor: ao copiá-la (var b = a;) fica-se com uma cópia independente, e mudar b não muda a. Com uma class, a cópia aponta para o mesmo objeto e muda os dois. Um membro static pertence à classe e não a cada objeto: usa-se pelo nome da classe, sem new. Uma static class só tem membros static e serve de caixa de ferramentas. Exemplo: enum Mood { Calm, Angry } struct Gem { public int Size; } static class Jeweler { public static int Double(Gem gem) { return gem.Size * 2; } } Depois, Gem g = new Gem { Size = 3 }; Gem h = g; h.Size = 8; deixa g.Size com 3, e Jeweler.Double(g) dá 6 (e não new Jeweler().Double(g)).",
+    "en": "Three new tools. An enum is a fixed set of names: enum Mood { Calm, Angry }, used as Mood.Calm. A struct is like a class, but it is a value: copying it (var b = a;) gives an independent copy, and changing b does not change a. With a class, the copy points to the same object and changes both. A static member belongs to the class and not to each object: you use it through the class name, without new. A static class only has static members and works as a toolbox. Example: enum Mood { Calm, Angry } struct Gem { public int Size; } static class Jeweler { public static int Double(Gem gem) { return gem.Size * 2; } } Then Gem g = new Gem { Size = 3 }; Gem h = g; h.Size = 8; leaves g.Size at 3, and Jeweler.Double(g) gives 6 (and not new Jeweler().Double(g))."
+  },
+  "hints": [
+    {
+      "pt": "Três palavras a trocar: enum Element { Fire, Water, Earth } (só os nomes, separados por vírgulas), struct Rune e static class RuneMath. Dentro da RuneMath cada método leva static e usa-se pelo nome da classe. Total soma o Power de cada runa; Strongest vai guardando a runa com mais poder.",
+      "en": "Three words to swap: enum Element { Fire, Water, Earth } (just the names, separated by commas), struct Rune and static class RuneMath. Inside RuneMath every method gets static and is used through the class name. Total adds up the Power of each rune; Strongest keeps the rune with the most power as it goes."
+    },
+    {
+      "pt": "Para Total: int total = 0; foreach (Rune rune in runes) { total += rune.Power; } return total;. Para Strongest: Rune best = runes[0]; foreach (Rune rune in runes) { if (rune.Power > best.Power) { best = rune; } } return best.Element;. Com > (e não >=) a primeira runa fica em caso de empate.",
+      "en": "For Total: int total = 0; foreach (Rune rune in runes) { total += rune.Power; } return total;. For Strongest: Rune best = runes[0]; foreach (Rune rune in runes) { if (rune.Power > best.Power) { best = rune; } } return best.Element;. With > (and not >=) the first rune stays in case of a tie."
+    }
+  ],
+  "maxStatementsForThreeStars": 9,
+  "grimoirePageId": "static-enum-struct",
+  "sceneLabel": { "pt": "Três runas gravadas numa pedra: fogo, água e terra", "en": "Three runes carved in a stone: fire, water and earth" }
+}
