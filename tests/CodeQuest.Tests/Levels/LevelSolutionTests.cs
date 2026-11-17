@@ -1550,6 +1550,7 @@ public class LevelSolutionTests
                 "IFlyer.FlySpeed",
                 "IFlyer.FlySpeed implemented in",
                 "typeof(Griffin).GetMethod(\"Roar\").DeclaringType",
+                "typeof(Wyvern).GetMethod(\"Roar\").DeclaringType",
                 "new Griffin().Sound()",
                 "new Griffin().Roar()",
                 "new Wyvern().Roar()",
@@ -1557,7 +1558,7 @@ public class LevelSolutionTests
             ],
             result.Checks.Select(check => check.Case));
         Assert.Equal(
-            ["abstract class", "interface", "class", "Beast", "Beast", "true", "false", "abstract", "abstract", "Griffin", "Beast", "\"screech\"", "\"SCREECH!\"", "\"GROWL!\"", "30"],
+            ["abstract class", "interface", "class", "Beast", "Beast", "true", "false", "abstract", "abstract", "Griffin", "Beast", "Beast", "\"screech\"", "\"SCREECH!\"", "\"GROWL!\"", "30"],
             result.Checks.Select(check => check.Expected));
         Assert.Equal(4, level.MaxStatementsForThreeStars);
         Assert.True(result.StatementCount <= level.MaxStatementsForThreeStars);
@@ -1633,6 +1634,20 @@ public class LevelSolutionTests
         var result = Assert.IsType<ChecksFailed>(await Run(level, Griffins(beast: hardCoded)));
 
         Assert.Contains(new CheckOutcome("new Wyvern().Roar()", "\"GROWL!\"", "\"SCREECH!\""), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level16_RoarOverriddenInWyvern_IsRejected()
+    {
+        var level = Find("16-interfaces");
+        var virtualRoar = AbstractBeast.Replace("public string Roar", "public virtual string Roar", StringComparison.Ordinal)
+            .Replace("Sound().ToUpper() + \"!\"", "\"SCREECH!\"", StringComparison.Ordinal);
+        var wyvern = WyvernClass.Replace("    public override string Sound()", "    public override string Roar() { return \"GROWL!\"; }\n\n    public override string Sound()", StringComparison.Ordinal);
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Griffins(beast: virtualRoar, wyvern: wyvern)));
+
+        Assert.Contains(new CheckOutcome("typeof(Wyvern).GetMethod(\"Roar\").DeclaringType", "Beast", "Wyvern"), result.Checks);
+        Assert.Contains(new CheckOutcome("new Wyvern().Roar()", "\"GROWL!\"", "\"GROWL!\""), result.Checks);
     }
 
     [Fact]

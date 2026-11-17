@@ -18,7 +18,8 @@ public static class Validation
         yield return ("Beast.Sound", "abstract", SoundKind());
         yield return ("IFlyer.FlySpeed", "abstract", FlySpeedKind());
         yield return ("IFlyer.FlySpeed implemented in", "Griffin", FlySpeedOwner());
-        yield return ("typeof(Griffin).GetMethod(\"Roar\").DeclaringType", "Beast", RoarOwner());
+        yield return ("typeof(Griffin).GetMethod(\"Roar\").DeclaringType", "Beast", RoarOwner(typeof(Griffin)));
+        yield return ("typeof(Wyvern).GetMethod(\"Roar\").DeclaringType", "Beast", RoarOwner(typeof(Wyvern)));
         yield return ("new Griffin().Sound()", "\"screech\"", Call(griffin, typeof(Griffin), "Sound", Everything));
         yield return ("new Griffin().Roar()", "\"SCREECH!\"", Call(griffin, typeof(Beast), "Roar", global::System.Reflection.BindingFlags.Public));
         yield return ("new Wyvern().Roar()", "\"GROWL!\"", Call(wyvern, typeof(Beast), "Roar", global::System.Reflection.BindingFlags.Public));
@@ -71,9 +72,9 @@ public static class Validation
         };
     }
 
-    // GetMethod gives the most derived declaration, so a Roar written again in Griffin (override or new) is not "Beast".
-    private static string RoarOwner() =>
-        Find(typeof(Griffin), "Roar", global::System.Reflection.BindingFlags.Public)?.DeclaringType?.Name ?? "no public Roar()";
+    // GetMethod gives the most derived declaration, so a Roar written again in a beast (override or new) is not "Beast".
+    private static string RoarOwner(global::System.Type beast) =>
+        Find(beast, "Roar", global::System.Reflection.BindingFlags.Public)?.DeclaringType?.Name ?? "no public Roar()";
 
     private static string Call(object target, global::System.Type owner, string name, global::System.Reflection.BindingFlags access)
     {
