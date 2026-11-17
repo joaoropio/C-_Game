@@ -285,6 +285,65 @@ public class OopErrorExplanationTests
         Assert.Equal(2, error.Line);
     }
 
+    [Fact]
+    public void VirtualWithoutPublic_Explained()
+    {
+        var error = Explained(
+            "class Beast { virtual string Speak() => \"a\"; }",
+            "return 1;",
+            insidePlayerCode: true);
+
+        AssertExplained(
+            error,
+            "\"Speak\" is virtual (or override), so it must be public.",
+            "\"Speak\" é virtual (ou override), por isso tem de ser public.");
+        Assert.Equal(1, error.Line);
+    }
+
+    [Fact]
+    public void OverrideWithWeakerAccess_Explained()
+    {
+        var error = Explained(
+            "class Beast { public virtual string Speak() => \"a\"; }\nclass Griffin : Beast { protected override string Speak() => \"b\"; }",
+            "return 1;",
+            insidePlayerCode: true);
+
+        AssertExplained(
+            error,
+            "The override of \"Speak\" must have the same access as in the base class (public).",
+            "O override de \"Speak\" tem de ter o mesmo acesso que o da classe base (public).");
+        Assert.Equal(2, error.Line);
+    }
+
+
+    // `override string Speak()` has no access modifier: that is the CS0621 case, and the access-mismatch error that
+    // comes with it is dropped.
+    [Fact]
+    public void OverrideWithoutAnyAccess_OnlyTheMissingPublicIsExplained()
+    {
+        var errors = _compiler.Compile(new RunRequest(
+            Template,
+            "class Beast { public virtual string Speak() => \"a\"; }\nclass Griffin : Beast { override string Speak() => \"b\"; }",
+            Validation("return 1;"))).Errors;
+
+        var error = Assert.Single(errors);
+        Assert.Equal(2, error.Line);
+        Assert.Equal("\"Speak\" is virtual (or override), so it must be public.", error.Explanation!.En);
+    }
+    // The base method is private, so the override finds nothing to override; only the missing public is worth saying.
+    [Fact]
+    public void OverrideOfPrivateVirtual_OnlyTheMissingPublicIsExplained()
+    {
+        var errors = _compiler.Compile(new RunRequest(
+            Template,
+            "class Beast { virtual string Speak() => \"a\"; }\nclass Griffin : Beast { public override string Speak() => \"b\"; }",
+            Validation("return 1;"))).Errors;
+
+        var error = Assert.Single(errors);
+        Assert.Equal(1, error.Line);
+        Assert.Equal("\"Speak\" is virtual (or override), so it must be public.", error.Explanation!.En);
+    }
+
     [Theory]
     [InlineData("abstract class Beast { public abstract string Sound(); }\nclass Griffin : Beast { }", "Sound", "Beast")]
     [InlineData("abstract class Beast { public abstract string Sound { get; } }\nclass Griffin : Beast { }", "Sound", "Beast")]

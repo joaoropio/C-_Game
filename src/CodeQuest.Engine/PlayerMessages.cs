@@ -196,6 +196,14 @@ internal static class PlayerMessages
         $"\"{name}\" na classe base não é virtual nem abstract, por isso não se pode fazer override.",
         $"\"{name}\" in the base class is neither virtual nor abstract, so it can't be overridden.");
 
+    public static LocalizedText VirtualNotPublic(string name) => new(
+        $"\"{name}\" é virtual (ou override), por isso tem de ser public.",
+        $"\"{name}\" is virtual (or override), so it must be public.");
+
+    public static LocalizedText OverrideChangesAccess(string name, string access) => new(
+        $"O override de \"{name}\" tem de ter o mesmo acesso que o da classe base ({access}).",
+        $"The override of \"{name}\" must have the same access as in the base class ({access}).");
+
     public static LocalizedText MissingImplementation(string type, string member, string required) => new(
         $"\"{type}\" ainda não implementa \"{member}\" (pedido por \"{required}\").",
         $"\"{type}\" doesn't implement \"{member}\" yet (required by \"{required}\").");

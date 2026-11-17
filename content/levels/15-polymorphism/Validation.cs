@@ -48,6 +48,11 @@ public static class Validation
     // GetBaseDefinition is the method itself for `new` (a hiding method), and the first virtual declaration for an override.
     private static string DerivedSpeakKind(global::System.Type type)
     {
+        if (!type.IsSubclassOf(typeof(Creature)))
+        {
+            return "not a Creature";
+        }
+
         var speak = DeclaredSpeak(type);
         if (speak is null)
         {

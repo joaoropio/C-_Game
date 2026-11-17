@@ -82,8 +82,8 @@ internal sealed partial class PlayerCompiler
         }
 
         var playerMembers = PlayerMemberNames(written, markerIndex, playerLineCount);
-        var writtenErrors = writtenCompilation.GetDiagnostics()
-            .Where(d => d.Severity == DiagnosticSeverity.Error)
+        var writtenDiagnostics = writtenCompilation.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ToList();
+        var writtenErrors = DropFollowUpsOfMissingPublic(writtenDiagnostics)
             .Select(d => ToCompilationError(d, written, markerIndex, playerLineCount, playerMembers))
             .ToList();
         writtenErrors = CollapseRepeatedErrorsWithoutLine(DropErrorsWithoutLineWhenThePlayerHasOne(writtenErrors));

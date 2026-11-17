@@ -1373,6 +1373,82 @@ public class LevelSolutionTests
         });
     }
 
+    [Theory]
+    [InlineData("override string Speak() { return \"Meow\"; }")]
+    [InlineData("protected override string Speak() { return \"Meow\"; }")]
+    public async Task Level15_OverrideWithoutPublic_Explains(string catSpeak)
+    {
+        var level = Find("15-polymorphism");
+
+        var result = Assert.IsType<CompilationFailed>(await Run(level, Creatures(catSpeak: catSpeak)));
+
+        var error = Assert.Single(result.Errors);
+        Assert.Equal(8, error.Line);
+        Assert.Contains("public", error.Explanation!.En, StringComparison.Ordinal);
+        Assert.DoesNotContain("inherits", error.Explanation.En, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Level15_VirtualWithoutPublic_Explains()
+    {
+        var level = Find("15-polymorphism");
+
+        var result = Assert.IsType<CompilationFailed>(await Run(level, Creatures(creatureSpeak: "virtual string Speak() { return \"...\"; }")));
+
+        var error = Assert.Single(result.Errors);
+        Assert.Equal(3, error.Line);
+        Assert.Equal("\"Speak\" is virtual (or override), so it must be public.", error.Explanation!.En);
+    }
+
+    // Accepted: the base field plus base.Speak() is real overriding (each class still has its own override), it only
+    // costs the third star because the solution grows past the limit.
+    [Fact]
+    public async Task Level15_BaseSpeakWithAProtectedField_PassesWithoutThreeStars()
+    {
+        var level = Find("15-polymorphism");
+        const string code = """
+            class Creature
+            {
+                protected string sound = "...";
+
+                public virtual string Speak()
+                {
+                    return sound;
+                }
+            }
+
+            class Cat : Creature
+            {
+                public Cat()
+                {
+                    sound = "Meow";
+                }
+
+                public override string Speak()
+                {
+                    return base.Speak();
+                }
+            }
+
+            class Owl : Creature
+            {
+                public Owl()
+                {
+                    sound = "Hoot";
+                }
+
+                public override string Speak()
+                {
+                    return base.Speak();
+                }
+            }
+            """;
+
+        var result = Assert.IsType<Passed>(await Run(level, code));
+
+        Assert.True(result.StatementCount > level.MaxStatementsForThreeStars);
+    }
+
     [Fact]
     public async Task Level15_OverrideOfAMissingMethod_Explains()
     {
@@ -1396,6 +1472,8 @@ public class LevelSolutionTests
         Assert.Contains(new CheckOutcome("typeof(Cat).BaseType", "Creature", "Object"), result.Checks);
         Assert.Contains(new CheckOutcome("creatures[1].Speak()", "\"Meow\"", "not a Creature"), result.Checks);
         Assert.Contains(new CheckOutcome("creatures[2].Speak()", "\"Hoot\"", "not a Creature"), result.Checks);
+        Assert.Contains(new CheckOutcome("Cat.Speak", "override", "not a Creature"), result.Checks);
+        Assert.Contains(new CheckOutcome("Owl.Speak", "override", "not a Creature"), result.Checks);
     }
 
     [Fact]

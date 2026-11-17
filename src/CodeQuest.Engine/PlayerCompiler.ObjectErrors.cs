@@ -16,6 +16,8 @@ internal sealed partial class PlayerCompiler
     private const string InaccessibleSetterErrorId = "CS0272";
     private const string NothingToOverrideErrorId = "CS0115";
     private const string NotOverridableErrorId = "CS0506";
+    private const string VirtualMemberNotPublicErrorId = "CS0621";
+    private const string OverrideChangesAccessErrorId = "CS0507";
     private const string MissingAbstractImplementationErrorId = "CS0534";
     private const string MissingInterfaceImplementationErrorId = "CS0535";
     private const string AbstractInstanceErrorId = "CS0144";
@@ -32,6 +34,8 @@ internal sealed partial class PlayerCompiler
             MemberNamedLikeItsTypeErrorId => ExplainConstructorWithReturnType(diagnostic),
             NothingToOverrideErrorId => ExplainNothingToOverride(diagnostic),
             NotOverridableErrorId => ExplainNotOverridable(diagnostic),
+            VirtualMemberNotPublicErrorId => ExplainVirtualNotPublic(diagnostic),
+            OverrideChangesAccessErrorId => ExplainOverrideChangesAccess(diagnostic),
             MissingAbstractImplementationErrorId or MissingInterfaceImplementationErrorId =>
                 ExplainMissingImplementation(diagnostic),
             AbstractInstanceErrorId => ExplainAbstractInstance(diagnostic),
@@ -115,6 +119,32 @@ internal sealed partial class PlayerCompiler
     // "'Griffin.Speak()' cannot override inherited member 'Beast.Speak()' because it is not marked virtual...".
     private static LocalizedText? ExplainNotOverridable(Diagnostic diagnostic) =>
         QuotedNames(diagnostic) is [var symbol, ..] ? PlayerMessages.NotOverridable(MethodNameOf(symbol)) : null;
+
+    // "'Beast.Speak()': virtual or abstract members cannot be private": the member has no access modifier (or says private).
+    private static LocalizedText? ExplainVirtualNotPublic(Diagnostic diagnostic) =>
+        QuotedNames(diagnostic) is [var symbol, ..] ? PlayerMessages.VirtualNotPublic(MethodNameOf(symbol)) : null;
+
+    // "'Griffin.Speak()': cannot change access modifiers when overriding 'public' inherited member 'Beast.Speak()'".
+    private static LocalizedText? ExplainOverrideChangesAccess(Diagnostic diagnostic) =>
+        QuotedNames(diagnostic) is [var symbol, var access, ..] ? PlayerMessages.OverrideChangesAccess(MethodNameOf(symbol), access) : null;
+
+    // A virtual or override method without `public` is reported on its own (CS0621), and then again by the
+    // overrides that cannot see it (CS0115) or by the access mismatch (CS0507). Once the missing `public` is
+    // explained, those follow-ups for the same method name only mislead, e.g. "check that the class inherits".
+    private static List<Diagnostic> DropFollowUpsOfMissingPublic(List<Diagnostic> diagnostics)
+    {
+        var notPublic = diagnostics
+            .Where(d => d.Id == VirtualMemberNotPublicErrorId && QuotedNames(d) is [_, ..])
+            .Select(d => MethodNameOf(QuotedNames(d)[0]))
+            .ToHashSet();
+        return notPublic.Count == 0
+            ? diagnostics
+            : diagnostics
+                .Where(d => !(d.Id is NothingToOverrideErrorId or OverrideChangesAccessErrorId
+                    && QuotedNames(d) is [var symbol, ..]
+                    && notPublic.Contains(MethodNameOf(symbol))))
+                .ToList();
+    }
 
     // "'Griffin' does not implement inherited abstract member 'Beast.Sound()'"; for a property the member is
     // "Beast.Sound.get".
