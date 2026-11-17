@@ -1062,4 +1062,131 @@ public class LevelSolutionTests
         Assert.NotEmpty(result.Errors);
         Assert.All(result.Errors, error => Assert.Equal("\"Crack\" não é public, por isso não se pode usar aqui, fora da classe \"Golem\". Falta public?", error.Explanation!.Pt));
     }
+
+    private const string CreatureClass = "class Creature\n{\n    public string Name { get; }\n    public int Health { get; }\n\n    public Creature(string name, int health)\n    {\n        Name = name;\n        Health = health;\n    }\n\n    public string Describe()\n    {\n        return Name + \" (\" + Health + \")\";\n    }\n}\n\n";
+
+    private static string Dragon(
+        string creature = CreatureClass,
+        string header = "class Dragon : Creature",
+        string baseCall = " : base(name, health)",
+        string extraMembers = "",
+        string breatheBody = "return fire * 2;") =>
+        $"{creature}{header}\n{{\n    private int fire;\n{extraMembers}\n    public Dragon(string name, int health, int fire){baseCall}\n    {{\n        this.fire = fire;\n    }}\n\n    public int Breathe()\n    {{\n        {breatheBody}\n    }}\n}}";
+
+    [Fact]
+    public async Task Level14_Solution_RunsTheTwelveDragonChecksWithinTheStarLimit()
+    {
+        var level = Find("14-inheritance");
+
+        var result = Assert.IsType<Passed>(await Run(level, level.Solution));
+
+        Assert.Equal(
+            [
+                "new Dragon(\"Smaug\", 50, 7).Describe()",
+                "new Dragon(\"Ember\", 30, 4).Describe()",
+                "new Creature(\"Rat\", 5).Describe()",
+                "new Dragon(\"Smaug\", 50, 7).Breathe()",
+                "new Dragon(\"Ember\", 30, 4).Breathe()",
+                "new Dragon(\"Wisp\", 9, 0).Breathe()",
+                "new Dragon(\"Smaug\", 50, 7).Name",
+                "new Dragon(\"Smaug\", 50, 7).Health",
+                "new Dragon(\"Ember\", 30, 4).Health",
+                "new Dragon(\"Smaug\", 50, 7) is Creature",
+                "typeof(Dragon).BaseType",
+                "Describe declared in",
+            ],
+            result.Checks.Select(check => check.Case));
+        Assert.Equal(["\"Smaug (50)\"", "\"Ember (30)\"", "\"Rat (5)\"", "14", "8", "0", "\"Smaug\"", "50", "30", "true", "Creature", "Creature"], result.Checks.Select(check => check.Expected));
+        Assert.Equal(5, level.MaxStatementsForThreeStars);
+        Assert.True(result.StatementCount <= level.MaxStatementsForThreeStars);
+    }
+
+    [Fact]
+    public async Task Level14_FieldsInsteadOfProperties_Pass()
+    {
+        var level = Find("14-inheritance");
+        var creature = CreatureClass.Replace("Name { get; }", "Name;", StringComparison.Ordinal).Replace("Health { get; }", "Health;", StringComparison.Ordinal);
+
+        Assert.IsType<Passed>(await Run(level, Dragon(creature: creature)));
+    }
+
+    [Fact]
+    public async Task Level14_HardCodedBreathe_IsRejected()
+    {
+        var level = Find("14-inheritance");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Dragon(breatheBody: "return 14;")));
+
+        Assert.Contains(new CheckOutcome("new Dragon(\"Ember\", 30, 4).Breathe()", "8", "14"), result.Checks);
+        Assert.Contains(new CheckOutcome("new Dragon(\"Wisp\", 9, 0).Breathe()", "0", "14"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level14_BreatheIgnoringTheDoubling_ReportsExpectedAndObtained()
+    {
+        var level = Find("14-inheritance");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Dragon(breatheBody: "return fire;")));
+
+        Assert.Contains(new CheckOutcome("new Dragon(\"Smaug\", 50, 7).Breathe()", "14", "7"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level14_CopiedInsteadOfInherited_IsRejected()
+    {
+        var level = Find("14-inheritance");
+        var copied = Dragon(
+            header: "class Dragon",
+            baseCall: "",
+            extraMembers: "    public string Name { get; }\n    public int Health { get; }\n\n    public string Describe()\n    {\n        return Name + \" (\" + Health + \")\";\n    }\n")
+            .Replace("this.fire = fire;", "Name = name;\n        Health = health;\n        this.fire = fire;", StringComparison.Ordinal);
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, copied));
+
+        Assert.Contains(new CheckOutcome("new Dragon(\"Smaug\", 50, 7) is Creature", "true", "false"), result.Checks);
+        Assert.Contains(new CheckOutcome("typeof(Dragon).BaseType", "Creature", "Object"), result.Checks);
+        Assert.Contains(new CheckOutcome("Describe declared in", "Creature", "Dragon"), result.Checks);
+        Assert.Contains(new CheckOutcome("new Dragon(\"Smaug\", 50, 7).Describe()", "\"Smaug (50)\"", "\"Smaug (50)\""), result.Checks);
+    }
+
+    [Theory]
+    [InlineData("public new string Describe() { return Name + \" (\" + Health + \")\"; }", false)]
+    [InlineData("public override string Describe() { return Name + \" (\" + Health + \")\"; }", true)]
+    public async Task Level14_DescribeDeclaredAgainInDragon_IsRejected(string member, bool virtualInCreature)
+    {
+        var level = Find("14-inheritance");
+        var creature = virtualInCreature
+            ? CreatureClass.Replace("public string Describe", "public virtual string Describe", StringComparison.Ordinal)
+            : CreatureClass;
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Dragon(creature: creature, extraMembers: $"    {member}\n")));
+
+        Assert.Contains(new CheckOutcome("Describe declared in", "Creature", "Dragon"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level14_BaseCallWithWrongHealth_IsRejected()
+    {
+        var level = Find("14-inheritance");
+
+        var result = Assert.IsType<ChecksFailed>(await Run(level, Dragon(baseCall: " : base(name, 0)")));
+
+        Assert.Contains(new CheckOutcome("new Dragon(\"Smaug\", 50, 7).Describe()", "\"Smaug (50)\"", "\"Smaug (0)\""), result.Checks);
+        Assert.Contains(new CheckOutcome("new Dragon(\"Ember\", 30, 4).Health", "30", "0"), result.Checks);
+    }
+
+    [Fact]
+    public async Task Level14_MissingBaseCall_Explains()
+    {
+        var level = Find("14-inheritance");
+
+        var result = Assert.IsType<CompilationFailed>(await Run(level, Dragon(baseCall: "")));
+
+        Assert.NotEmpty(result.Errors);
+        Assert.All(result.Errors, error =>
+        {
+            Assert.Equal("Falta passar \"name\" ao construtor de \"Creature\": usa : base(...) no construtor de \"Dragon\".", error.Explanation!.Pt);
+            Assert.Equal("\"name\" must be passed to the constructor of \"Creature\": use : base(...) in the constructor of \"Dragon\".", error.Explanation.En);
+        });
+    }
 }

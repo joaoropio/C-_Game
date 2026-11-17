@@ -19,6 +19,7 @@ public sealed class GrimoireIconTests : BunitContext
     [InlineData("dictionaries", "cabinet")]
     [InlineData("classes", "slime")]
     [InlineData("constructors", "golem")]
+    [InlineData("inheritance", "dragon")]
     [InlineData("something-new", "book")]
     public void Icon_IsChosenByPageIdWithABookFallback(string pageId, string expectedKind)
     {

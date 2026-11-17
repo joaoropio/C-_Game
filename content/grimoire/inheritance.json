@@ -1,0 +1,29 @@
+{
+  "id": "inheritance",
+  "world": 3,
+  "title": { "pt": "Herança", "en": "Inheritance" },
+  "whatItIs": {
+    "pt": "Herança deixa uma classe aproveitar outra: class Dragon : Creature dá ao Dragon os membros públicos de Creature, e o Dragon só acrescenta o que é seu. A classe de cima chama-se base e a de baixo derivada; uma derivada é uma base (um Dragon é uma Creature), por isso pode ser usada onde se espera a base. A base inicializa os seus próprios dados, então o construtor da derivada passa-lhe os valores com : base(...). Sem essa chamada, a base tem de ter um construtor sem parâmetros. Cada classe só herda de uma outra.",
+    "en": "Inheritance lets a class reuse another: class Dragon : Creature gives Dragon the public members of Creature, and Dragon only adds what is its own. The upper class is called the base and the lower one the derived class; a derived class is a base (a Dragon is a Creature), so it can be used wherever the base is expected. The base initialises its own data, so the constructor of the derived class passes it the values with : base(...). Without that call, the base must have a parameterless constructor. A class can inherit from only one other class."
+  },
+  "syntax": {
+    "pt": "class Ferramenta\n{\n    public string Nome { get; }\n\n    public Ferramenta(string nome)\n    {\n        Nome = nome;\n    }\n}\n\nclass Martelo : Ferramenta\n{\n    public Martelo(string nome) : base(nome)\n    {\n    }\n}",
+    "en": "class Tool\n{\n    public string Label { get; }\n\n    public Tool(string label)\n    {\n        Label = label;\n    }\n}\n\nclass Hammer : Tool\n{\n    public Hammer(string label) : base(label)\n    {\n    }\n}"
+  },
+  "example": "class Tool\n{\n    public string Label { get; }\n\n    public Tool(string label)\n    {\n        Label = label;\n    }\n\n    public string Show()\n    {\n        return \"Tool \" + Label;\n    }\n}\n\nclass Hammer : Tool\n{\n    public int Weight { get; }\n\n    public Hammer(string label, int weight) : base(label)\n    {\n        Weight = weight;\n    }\n\n    public int Smash()\n    {\n        return Weight * 3;\n    }\n}\n\nclass Shed\n{\n    public string Check()\n    {\n        Hammer old = new Hammer(\"Old\", 4);\n        return old.Show() + \" \" + old.Smash();\n    }\n}",
+  "commonMistakes": [
+    {
+      "pt": "Esquecer o : base(...) quando a base tem um construtor com parâmetros: o compilador diz que falta um argumento ao construtor da base.",
+      "en": "Forgetting : base(...) when the base has a constructor with parameters: the compiler says an argument is missing for the constructor of the base."
+    },
+    {
+      "pt": "Copiar os membros da base para a derivada em vez de herdar: o código repete-se e a derivada deixa de ser uma base (is Creature dá false).",
+      "en": "Copying the members of the base into the derived class instead of inheriting: the code repeats itself and the derived class stops being a base (is Creature gives false)."
+    },
+    {
+      "pt": "Tentar usar na derivada um membro private da base: só os membros public (ou protected) passam para a derivada.",
+      "en": "Trying to use a private member of the base in the derived class: only public (or protected) members pass down to the derived class."
+    }
+  ],
+  "learnUrl": "https://learn.microsoft.com/dotnet/csharp/fundamentals/tutorials/inheritance"
+}

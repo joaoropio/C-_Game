@@ -1,0 +1,27 @@
+{
+  "id": "14-inheritance",
+  "world": 3,
+  "number": 14,
+  "title": { "pt": "O Dragão Bebé", "en": "The Baby Dragon" },
+  "story": {
+    "pt": "Num canto do Bestiário, um dragão bebé está sentado ao lado de um molde vazio de criatura. Todo o dragão é uma criatura: tem nome e vida e sabe descrever-se. Em vez de escreveres tudo outra vez, o dragão herda da criatura: class Dragon : Creature fica com os membros de Creature e só acrescenta o que é seu. Escreve class Creature com o construtor Creature(string name, int health), as propriedades Name e Health e o método string Describe(), que devolve o nome e a vida assim: \"Smaug (50)\". Depois escreve class Dragon : Creature com o construtor Dragon(string name, int health, int fire), que passa o nome e a vida à criatura com : base(name, health), e o método int Breathe(), que devolve o fogo a dobrar. Por exemplo, new Dragon(\"Smaug\", 50, 7) descreve-se como \"Smaug (50)\" e Breathe() dá 14. O Describe fica só na Creature: o dragão usa-o sem o escrever.",
+    "en": "In a corner of the Bestiary, a baby dragon sits beside an empty creature mould. Every dragon is a creature: it has a name and health and knows how to describe itself. Instead of writing it all again, the dragon inherits from the creature: class Dragon : Creature gets the members of Creature and only adds what is its own. Write class Creature with the constructor Creature(string name, int health), the properties Name and Health and the method string Describe(), which returns the name and the health like this: \"Smaug (50)\". Then write class Dragon : Creature with the constructor Dragon(string name, int health, int fire), which passes the name and the health to the creature with : base(name, health), and the method int Breathe(), which returns the fire doubled. For example, new Dragon(\"Smaug\", 50, 7) describes itself as \"Smaug (50)\" and Breathe() gives 14. Describe stays only in Creature: the dragon uses it without writing it."
+  },
+  "concept": {
+    "pt": "Herança: uma classe pode herdar de outra com dois pontos, class Dragon : Creature. A classe derivada (Dragon) recebe os membros públicos da classe base (Creature) e acrescenta os seus. Um Dragon é uma Creature, por isso new Dragon(...) is Creature é verdadeiro. A classe base trata dos seus próprios dados, então o construtor da derivada passa-lhe os valores com : base(...). Exemplo: class Tool { public string Label { get; } public Tool(string label) { Label = label; } public string Show() { return \"Tool \" + Label; } } class Hammer : Tool { public Hammer(string label) : base(label) { } } Depois, new Hammer(\"Old\").Show() dá \"Tool Old\", e Show só está escrito em Tool.",
+    "en": "Inheritance: a class can inherit from another with a colon, class Dragon : Creature. The derived class (Dragon) receives the public members of the base class (Creature) and adds its own. A Dragon is a Creature, so new Dragon(...) is Creature is true. The base class looks after its own data, so the constructor of the derived class passes it the values with : base(...). Example: class Tool { public string Label { get; } public Tool(string label) { Label = label; } public string Show() { return \"Tool \" + Label; } } class Hammer : Tool { public Hammer(string label) : base(label) { } } Then new Hammer(\"Old\").Show() gives \"Tool Old\", and Show is only written in Tool."
+  },
+  "hints": [
+    {
+      "pt": "Para herdar, escreve os dois pontos e o nome da base: class Dragon : Creature. Assim o Dragon já tem Name, Health e Describe, e não os repetes. Na Creature, guarda os valores no construtor (Name = name; e Health = health;) e usa-os em Describe.",
+      "en": "To inherit, write the colon and the name of the base: class Dragon : Creature. This way Dragon already has Name, Health and Describe, and you do not repeat them. In Creature, store the values in the constructor (Name = name; and Health = health;) and use them in Describe."
+    },
+    {
+      "pt": "O construtor do Dragon tem de passar o nome e a vida à Creature: public Dragon(string name, int health, int fire) : base(name, health) { ... }. O fogo é só do dragão: guarda-o num campo (private int fire; e this.fire = fire;) e Breathe devolve fire * 2. Para o texto do Describe, junta com +: Name + \" (\" + Health + \")\".",
+      "en": "The constructor of Dragon has to pass the name and the health to Creature: public Dragon(string name, int health, int fire) : base(name, health) { ... }. The fire only belongs to the dragon: keep it in a field (private int fire; and this.fire = fire;) and Breathe returns fire * 2. For the text of Describe, join with +: Name + \" (\" + Health + \")\"."
+    }
+  ],
+  "maxStatementsForThreeStars": 5,
+  "grimoirePageId": "inheritance",
+  "sceneLabel": { "pt": "Um dragão pequeno ao lado de um molde de criatura", "en": "A small dragon beside a creature mould" }
+}
