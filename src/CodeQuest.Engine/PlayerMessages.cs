@@ -112,6 +112,18 @@ internal static class PlayerMessages
         $"stackalloc não é permitido nesta masmorra (linha {line}).",
         $"stackalloc is not allowed in this dungeon (line {line}).");
 
+    public static LocalizedText StructTooBig(string name) => new(
+        $"A struct \"{name}\" é grande demais (mais de 1 KB) e rebentaria a pilha: usa uma class ou menos campos.",
+        $"The struct \"{name}\" is too big (over 1 KB) and would blow the stack: use a class or fewer fields.");
+
+    public static LocalizedText FrameTooBig(string method) => new(
+        $"O método \"{method}\" guarda demasiado na pilha (mais de 32 KB em structs): usa class ou menos variáveis.",
+        $"The method \"{method}\" keeps too much on the stack (over 32 KB of structs): use a class or fewer variables.");
+
+    public static readonly LocalizedText GenericsNotYet = new(
+        "Ainda não podes escrever genéricos (<T>): chegam no Mundo 4.",
+        "You can't write generics (<T>) yet: they arrive in World 4.");
+
     public static readonly LocalizedText TypesNotAllowed = new(
         "Ainda não podes criar tipos: escreve só métodos static.",
         "You can't create types yet: write only static methods.");
@@ -120,6 +132,18 @@ internal static class PlayerMessages
         "Para já só podes escrever métodos static, sem campos, propriedades nem construtores.",
         "For now you can only write static methods, not fields, properties or constructors.");
 
+    public static LocalizedText NotYetInThisWorld(string pt, string en) => new(
+        $"Ainda não podes escrever {pt} aqui.",
+        $"You can't write {en} here yet.");
+
+    public static readonly LocalizedText OnlyTypesAtFileLevel = new(
+        "Aqui só podes escrever classes (e outros tipos): põe o código dentro de uma classe.",
+        "Only classes (and other types) go here: put your code inside a class.");
+
+    public static LocalizedText StaticConstructorFailed(string type) => new(
+        $"O construtor static de \"{type}\" (ou o valor inicial de um campo static) lançou um erro.",
+        $"The static constructor of \"{type}\" (or a static field's initial value) threw an error.");
+
     public static LocalizedText AsyncNotAllowed(int line) => new(
         $"Ainda não podes usar async nesta masmorra (linha {line}).",
         $"You can't use async in this dungeon yet (line {line}).");
@@ -127,6 +151,146 @@ internal static class PlayerMessages
     public static LocalizedText ExternNotAllowed(int line) => new(
         $"Ainda não podes usar extern nesta masmorra (linha {line}).",
         $"You can't use extern in this dungeon yet (line {line}).");
+
+    public static LocalizedText MissingClass(string name) => new(
+        $"Falta a classe \"{name}\".",
+        $"The class \"{name}\" is missing.");
+
+    public static LocalizedText UnknownType(string name) => new(
+        $"Não existe nenhum tipo \"{name}\". Verifica o nome.",
+        $"There is no type \"{name}\". Check the name.");
+
+    public static LocalizedText NoConstructorForCount(string type, int count) => count == 1
+        ? new LocalizedText(
+            $"\"{type}\" não tem um construtor que receba 1 argumento.",
+            $"\"{type}\" has no constructor that takes 1 argument.")
+        : new LocalizedText(
+            $"\"{type}\" não tem um construtor que receba {count} argumentos.",
+            $"\"{type}\" has no constructor that takes {count} arguments.");
+
+    public static LocalizedText MissingConstructorArguments(string type, string parameter) => new(
+        $"Falta o valor de \"{parameter}\" ao criar \"{type}\".",
+        $"No value for \"{parameter}\" when creating \"{type}\".");
+
+    public static LocalizedText MissingBaseConstructorArgument(string parameter, string baseType, string derivedType) => new(
+        $"Falta passar \"{parameter}\" ao construtor de \"{baseType}\": usa : base(...) no construtor de \"{derivedType}\".",
+        $"\"{parameter}\" must be passed to the constructor of \"{baseType}\": use : base(...) in the constructor of \"{derivedType}\".");
+
+    public static LocalizedText NotPublic(string member, string type) => new(
+        $"\"{member}\" não é public, por isso não se pode usar aqui, fora da classe \"{type}\". Falta public?",
+        $"\"{member}\" isn't public, so it can't be used here, outside the class \"{type}\". Is public missing?");
+
+    public static LocalizedText BaseCallWithoutBaseClass(string type) => new(
+        $"\"{type}\" ainda não herda de nenhuma classe, por isso base(...) não tem para onde ir: acrescenta \": ClasseBase\" depois do nome.",
+        $"\"{type}\" doesn't inherit from any class yet, so base(...) has nowhere to go: add \": BaseClass\" after its name.");
+
+    public static LocalizedText SealedBase(string type) => new(
+        $"\"{type}\" não pode ser herdada (é sealed ou struct): usa uma class sem sealed como base.",
+        $"\"{type}\" can't be inherited from (it is sealed or a struct): use a class without sealed as the base.");
+
+    public static LocalizedText ConstructorNotPublic(string type) => new(
+        $"O construtor de \"{type}\" não é public, por isso new não o pode usar fora da classe. Põe public antes de {type}(...).",
+        $"The constructor of \"{type}\" isn't public, so new can't use it outside the class. Put public before {type}(...).");
+
+    public static LocalizedText ConstructorWithReturnType(string type) => new(
+        $"Um construtor não tem tipo de retorno: tira o void (ou o tipo) antes de \"{type}\".",
+        $"A constructor has no return type: remove the void (or the type) before \"{type}\".");
+
+    public static LocalizedText CannotAssignHere(string member) => new(
+        $"\"{member}\" não se pode mudar aqui: não tem set (ou o set é private).",
+        $"\"{member}\" can't be changed here: it has no set (or its set is private).");
+
+    public static LocalizedText CannotAssignFromOutside(string member) => new(
+        $"\"{member}\" não se pode mudar de fora da classe (o set é private ou não existe).",
+        $"\"{member}\" can't be changed from outside the class (its set is private or missing).");
+
+    public static LocalizedText NothingToOverride(string name) => new(
+        $"Não há nenhum \"{name}\" na classe base para substituir: verifica o nome, os parâmetros e se a classe herda da base (\": Base\").",
+        $"There is no \"{name}\" in the base class to override: check the name, the parameters and that the class inherits from the base (\": Base\").");
+
+    public static LocalizedText NotOverridable(string name) => new(
+        $"\"{name}\" na classe base não é virtual nem abstract, por isso não se pode fazer override.",
+        $"\"{name}\" in the base class is neither virtual nor abstract, so it can't be overridden.");
+
+    public static LocalizedText VirtualNotPublic(string name) => new(
+        $"\"{name}\" é virtual, abstract ou override, por isso tem de ser public.",
+        $"\"{name}\" is virtual, abstract or override, so it must be public.");
+
+    public static LocalizedText OverrideChangesAccess(string name, string access) => new(
+        $"O override de \"{name}\" tem de ter o mesmo acesso que o da classe base ({access}).",
+        $"The override of \"{name}\" must have the same access as in the base class ({access}).");
+
+    public static LocalizedText MissingImplementation(string type, string member, string required) => new(
+        $"\"{type}\" ainda não implementa \"{member}\" (pedido por \"{required}\").",
+        $"\"{type}\" doesn't implement \"{member}\" yet (required by \"{required}\").");
+
+    public static LocalizedText InterfaceMemberNotPublic(string name) => new(
+        $"\"{name}\" vem de uma interface, por isso tem de ser public.",
+        $"\"{name}\" comes from an interface, so it must be public.");
+
+    public static LocalizedText AbstractInNonAbstractClass(string name, string type) => new(
+        $"\"{name}\" é abstract, por isso \"{type}\" também tem de ser: escreve abstract class {type}.",
+        $"\"{name}\" is abstract, so \"{type}\" must be abstract too: write abstract class {type}.");
+
+    public static LocalizedText MissingBody(string name) => new(
+        $"\"{name}\" não tem corpo: escreve {{ ... }} ou, numa classe abstract, marca-o com abstract.",
+        $"\"{name}\" has no body: write {{ ... }} or, in an abstract class, mark it abstract.");
+
+    public static LocalizedText SecondBaseClass(string name) => new(
+        $"Uma classe só herda de uma base, e \"{name}\" é uma classe: para a pôr a seguir à base, \"{name}\" tem de ser uma interface.",
+        $"A class inherits from a single base, and \"{name}\" is a class: to list it after the base, \"{name}\" must be an interface.");
+
+    public static LocalizedText BaseClassNotFirst(string list) => new(
+        $"A classe base vem primeiro e só depois as interfaces: escreve \": {list}\".",
+        $"The base class comes first, then the interfaces: write \": {list}\".");
+
+    public static LocalizedText AbstractInstance(string type) => new(
+        $"Não se pode fazer new de \"{type}\": é abstrata (ou uma interface).",
+        $"You can't use new on \"{type}\": it is abstract (or an interface).");
+
+    public static LocalizedText InstanceMemberInStaticMember(string name) => new(
+        $"\"{name}\" pertence a cada objeto: um membro static não lhe pode aceder sem um objeto (ou \"{name}\" tem de ser static).",
+        $"\"{name}\" belongs to each object: a static member can't use it without an object (or make \"{name}\" static).");
+
+    public static LocalizedText MissingStaticMember(string name) => new(
+        $"Falta static em \"{name}\".",
+        $"\"{name}\" needs to be static.");
+
+    public static LocalizedText StaticMemberViaInstance(string name) => new(
+        $"\"{name}\" é static: pertence à classe e não a cada objeto. Tira o static.",
+        $"\"{name}\" is static: it belongs to the class, not to each object. Remove the static.");
+
+    public static LocalizedText StaticMemberViaInstanceByName(string type, string name) => new(
+        $"\"{name}\" é static: usa-o pelo nome da classe (\"{type}.{name}\") e não por um objeto, ou tira o static.",
+        $"\"{name}\" is static: use it through the class name (\"{type}.{name}\"), not through an object, or remove the static.");
+
+    public static LocalizedText EnumMemberViaValue(string enumName, string value) => new(
+        $"\"{value}\" é um valor do enum \"{enumName}\": escreve {enumName}.{value} e não uma variável seguida de .{value}.",
+        $"\"{value}\" is a value of the enum \"{enumName}\": write {enumName}.{value}, not a variable followed by .{value}.");
+
+    public static LocalizedText StaticClassInstance(string name) => new(
+        $"\"{name}\" é static: não se cria com new; chama os seus métodos pelo nome da classe ({name}.Método(...)).",
+        $"\"{name}\" is static: you don't create it with new; call its methods through the class name ({name}.Method(...)).");
+
+    public static LocalizedText StaticClassVariable(string name) => new(
+        $"\"{name}\" é static: não se declaram variáveis desse tipo; usa {name}.Método(...) diretamente.",
+        $"\"{name}\" is static: you can't declare variables of that type; use {name}.Method(...) directly.");
+
+    public static LocalizedText EnumComparedWithText(string enumName, string member) => new(
+        $"\"{enumName}\" é um enum, não um texto: compara com {enumName}.{member}.",
+        $"\"{enumName}\" is an enum, not a text: compare it with {enumName}.{member}.");
+
+    public static LocalizedText EnumComparedWithText(string enumName) => new(
+        $"\"{enumName}\" é um enum, não um texto: compara com um dos valores do enum.",
+        $"\"{enumName}\" is an enum, not a text: compare it with one of the values of the enum.");
+
+    public static readonly LocalizedText StructInitializerWithoutConstructor = new(
+        "Numa struct sem construtor os campos não podem ter valor inicial: tira o \"= ...\" ou escreve um construtor.",
+        "In a struct without a constructor the fields can't have an initial value: remove the \"= ...\" or write a constructor.");
+
+    public static LocalizedText MemberInStaticClass(string name) => new(
+        $"\"{name}\" está numa classe static, por isso também tem de ser static.",
+        $"\"{name}\" is in a static class, so it has to be static too.");
 
     public static readonly LocalizedText DividedByZero = new(
         "Dividiste por zero.",

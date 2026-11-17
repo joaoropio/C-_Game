@@ -1,0 +1,29 @@
+{
+  "id": "static-enum-struct",
+  "world": 3,
+  "title": { "pt": "static, enum e struct", "en": "static, enum and struct" },
+  "whatItIs": {
+    "pt": "Um enum é um conjunto fixo de nomes (enum Dia { Seg, Ter, Qua }), usado como Dia.Seg: troca números e textos soltos por valores com nome, que o compilador confere. Uma struct é um tipo de valor: como uma classe, tem campos e métodos, mas ao copiá-la (var b = a;) fica-se com uma cópia independente, e mudar b não muda a. Numa class a cópia aponta para o mesmo objeto. Usa struct para pequenos pacotes de dados. Um membro static pertence à classe, não a cada objeto: usa-se pelo nome da classe (Calc.Soma(1, 2)), sem new, e partilha-se por todos. Uma static class só pode ter membros static e não se pode instanciar; serve de caixa de ferramentas.",
+    "en": "An enum is a fixed set of names (enum Day { Mon, Tue, Wed }), used as Day.Mon: it replaces loose numbers and texts with named values that the compiler checks. A struct is a value type: like a class it has fields and methods, but copying it (var b = a;) gives an independent copy, and changing b does not change a. With a class the copy points to the same object. Use a struct for small packages of data. A static member belongs to the class, not to each object: you use it through the class name (Calc.Sum(1, 2)), without new, and it is shared by everyone. A static class can only have static members and cannot be instantiated; it works as a toolbox."
+  },
+  "syntax": {
+    "pt": "enum Dia\n{\n    Seg,\n    Ter,\n    Qua,\n}\n\nstruct Ponto\n{\n    public int X;\n    public int Y;\n}\n\nstatic class Calc\n{\n    public static int Soma(int a, int b)\n    {\n        return a + b;\n    }\n}\n\n// Ponto p = new Ponto { X = 1 }; Ponto q = p; q.X = 5;  (p.X continua 1)\n// Dia d = Dia.Ter;  Calc.Soma(1, 2)",
+    "en": "enum Day\n{\n    Mon,\n    Tue,\n    Wed,\n}\n\nstruct Point\n{\n    public int X;\n    public int Y;\n}\n\nstatic class Calc\n{\n    public static int Sum(int a, int b)\n    {\n        return a + b;\n    }\n}\n\n// Point p = new Point { X = 1 }; Point q = p; q.X = 5;  (p.X is still 1)\n// Day d = Day.Tue;  Calc.Sum(1, 2)"
+  },
+  "example": "enum Potion\n{\n    Small,\n    Large,\n}\n\nstruct Flask\n{\n    public Potion Kind;\n    public int Doses;\n}\n\nstatic class Alchemy\n{\n    public static int Doses(Flask[] flasks)\n    {\n        int doses = 0;\n        foreach (Flask flask in flasks)\n        {\n            doses += flask.Doses;\n        }\n\n        return doses;\n    }\n}\n\nclass Shelf\n{\n    public int Count()\n    {\n        Flask a = new Flask { Kind = Potion.Small, Doses = 2 };\n        Flask b = a;\n        b.Doses = 9;\n        return Alchemy.Doses([a, b]);\n    }\n}",
+  "commonMistakes": [
+    {
+      "pt": "Chamar um método static por um objeto (new Smith().Hit(2), com static int Hit(int n) numa class Smith): o compilador recusa. Usa o nome da classe: Smith.Hit(2). Uma static class nem sequer se pode criar com new.",
+      "en": "Calling a static method through an object (new Smith().Hit(2), with static int Hit(int n) in a class Smith): the compiler refuses. Use the class name: Smith.Hit(2). A static class cannot even be created with new."
+    },
+    {
+      "pt": "Esquecer o static num membro de uma static class: todos os membros de uma static class têm de ser static.",
+      "en": "Forgetting static on a member of a static class: every member of a static class must be static."
+    },
+    {
+      "pt": "Esperar que a cópia de uma struct mude o original: cada variável tem o seu valor. Para mudar o original, muda-se o original (ou usa-se uma class).",
+      "en": "Expecting the copy of a struct to change the original: each variable has its own value. To change the original, change the original (or use a class)."
+    }
+  ],
+  "learnUrl": "https://learn.microsoft.com/dotnet/csharp/fundamentals/types/structs"
+}

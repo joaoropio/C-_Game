@@ -1,0 +1,27 @@
+{
+  "id": "12-classes",
+  "world": 3,
+  "number": 12,
+  "title": { "pt": "O Frasco do Bestiário", "en": "The Bestiary Jar" },
+  "story": {
+    "pt": "No Bestiário Encantado, uma slime dorme dentro de um frasco de vidro. Para a descreveres, precisas de uma classe: um molde que diz o que cada slime tem (campos) e o que sabe fazer (métodos). Cada slime criada com new é um objeto com a sua própria cópia dos campos. Escreve class Slime com dois campos públicos, string Name e int Health, um método void Hit(int damage), que tira vida (nunca abaixo de 0), e um método bool IsAlive(), que diz se a slime ainda tem vida (Health maior que 0). Por exemplo, uma slime com 10 de vida fica com 7 depois de Hit(3) e com 0 depois de Hit(20). E duas slimes são independentes: atingir uma não mexe na vida da outra.",
+    "en": "In the Enchanted Bestiary, a slime sleeps inside a glass jar. To describe it you need a class: a mould that says what every slime has (fields) and what it can do (methods). Each slime created with new is an object with its own copy of the fields. Write class Slime with two public fields, string Name and int Health, a method void Hit(int damage), which takes away health (never below 0), and a method bool IsAlive(), which tells whether the slime still has health (Health greater than 0). For example, a slime with 10 health has 7 after Hit(3) and 0 after Hit(20). And two slimes are independent: hitting one does not change the other's health."
+  },
+  "concept": {
+    "pt": "Uma classe é um molde: descreve os dados (campos) e as ações (métodos) de uma coisa. new Torch() cria um objeto a partir do molde, e cada objeto tem os seus próprios valores. Exemplo: class Torch { public int Fuel; public void Burn() { Fuel = Fuel - 1; } } Depois, Torch lamp = new Torch(); lamp.Fuel = 5; lamp.Burn(); deixa lamp.Fuel com 4, sem mexer em nenhuma outra tocha. O ponto entra no objeto: lamp.Fuel lê o campo e lamp.Burn() chama o método. Um membro public vê-se de fora da classe; sem public, é privado.",
+    "en": "A class is a mould: it describes the data (fields) and the actions (methods) of a thing. new Torch() creates an object from the mould, and each object has its own values. Example: class Torch { public int Fuel; public void Burn() { Fuel = Fuel - 1; } } Then, Torch lamp = new Torch(); lamp.Fuel = 5; lamp.Burn(); leaves lamp.Fuel at 4, without touching any other torch. The dot goes inside the object: lamp.Fuel reads the field and lamp.Burn() calls the method. A public member can be seen from outside the class; without public, it is private."
+  },
+  "hints": [
+    {
+      "pt": "Começa com class Slime { } e, lá dentro, declara os campos: public string Name; e public int Health; Sem public, o campo é privado e ninguém de fora o consegue usar.",
+      "en": "Start with class Slime { } and, inside it, declare the fields: public string Name; and public int Health; Without public, the field is private and nobody outside can use it."
+    },
+    {
+      "pt": "Os métodos também ficam dentro da classe, sem static. Em Hit, tira o dano: Health -= damage; e, se Health ficar abaixo de 0, põe-o a 0. IsAlive devolve a comparação: return Health > 0;",
+      "en": "The methods also go inside the class, without static. In Hit, take the damage off: Health -= damage; and, if Health drops below 0, set it to 0. IsAlive returns the comparison: return Health > 0;"
+    }
+  ],
+  "maxStatementsForThreeStars": 4,
+  "grimoirePageId": "classes",
+  "sceneLabel": { "pt": "Uma slime dentro de um frasco de vidro", "en": "A slime inside a glass jar" }
+}

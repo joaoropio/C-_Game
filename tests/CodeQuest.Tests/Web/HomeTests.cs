@@ -172,10 +172,10 @@ public sealed class HomeTests : BunitContext
             progress.RecordPass(level.Id, stars: 3);
         }
 
-        var cut = await RenderTwoWorldsAsync(progress);
+        var cut = await RenderMapAsync(progress);
 
         var worlds = cut.FindAll("section.world");
-        Assert.Equal(2, worlds.Count);
+        Assert.Equal(Content.Levels.Select(level => level.World).Distinct().Count(), worlds.Count);
         Assert.Single(worlds[0].QuerySelectorAll("path.trail"));
         Assert.Empty(worlds[1].QuerySelectorAll("path.trail"));
         Assert.NotEmpty(worlds[1].QuerySelectorAll("li.room"));
@@ -191,14 +191,14 @@ public sealed class HomeTests : BunitContext
             progress.RecordPass(level.Id, stars: 3);
         }
 
-        var cut = await RenderTwoWorldsAsync(progress);
+        var cut = await RenderMapAsync(progress);
 
         var second = cut.FindAll("section.world")[1];
         Assert.Empty(second.QuerySelectorAll("path.trail"));
         Assert.Single(second.QuerySelectorAll("li.room.current"));
     }
 
-    private async Task<IRenderedComponent<Home>> RenderTwoWorldsAsync(PlayerProgress progress, Language language = Language.Pt)
+    private async Task<IRenderedComponent<Home>> RenderMapAsync(PlayerProgress progress, Language language = Language.Pt)
     {
         this.AddGameServices(savedProgress: progress.ToJson());
         await Services.GetRequiredService<ProgressStore>().LoadAsync();
@@ -209,7 +209,7 @@ public sealed class HomeTests : BunitContext
     [Fact]
     public async Task Home_RoomNumbers_RestartInEachWorld()
     {
-        var cut = await RenderTwoWorldsAsync(new PlayerProgress());
+        var cut = await RenderMapAsync(new PlayerProgress());
 
         var worlds = cut.FindAll("section.world");
         Assert.Equal(6, worlds[0].QuerySelectorAll("li.room").Length);
@@ -222,10 +222,10 @@ public sealed class HomeTests : BunitContext
     [Fact]
     public async Task Home_SecondWorld_IsASecondFloorBelowTheFirst()
     {
-        var cut = await RenderTwoWorldsAsync(new PlayerProgress());
+        var cut = await RenderMapAsync(new PlayerProgress());
 
         var worlds = cut.FindAll("section.world");
-        Assert.Equal(2, worlds.Count);
+        Assert.Equal(Content.Levels.Select(level => level.World).Distinct().Count(), worlds.Count);
         Assert.Equal("Mundo 1 · Primeiro andar", worlds[0].QuerySelector(".world-floor")!.TextContent);
         Assert.Equal("As Fundações", worlds[0].QuerySelector("h2.world-name")!.TextContent);
         Assert.Equal("Mundo 2 · Segundo andar", worlds[1].QuerySelector(".world-floor")!.TextContent);
@@ -241,7 +241,7 @@ public sealed class HomeTests : BunitContext
             progress.RecordPass(level.Id, stars: 3);
         }
 
-        var cut = await RenderTwoWorldsAsync(progress);
+        var cut = await RenderMapAsync(progress);
 
         var second = cut.FindAll("section.world")[1];
         Assert.NotEmpty(second.QuerySelectorAll("li.room"));
@@ -258,7 +258,7 @@ public sealed class HomeTests : BunitContext
             progress.RecordPass(level.Id, stars: 3);
         }
 
-        var cut = await RenderTwoWorldsAsync(progress);
+        var cut = await RenderMapAsync(progress);
 
         var worlds = cut.FindAll("section.world");
         Assert.Empty(worlds[0].QuerySelectorAll("li.room.current"));
@@ -278,33 +278,35 @@ public sealed class HomeTests : BunitContext
             progress.RecordPass(level.Id, stars: 1);
         }
 
-        var cut = await RenderTwoWorldsAsync(progress);
+        var cut = await RenderMapAsync(progress);
 
         var totals = cut.FindAll(".world-stars").Select(element => element.TextContent.Trim()).ToArray();
-        var secondWorldLevels = Content.Levels.Count(level => level.World == 2);
-        Assert.Equal([$"7 de {WorldOneRooms * 3} estrelas", $"0 de {secondWorldLevels * 3} estrelas"], totals);
+        var untouchedWorlds = Content.Levels.GroupBy(level => level.World).Skip(1).Select(world => $"0 de {world.Count() * 3} estrelas");
+        Assert.Equal([$"7 de {WorldOneRooms * 3} estrelas", .. untouchedWorlds], totals);
     }
 
     [Fact]
     public async Task Home_NextWorldTeaser_AppearsOnlyAfterTheLastWorld()
     {
-        var cut = await RenderTwoWorldsAsync(new PlayerProgress());
+        var cut = await RenderMapAsync(new PlayerProgress());
 
         var worlds = cut.FindAll("section.world");
-        Assert.Empty(worlds[0].QuerySelectorAll(".next-world"));
-        Assert.Contains("Mundo 3 · Classes e objetos — em breve", worlds[1].QuerySelector(".next-world")!.TextContent);
+        Assert.All(worlds.SkipLast(1), world => Assert.Empty(world.QuerySelectorAll(".next-world")));
+        Assert.Contains("Mundo 4 · Genéricos, lambdas e LINQ — em breve", worlds.Last().QuerySelector(".next-world")!.TextContent);
     }
 
     [Fact]
-    public async Task Home_TwoWorlds_EnglishFloorAndWorldNames()
+    public async Task Home_English_FloorAndWorldNames()
     {
-        var cut = await RenderTwoWorldsAsync(new PlayerProgress(), Language.En);
+        var cut = await RenderMapAsync(new PlayerProgress(), Language.En);
 
         var worlds = cut.FindAll("section.world");
         Assert.Equal("World 1 · First floor", worlds[0].QuerySelector(".world-floor")!.TextContent);
         Assert.Equal("World 2 · Second floor", worlds[1].QuerySelector(".world-floor")!.TextContent);
         Assert.Equal("The Arcane Library", worlds[1].QuerySelector("h2.world-name")!.TextContent);
-        Assert.Contains("World 3 · Classes and objects — coming soon", worlds[1].QuerySelector(".next-world")!.TextContent);
+        Assert.Equal("World 3 · Third floor", worlds[2].QuerySelector(".world-floor")!.TextContent);
+        Assert.Equal("The Enchanted Bestiary", worlds[2].QuerySelector("h2.world-name")!.TextContent);
+        Assert.Contains("World 4 · Generics, lambdas and LINQ — coming soon", worlds.Last().QuerySelector(".next-world")!.TextContent);
     }
 
     [Fact]
@@ -340,5 +342,17 @@ public sealed class HomeTests : BunitContext
         await Services.GetRequiredService<ProgressStore>().LoadAsync();
 
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll("li.room")));
+    }
+
+    [Fact]
+    public async Task Home_ThirdWorld_IsAThirdFloorWithItsOwnNumbering()
+    {
+        var cut = await RenderMapAsync(new PlayerProgress());
+
+        var third = cut.FindAll("section.world")[2];
+        Assert.Equal("Mundo 3 · Terceiro andar", third.QuerySelector(".world-floor")!.TextContent);
+        Assert.Equal("O Bestiário Encantado", third.QuerySelector("h2.world-name")!.TextContent);
+        Assert.StartsWith("3-1", third.QuerySelectorAll(".room-number")[0].TextContent);
+        Assert.Equal(third.QuerySelectorAll("li.room").Length, third.QuerySelectorAll("li.room.locked").Length);
     }
 }

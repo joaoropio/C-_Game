@@ -1,0 +1,27 @@
+{
+  "id": "13-constructors",
+  "world": 3,
+  "number": 13,
+  "title": { "pt": "O Golem de Pedra", "en": "The Stone Golem" },
+  "story": {
+    "pt": "No fundo do Bestiário, um golem de pedra espera que o acordes. Um golem nasce com um nome e uma placa de armadura, por isso precisa de um construtor: um método especial, com o nome da classe e sem tipo de retorno, que corre quando escreves new e deixa o objeto pronto. Escreve class Golem com o construtor Golem(string name, int armor), que guarda o nome e a armadura (uma armadura negativa fica a 0). O nome é uma propriedade string Name { get; }, que só se lê, e a armadura é int Armor { get; private set; }: qualquer um a lê, mas só o próprio golem a muda. Falta o método void Crack(), que tira 1 à armadura sem nunca a deixar abaixo de 0. Por exemplo, new Golem(\"Rocky\", 3) tem Armor 3, e fica com 0 depois de quatro Crack(). Um golem com armadura -2 começa com 0.",
+    "en": "Deep in the Bestiary, a stone golem waits for you to wake it. A golem is born with a name and an armour plate, so it needs a constructor: a special method, named after the class and with no return type, that runs when you write new and leaves the object ready. Write class Golem with the constructor Golem(string name, int armor), which stores the name and the armour (a negative armour becomes 0). The name is a string Name { get; } property, which can only be read, and the armour is int Armor { get; private set; }: anyone can read it, but only the golem itself can change it. The method void Crack() is still missing: it takes 1 off the armour and never lets it drop below 0. For example, new Golem(\"Rocky\", 3) has Armor 3, and 0 after four Crack() calls. A golem with armour -2 starts at 0."
+  },
+  "concept": {
+    "pt": "Um construtor prepara o objeto quando o crias com new: tem o nome da classe, não tem tipo de retorno e recebe os valores iniciais. Uma propriedade é um campo com porta: { get; } só se lê e { get; private set; } lê-se de fora mas só muda por dentro da classe. Assim a classe protege os seus dados (encapsulamento). Exemplo: class Lantern { public int Oil { get; private set; } public Lantern(int oil) { Oil = Math.Max(1, oil); } public void Burn() { Oil = Oil - 1; } } Depois, new Lantern(5) tem Oil 5, new Lantern(0) começa com 1 (o construtor garante pelo menos 1), e lamp.Oil = 9; de fora é um erro: o set é private.",
+    "en": "A constructor prepares the object when you create it with new: it has the name of the class, no return type, and receives the starting values. A property is a field with a gate: { get; } can only be read, and { get; private set; } can be read from outside but only changed from inside the class. This way the class protects its data (encapsulation). Example: class Lantern { public int Oil { get; private set; } public Lantern(int oil) { Oil = Math.Max(1, oil); } public void Burn() { Oil = Oil - 1; } } Then new Lantern(5) has Oil 5, new Lantern(0) starts at 1 (the constructor guarantees at least 1), and lamp.Oil = 9; from outside is an error: the set is private."
+  },
+  "hints": [
+    {
+      "pt": "O construtor tem o nome da classe e leva public, mas não tem tipo de retorno: public Golem(string name, int armor) { ... }. Lá dentro, guarda os valores nas propriedades: Name = name; e Armor = armor; (as propriedades declaram-se com public string Name { get; } e public int Armor { get; private set; }).",
+      "en": "The constructor has the name of the class and takes public, but has no return type: public Golem(string name, int armor) { ... }. Inside, store the values in the properties: Name = name; and Armor = armor; (the properties are declared with public string Name { get; } and public int Armor { get; private set; })."
+    },
+    {
+      "pt": "No construtor, se armor for menor que 0, a armadura fica a 0: Armor = armor < 0 ? 0 : armor; Em Crack, só tiras se ainda houver armadura: if (Armor > 0) { Armor--; } Lembra-te do public no método Crack.",
+      "en": "In the constructor, if armor is less than 0, the armour becomes 0: Armor = armor < 0 ? 0 : armor; In Crack, only take some off if there is still armour: if (Armor > 0) { Armor--; } Remember the public on the Crack method."
+    }
+  ],
+  "maxStatementsForThreeStars": 4,
+  "grimoirePageId": "constructors",
+  "sceneLabel": { "pt": "Um golem de pedra com uma placa de armadura", "en": "A stone golem with an armour plate" }
+}

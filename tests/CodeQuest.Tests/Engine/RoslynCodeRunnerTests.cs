@@ -194,6 +194,35 @@ public class RoslynCodeRunnerTests
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => Run("return x;", "public static class Validation { public static int Run() => 0; }"));
 
+
+    // A type the runtime cannot load (here a struct of about 1 GB declared by the validation, never instantiated)
+    // makes Assembly.GetTypes throw; the run must still end in a result, never in an exception out of RunAsync.
+    [Fact]
+    public async Task Run_AssemblyHasATypeThatCannotLoad_RuntimeErrorInsteadOfAnException()
+    {
+        const string unloadable = """
+            struct L0 { public long a, b, c, d, e, f, g, h; }
+            struct L1 { public L0 a, b, c, d, e, f, g, h; }
+            struct L2 { public L1 a, b, c, d, e, f, g, h; }
+            struct L3 { public L2 a, b, c, d, e, f, g, h; }
+            struct L4 { public L3 a, b, c, d, e, f, g, h; }
+            struct L5 { public L4 a, b, c, d, e, f, g, h; }
+            struct L6 { public L5 a, b, c, d, e, f, g, h; }
+            struct L7 { public L6 a, b, c, d, e, f, g, h; }
+            struct L8 { public L7 a, b, c, d, e, f, g, h; }
+            public static class Validation
+            {
+                public static System.Collections.Generic.IEnumerable<(string Case, string Expected, string Actual)> Run()
+                {
+                    yield return ("x", "1", "1");
+                }
+            }
+            """;
+
+        var result = Assert.IsType<RuntimeError>(await Run("return x;", unloadable));
+
+        Assert.Equal("The spell failed while running.", result.Explanation.En);
+    }
     [Fact]
     public async Task Run_ExceptionInsideValidationRun_RuntimeError()
     {

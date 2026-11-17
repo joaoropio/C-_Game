@@ -1,0 +1,27 @@
+{
+  "id": "15-polymorphism",
+  "world": 3,
+  "number": 15,
+  "title": { "pt": "O Coro das Criaturas", "en": "The Chorus of Creatures" },
+  "story": {
+    "pt": "Numa galeria do Bestiário, um gato e uma coruja estão em frente a um coro de criaturas, e o mago quer que todas falem de uma vez. Ele só tem uma lista de Creature, mas cada criatura deve falar à sua maneira: a criatura base diz \"...\", o gato diz \"Meow\" e a coruja diz \"Hoot\". Isso resolve-se com polimorfismo: a base marca o método como virtual e cada derivada refá-lo com override. Escreve class Creature com o método public virtual string Speak(), que devolve \"...\". Depois escreve class Cat : Creature e class Owl : Creature, cada uma com public override string Speak(): o gato devolve \"Meow\" e a coruja devolve \"Hoot\". Por exemplo, em Creature[] creatures = { new Creature(), new Cat(), new Owl() }, chamar creatures[1].Speak() dá \"Meow\", mesmo que a referência seja uma Creature. Sem override, o Speak do gato só esconde o da base e, pela referência Creature, o gato diz \"...\".",
+    "en": "In a gallery of the Bestiary, a cat and an owl stand in front of a chorus of creatures, and the mage wants every one of them to speak at once. He only has a list of Creature, but each creature has to speak in its own way: the base creature says \"...\", the cat says \"Meow\" and the owl says \"Hoot\". That is solved with polymorphism: the base marks the method as virtual and each derived class redoes it with override. Write class Creature with the method public virtual string Speak(), which returns \"...\". Then write class Cat : Creature and class Owl : Creature, each with public override string Speak(): the cat returns \"Meow\" and the owl returns \"Hoot\". For example, in Creature[] creatures = { new Creature(), new Cat(), new Owl() }, calling creatures[1].Speak() gives \"Meow\", even though the reference is a Creature. Without override, the Speak of the cat only hides the one in the base and, through the Creature reference, the cat says \"...\"."
+  },
+  "concept": {
+    "pt": "Polimorfismo: uma referência da classe base pode apontar para um objeto de uma derivada, e a chamada corre o método da derivada. Para isso, a base declara o método com virtual e a derivada refá-lo com override. Exemplo: class Lamp { public virtual string Glow() { return \"dim\"; } } class Torch : Lamp { public override string Glow() { return \"flame\"; } } Depois, Lamp lamp = new Torch(); lamp.Glow() dá \"flame\", e não \"dim\". Sem virtual não se pode fazer override (erro) e, sem a palavra override, o método da derivada só esconde o da base: pela referência Lamp, a chamada continua a dar \"dim\".",
+    "en": "Polymorphism: a reference of the base class can point to an object of a derived class, and the call runs the method of the derived class. For that, the base declares the method with virtual and the derived class redoes it with override. Example: class Lamp { public virtual string Glow() { return \"dim\"; } } class Torch : Lamp { public override string Glow() { return \"flame\"; } } Then Lamp lamp = new Torch(); lamp.Glow() gives \"flame\", not \"dim\". Without virtual you cannot override (an error) and, without the word override, the method of the derived class only hides the one in the base: through the Lamp reference, the call still gives \"dim\"."
+  },
+  "hints": [
+    {
+      "pt": "Na Creature, escreve public virtual string Speak() e devolve \"...\". Na Cat e na Owl, herda com : Creature e escreve public override string Speak() com a fala de cada uma. O virtual abre a porta, o override entra por ela.",
+      "en": "In Creature, write public virtual string Speak() and return \"...\". In Cat and Owl, inherit with : Creature and write public override string Speak() with the speech of each one. The virtual opens the door, the override goes through it."
+    },
+    {
+      "pt": "As três classes ficam assim: class Creature { public virtual string Speak() { return \"...\"; } } e class Cat : Creature { public override string Speak() { return \"Meow\"; } }. A Owl é igual à Cat, mas devolve \"Hoot\". Não uses if com is Cat dentro da Creature: cada classe fala por si, com o seu override.",
+      "en": "The three classes look like this: class Creature { public virtual string Speak() { return \"...\"; } } and class Cat : Creature { public override string Speak() { return \"Meow\"; } }. Owl is like Cat, but returns \"Hoot\". Do not use an if with is Cat inside Creature: each class speaks for itself, with its own override."
+    }
+  ],
+  "maxStatementsForThreeStars": 3,
+  "grimoirePageId": "polymorphism",
+  "sceneLabel": { "pt": "Um gato e uma coruja em frente a um coro de criaturas", "en": "A cat and an owl in front of a chorus of creatures" }
+}

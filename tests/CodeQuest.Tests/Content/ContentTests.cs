@@ -50,6 +50,8 @@ public class ContentTests
         }
         """;
 
+    private const string FileScopeTemplate = "// {{PLAYER_CODE}}";
+
     private static readonly string ContentDirectory = Path.Combine(AppContext.BaseDirectory, "content");
 
     private static readonly IReadOnlyList<GrimoirePage> Pages =
@@ -114,6 +116,16 @@ public class ContentTests
             }));
     }
 
+    [Theory]
+    [InlineData(Language.Pt, "Mundo 3 · Terceiro andar", "O Bestiário Encantado", "Mundo 4 · Genéricos, lambdas e LINQ — em breve")]
+    [InlineData(Language.En, "World 3 · Third floor", "The Enchanted Bestiary", "World 4 · Generics, lambdas and LINQ — coming soon")]
+    public void ThirdFloorTexts_AreThePlannedOnes(Language language, string floor, string world, string teaser)
+    {
+        Assert.Equal(floor, Ui.Get("map.floor.3", language));
+        Assert.Equal(world, Ui.Get("map.world.3", language));
+        Assert.Equal(teaser, Ui.Get("map.nextWorldSoon", language));
+    }
+
     [Fact]
     public void EveryLevel_HasASafeDecorativeSceneAndALocalizedLabel()
     {
@@ -175,9 +187,12 @@ public class ContentTests
     public async Task EveryPage_ExampleCompiles(string id)
     {
         var page = Find(id);
-        var request = page.World >= 2
-            ? new RunRequest(ClassScopeTemplate, page.Example, NestedEmptyValidation)
-            : new RunRequest(NeutralTemplate, page.Example, EmptyValidation);
+        var request = page.World switch
+        {
+            >= 3 => new RunRequest(FileScopeTemplate, page.Example, EmptyValidation),
+            2 => new RunRequest(ClassScopeTemplate, page.Example, NestedEmptyValidation),
+            _ => new RunRequest(NeutralTemplate, page.Example, EmptyValidation),
+        };
 
         var result = await new RoslynCodeRunner().RunAsync(request, Language.En, CancellationToken.None);
 

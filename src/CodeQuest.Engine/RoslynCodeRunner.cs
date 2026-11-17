@@ -33,7 +33,7 @@ public sealed class RoslynCodeRunner : ICodeRunner
         }
 
         var execution = Task.Factory.StartNew(
-            () => Execute(outcome, request.PlayerCode, PlayerScope.IsClassScope(request.Template)),
+            () => Execute(outcome, request.PlayerCode),
             CancellationToken.None,
             TaskCreationOptions.LongRunning,
             TaskScheduler.Default);
@@ -47,7 +47,7 @@ public sealed class RoslynCodeRunner : ICodeRunner
         }
     }
 
-    private static RunResult Execute(CompileOutcome outcome, string playerCode, bool atClassScope)
+    private static RunResult Execute(CompileOutcome outcome, string playerCode)
     {
         var context = new PlayerLoadContext();
         try
@@ -55,7 +55,13 @@ public sealed class RoslynCodeRunner : ICodeRunner
             using var assemblyStream = new MemoryStream(outcome.Assembly!);
             using var pdbStream = new MemoryStream(outcome.Pdb!);
             var run = FindValidationMethod(context.LoadFromStream(assemblyStream, pdbStream));
-            return RunValidation(run, outcome, playerCode, atClassScope);
+            return RunValidation(run, outcome, playerCode);
+        }
+        catch (Exception exception) when (exception is ReflectionTypeLoadException or TypeLoadException or BadImageFormatException)
+        {
+            // A type the runtime refuses to load must not escape RunAsync. Anything else (including an
+            // InvalidOperationException from a broken Validation) is an engine or content bug and stays loud.
+            return new RuntimeError(PlayerMessages.SpellFailedWhileRunning, exception.Message, null);
         }
         finally
         {
@@ -63,7 +69,7 @@ public sealed class RoslynCodeRunner : ICodeRunner
         }
     }
 
-    private static RunResult RunValidation(MethodInfo run, CompileOutcome outcome, string playerCode, bool atClassScope)
+    private static RunResult RunValidation(MethodInfo run, CompileOutcome outcome, string playerCode)
     {
         try
         {
@@ -71,20 +77,24 @@ public sealed class RoslynCodeRunner : ICodeRunner
             var checks = results
                 .Select(result => new CheckOutcome(result.Case, result.Expected, result.Actual))
                 .ToList();
-            return checks.Any(check => !check.Passed)
-                ? new ChecksFailed(checks)
-                : new Passed(StatementCounter.Count(playerCode, atClassScope), checks);
+
+            // A validation that caught the guard's exception must not turn the failure into a pass.
+            return RuntimeErrorExplainer.AfterTrip(TripKind(run))
+                ?? (checks.Any(check => !check.Passed)
+                    ? new ChecksFailed(checks)
+                    : new Passed(StatementCounter.Count(playerCode, outcome.Scope), checks));
         }
         catch (Exception exception)
         {
-            var cause = exception is TargetInvocationException { InnerException: { } inner }
-                ? inner
-                : exception;
-            return cause.GetType().Name == LoopGuardRewriter.LimitExceptionName
-                ? new TimedOut()
-                : RuntimeErrorExplainer.Explain(cause, outcome.PlayerLineOffset, outcome.PlayerLineCount);
+            return RuntimeErrorExplainer.Classify(exception, outcome.PlayerLineOffset, outcome.PlayerLineCount, TripKind(run));
         }
     }
+
+    private static int TripKind(MethodInfo run) => (int)run.DeclaringType!.Assembly
+        .GetType(LoopGuardRewriter.GuardTypeName)!
+        .GetProperty(LoopGuardRewriter.TripKindName, BindingFlags.Public | BindingFlags.Static)!
+        .GetValue(null)!;
+
     private static MethodInfo FindValidationMethod(Assembly assembly)
     {
         var validation = assembly.GetTypes().Where(type => type.Name == ValidationTypeName).ToList() is [var single]
