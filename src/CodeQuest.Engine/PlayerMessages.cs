@@ -113,8 +113,8 @@ internal static class PlayerMessages
         $"stackalloc is not allowed in this dungeon (line {line}).");
 
     public static LocalizedText StructTooBig(string name) => new(
-        $"A struct \"{name}\" é grande demais (mais de 16 KB) e rebentaria a pilha: usa uma class ou menos campos.",
-        $"The struct \"{name}\" is too big (over 16 KB) and would blow the stack: use a class or fewer fields.");
+        $"A struct \"{name}\" é grande demais (mais de 1 KB) e rebentaria a pilha: usa uma class ou menos campos.",
+        $"The struct \"{name}\" is too big (over 1 KB) and would blow the stack: use a class or fewer fields.");
 
     public static LocalizedText FrameTooBig(string method) => new(
         $"O método \"{method}\" guarda demasiado na pilha (mais de 32 KB em structs): usa class ou menos variáveis.",

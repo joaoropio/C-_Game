@@ -13,7 +13,7 @@ namespace CodeQuest.Engine;
 // The check lives apart from ForbiddenApiChecker because it is about size, not about which API is named.
 internal sealed class StructSizeChecker
 {
-    internal const int LimitInBytes = 16 * 1024;
+    internal const int LimitInBytes = 1024;
     internal const int FrameBudgetInBytes = 32 * 1024;
 
     private const int ReferenceSize = 8;
@@ -45,10 +45,11 @@ internal sealed class StructSizeChecker
     }
 
     // The frame of one body (method, constructor, accessor, local function, lambda) is reserved whole before its first
-    // statement, so what counts is the sum over that body of: value-type locals and parameters, plus a temporary for each
-    // value-type result of a creation, `default`, call, element access or tuple (a debug build gives every temporary its
-    // own slot). Over-approximation on purpose: every value type counts, however small, and a temporary is counted next to
-    // the local it initialises. Nested lambdas and local functions have their own frame, so they are counted apart.
+    // statement, so what counts is the sum over that body of: value-type locals and parameters, plus a temporary for EVERY
+    // value-type expression (member, property or element access, call, creation, conditional, cast, assignment, operator
+    // result, literal...): a debug build gives every temporary its own slot, so each copy of a struct costs its size.
+    // Over-approximation on purpose: a member chain such as `o.P.a.a` counts every link, and a temporary is counted next
+    // to the local it initialises. Nested lambdas and local functions have their own frame, so they are counted apart.
     private CodeRejected? FirstBodyOverBudget(SemanticModel model, SyntaxNode root, int playerLineOffset, int playerLineCount)
     {
         var totals = new Dictionary<SyntaxNode, long>();
@@ -81,13 +82,15 @@ internal sealed class StructSizeChecker
         {
             VariableDeclaratorSyntax or SingleVariableDesignationSyntax or ForEachStatementSyntax or ParameterSyntax =>
                 model.GetDeclaredSymbol(node) switch { ILocalSymbol local => local.Type, IParameterSymbol parameter => parameter.Type, _ => null },
-            InvocationExpressionSyntax or BaseObjectCreationExpressionSyntax or DefaultExpressionSyntax or TupleExpressionSyntax
-                or ElementAccessExpressionSyntax => model.GetTypeInfo(node).Type,
-            LiteralExpressionSyntax literal when literal.IsKind(SyntaxKind.DefaultLiteralExpression) => model.GetTypeInfo(node).Type,
+            ExpressionSyntax expression when !NamesLocalParameterOrType(model, expression) => model.GetTypeInfo(expression).Type,
             _ => null,
         };
         return type is { IsValueType: true, SpecialType: not SpecialType.System_Void } ? SizeOf(type, depth: 0) : 0;
     }
+
+    // A bare local or parameter is already counted by its declaration, and a type name is no value at all.
+    private static bool NamesLocalParameterOrType(SemanticModel model, ExpressionSyntax expression) =>
+        expression is TypeSyntax && model.GetSymbolInfo(expression).Symbol is ILocalSymbol or IParameterSymbol or ITypeSymbol or INamespaceSymbol;
 
     private static bool IsFrame(SyntaxNode node) => node is BaseMethodDeclarationSyntax or AccessorDeclarationSyntax
         or LocalFunctionStatementSyntax or AnonymousFunctionExpressionSyntax or TypeDeclarationSyntax
