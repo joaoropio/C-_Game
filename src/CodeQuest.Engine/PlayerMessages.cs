@@ -112,6 +112,10 @@ internal static class PlayerMessages
         $"stackalloc não é permitido nesta masmorra (linha {line}).",
         $"stackalloc is not allowed in this dungeon (line {line}).");
 
+    public static LocalizedText StructTooBig(string name) => new(
+        $"A struct \"{name}\" é grande demais (mais de 16 KB) e rebentaria a pilha: usa uma class ou menos campos.",
+        $"The struct \"{name}\" is too big (over 16 KB) and would blow the stack: use a class or fewer fields.");
+
     public static readonly LocalizedText TypesNotAllowed = new(
         "Ainda não podes criar tipos: escreve só métodos static.",
         "You can't create types yet: write only static methods.");

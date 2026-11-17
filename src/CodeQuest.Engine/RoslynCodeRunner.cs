@@ -57,6 +57,12 @@ public sealed class RoslynCodeRunner : ICodeRunner
             var run = FindValidationMethod(context.LoadFromStream(assemblyStream, pdbStream));
             return RunValidation(run, outcome, playerCode);
         }
+        catch (Exception exception) when (exception is not InvalidOperationException)
+        {
+            // Whatever the player's types make the runtime refuse to load (or find) must not escape RunAsync.
+            // An InvalidOperationException is a mistake in the level's own Validation and stays loud.
+            return new RuntimeError(PlayerMessages.SpellFailedWhileRunning, exception.Message, null);
+        }
         finally
         {
             context.Unload();
