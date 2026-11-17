@@ -198,6 +198,18 @@ public class StructSizeTests
     public async Task Run_FewStructReads_Passed() =>
         Assert.IsType<Passed>(await Run(RecursiveMethodRepeating("s += o.P.a.a.a; ", 3)));
 
+
+    // A foreach holds the enumerator and a copy of the current element on the stack, with no expression node for either.
+    [Fact]
+    public async Task Run_ManyDeconstructingForeachOverStructList_Rejected() => AssertFrameTooBig(await Run(
+        Small.Replace("public M f;", "public List<M> list; public M f;").Replace("struct M { public L1 a, b; }", "struct M { public L1 a, b; public void Deconstruct(out long x, out long y) { x = 1; y = 2; } }")
+        + "class A { public static long F(O o, int n) { long s = 0; "
+        + string.Concat(Enumerable.Repeat("foreach (var (p, q) in o.list) { s += p; } ", 100))
+        + "return n == 0 ? s : F(o, n - 1) + s; } }"));
+
+    [Fact]
+    public async Task Run_NormalForeachOverSmallStructList_Passed() => Assert.IsType<Passed>(await Run(
+        "struct P { public int X; public int Y; }\nclass A { public static int F() { var l = new List<P> { new P() }; int s = 0; foreach (var p in l) { s += p.X; } foreach (var (a, b) in new List<(int, int)>()) { s += a + b; } return s; } }"));
     [Fact]
     public async Task Run_ManyIntAndDoubleExpressions_Passed() => Assert.IsType<Passed>(await Run(
         "class A { public static double F(int n) { double s = 0; "

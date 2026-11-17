@@ -85,8 +85,18 @@ internal sealed class StructSizeChecker
             ExpressionSyntax expression when !NamesLocalParameterOrType(model, expression) => model.GetTypeInfo(expression).Type,
             _ => null,
         };
-        return type is { IsValueType: true, SpecialType: not SpecialType.System_Void } ? SizeOf(type, depth: 0) : 0;
+        return BytesOf(type) + (node is CommonForEachStatementSyntax loop ? ForEachHiddenBytes(model, loop) : 0);
     }
+
+    // A foreach keeps the enumerator and a copy of the current element on the stack, and neither has an expression node.
+    private long ForEachHiddenBytes(SemanticModel model, CommonForEachStatementSyntax loop)
+    {
+        var info = model.GetForEachStatementInfo(loop);
+        return BytesOf(info.ElementType) + BytesOf(info.GetEnumeratorMethod?.ReturnType);
+    }
+
+    private long BytesOf(ITypeSymbol? type) =>
+        type is { IsValueType: true, SpecialType: not SpecialType.System_Void } ? SizeOf(type, depth: 0) : 0;
 
     // A bare local or parameter is already counted by its declaration, and a type name is no value at all.
     private static bool NamesLocalParameterOrType(SemanticModel model, ExpressionSyntax expression) =>
