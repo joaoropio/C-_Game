@@ -7,8 +7,9 @@ public static class Validation
         // checks and not as compiler errors about the Validation.
         yield return ("typeof(Element)", "enum", ElementKind());
         yield return ("typeof(Rune)", "struct", Kind(typeof(Rune)));
+        yield return ("typeof(Rune).Element", "Element", ElementMember());
         yield return ("typeof(RuneMath)", "static class", Kind(typeof(RuneMath)));
-        yield return ("var a = new Rune { Power = 1 }; var b = a; b.Power = 9; a.Power", "1", Shown(CopyThenChange()));
+        yield return ("var a = new Rune { Power = 1 }; var b = a; b.Power = 9; a.Power", "1", CopyThenChange());
 
         yield return ("RuneMath.Total([Fire 3, Water 5, Earth 2])", "10", Total(R("Fire", 3), R("Water", 5), R("Earth", 2)));
         yield return ("RuneMath.Total([Earth 4])", "4", Total(R("Earth", 4)));
@@ -29,12 +30,25 @@ public static class Validation
 
     private static string ElementKind() => ElementType() is { } type ? Kind(type) : "no Element";
 
-    private static int CopyThenChange()
+    // "var b = a; b.Power = 9;": boxing a struct copies it, so b is boxed apart from a; for a class both are the same object.
+    private static string CopyThenChange()
     {
-        var a = new Rune { Power = 1 };
+        var a = R("Fire", 1);
         var b = a;
-        b.Power = 9;
-        return a.Power;
+        object boxedB = b;
+        if (!Set(boxedB, "Power", 9))
+        {
+            return "no public Power";
+        }
+
+        object boxedA = a;
+        return Shown(Get(boxedA, "Power"));
+    }
+
+    private static string ElementMember()
+    {
+        var type = (typeof(Rune).GetField("Element", Instance)?.FieldType) ?? typeof(Rune).GetProperty("Element", Instance)?.PropertyType;
+        return type?.Name ?? "no public Element";
     }
 
     // A Rune with the element of that name and that power; a member that is missing or of another type is left as it is.
@@ -47,18 +61,31 @@ public static class Validation
         return (Rune)rune;
     }
 
-    private static void Set(object target, string member, object? value)
+    private static bool Set(object target, string member, object? value)
     {
         var type = target.GetType();
-        if (type.GetField(member, Instance) is { } field && value is not null && field.FieldType.IsInstanceOfType(value))
+        if (value is null)
+        {
+            return false;
+        }
+
+        if (type.GetField(member, Instance) is { } field && field.FieldType.IsInstanceOfType(value))
         {
             field.SetValue(target, value);
+            return true;
         }
-        else if (type.GetProperty(member, Instance) is { CanWrite: true } property && value is not null && property.PropertyType.IsInstanceOfType(value))
+
+        if (type.GetProperty(member, Instance) is { CanWrite: true } property && property.PropertyType.IsInstanceOfType(value))
         {
             property.SetValue(target, value);
+            return true;
         }
+
+        return false;
     }
+
+    private static object? Get(object target, string member) =>
+        target.GetType().GetField(member, Instance)?.GetValue(target) ?? target.GetType().GetProperty(member, Instance)?.GetValue(target);
 
     private static string Kind(global::System.Type type) =>
         type.IsEnum ? "enum"

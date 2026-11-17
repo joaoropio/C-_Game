@@ -13,8 +13,8 @@
   "example": "enum Potion\n{\n    Small,\n    Large,\n}\n\nstruct Flask\n{\n    public Potion Kind;\n    public int Doses;\n}\n\nstatic class Alchemy\n{\n    public static int Doses(Flask[] flasks)\n    {\n        int doses = 0;\n        foreach (Flask flask in flasks)\n        {\n            doses += flask.Doses;\n        }\n\n        return doses;\n    }\n}\n\nclass Shelf\n{\n    public int Count()\n    {\n        Flask a = new Flask { Kind = Potion.Small, Doses = 2 };\n        Flask b = a;\n        b.Doses = 9;\n        return Alchemy.Doses([a, b]);\n    }\n}",
   "commonMistakes": [
     {
-      "pt": "Chamar um método static por um objeto (rune.Total(...)): o compilador recusa. Usa o nome da classe: RuneMath.Total(...).",
-      "en": "Calling a static method through an object (rune.Total(...)): the compiler refuses. Use the class name: RuneMath.Total(...)."
+      "pt": "Chamar um método static por um objeto (new Smith().Hit(2), com static int Hit(int n) numa class Smith): o compilador recusa. Usa o nome da classe: Smith.Hit(2). Uma static class nem sequer se pode criar com new.",
+      "en": "Calling a static method through an object (new Smith().Hit(2), with static int Hit(int n) in a class Smith): the compiler refuses. Use the class name: Smith.Hit(2). A static class cannot even be created with new."
     },
     {
       "pt": "Esquecer o static num membro de uma static class: todos os membros de uma static class têm de ser static.",

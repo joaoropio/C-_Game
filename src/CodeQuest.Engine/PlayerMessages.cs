@@ -248,6 +248,26 @@ internal static class PlayerMessages
         $"\"{name}\" é static: usa-o pelo nome da classe (\"{type}.{name}\") e não por um objeto, ou tira o static.",
         $"\"{name}\" is static: use it through the class name (\"{type}.{name}\"), not through an object, or remove the static.");
 
+    public static LocalizedText EnumMemberViaValue(string enumName, string value) => new(
+        $"\"{value}\" é um valor do enum \"{enumName}\": escreve {enumName}.{value} e não uma variável seguida de .{value}.",
+        $"\"{value}\" is a value of the enum \"{enumName}\": write {enumName}.{value}, not a variable followed by .{value}.");
+
+    public static LocalizedText StaticClassInstance(string name) => new(
+        $"\"{name}\" é static: não se cria com new; chama {name}.Total(...) diretamente.",
+        $"\"{name}\" is static: you can't create it with new; call {name}.Total(...) directly.");
+
+    public static LocalizedText EnumComparedWithText(string enumName, string member) => new(
+        $"\"{enumName}\" é um enum, não um texto: compara com {enumName}.{member}.",
+        $"\"{enumName}\" is an enum, not a text: compare it with {enumName}.{member}.");
+
+    public static LocalizedText EnumComparedWithText(string enumName) => new(
+        $"\"{enumName}\" é um enum, não um texto: compara com um dos valores do enum.",
+        $"\"{enumName}\" is an enum, not a text: compare it with one of the values of the enum.");
+
+    public static readonly LocalizedText StructInitializerWithoutConstructor = new(
+        "Numa struct sem construtor os campos não podem ter valor inicial: tira o \"= ...\" ou escreve um construtor.",
+        "In a struct without a constructor the fields can't have an initial value: remove the \"= ...\" or write a constructor.");
+
     public static LocalizedText MemberInStaticClass(string name) => new(
         $"\"{name}\" está numa classe static, por isso também tem de ser static.",
         $"\"{name}\" is in a static class, so it has to be static too.");

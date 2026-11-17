@@ -28,6 +28,9 @@ internal sealed partial class PlayerCompiler
     private const string AbstractInstanceErrorId = "CS0144";
     private const string StaticMemberViaInstanceErrorId = "CS0176";
     private const string MemberNamedLikeItsTypeErrorId = "CS0542";
+    private const string StaticClassInstanceErrorId = "CS0712";
+    private const string StaticClassVariableErrorId = "CS0723";
+    private const string StructInitializerWithoutConstructorErrorId = "CS8983";
 
     private static LocalizedText? ExplainObjectOrientedError(Diagnostic diagnostic, bool insidePlayerCode) =>
         diagnostic.Id switch
@@ -49,6 +52,8 @@ internal sealed partial class PlayerCompiler
             MissingBodyErrorId => ExplainMissingBody(diagnostic),
             SecondBaseClassErrorId => ExplainSecondBaseClass(diagnostic),
             BaseClassNotFirstErrorId => ExplainBaseClassNotFirst(diagnostic),
+            StaticClassInstanceErrorId or StaticClassVariableErrorId => ExplainStaticClassInstance(diagnostic),
+            StructInitializerWithoutConstructorErrorId => PlayerMessages.StructInitializerWithoutConstructor,
             _ => null,
         };
 
@@ -232,6 +237,11 @@ internal sealed partial class PlayerCompiler
         var isPlayers = symbol.Contains('(')
             ? playerMembers.Contains(path[^1])
             : path is [.., var type, var name] && playerMembers.Contains($"{type}.{name}");
+        if (path is [.., var enumName, var value] && playerMembers.Contains(EnumKey(enumName)))
+        {
+            return PlayerMessages.EnumMemberViaValue(enumName, value);
+        }
+
         if (!isPlayers)
         {
             return null;
@@ -241,6 +251,33 @@ internal sealed partial class PlayerCompiler
             ? PlayerMessages.StaticMemberViaInstanceByName(owner, path[^1])
             : PlayerMessages.StaticMemberViaInstance(path[^1]);
     }
+
+    // "Cannot create an instance of the static class 'RuneMath'" and "Cannot declare a variable of static type 'RuneMath'".
+    private static LocalizedText? ExplainStaticClassInstance(Diagnostic diagnostic) =>
+        QuotedNames(diagnostic) is [var type, ..] ? PlayerMessages.StaticClassInstance(SymbolPath(type)[^1]) : null;
+
+    // "Operator '==' cannot be applied to operands of type 'Element' and 'string'": a player's enum compared with its name as a text.
+    private static LocalizedText? ExplainEnumComparedWithText(Diagnostic diagnostic, IReadOnlySet<string> playerMembers)
+    {
+        if (QuotedNames(diagnostic) is not [_, var left, var right]
+            || (left == "string" ? right : right == "string" ? left : null) is not { } enumName
+            || !playerMembers.Contains(EnumKey(enumName)))
+        {
+            return null;
+        }
+
+        var text = diagnostic.Location.SourceTree!.GetRoot()
+            .FindNode(diagnostic.Location.SourceSpan)
+            .DescendantNodesAndSelf()
+            .OfType<LiteralExpressionSyntax>()
+            .Select(literal => literal.Token.ValueText)
+            .FirstOrDefault();
+        return text is not null && playerMembers.Contains($"{enumName}.{text}")
+            ? PlayerMessages.EnumComparedWithText(enumName, text)
+            : PlayerMessages.EnumComparedWithText(enumName);
+    }
+
+    private static string EnumKey(string name) => "enum:" + name;
 
     // "Dictionary<string, int>.ContainsKey(string)" -> ["Dictionary", "ContainsKey"].
     private static string[] SymbolPath(string symbol) => WithoutTypeArguments(symbol).Split('(')[0].Split('.');

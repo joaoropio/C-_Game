@@ -44,6 +44,7 @@ internal sealed partial class PlayerCompiler
     private const string DuplicateMethodErrorId = "CS0111";
     private const string InstanceMemberInStaticClassErrorId = "CS0708";
     private const string ObjectReferenceRequiredErrorId = "CS0120";
+    private const string OperatorTypesErrorId = "CS0019";
     private const string DuplicateDefinitionErrorId = "CS0102";
     private const string MethodGroupToNonDelegateErrorId = "CS0428";
 
@@ -185,7 +186,10 @@ internal sealed partial class PlayerCompiler
         var fields = nodes.OfType<VariableDeclaratorSyntax>()
             .Where(variable => variable.Parent?.Parent is FieldDeclarationSyntax && IsPlayers(variable.Identifier))
             .Select(variable => QualifiedName(variable, variable.Identifier.Text));
-        return methods.Concat(properties).Concat(fields).ToHashSet();
+        var enums = nodes.OfType<EnumDeclarationSyntax>().Where(declaration => IsPlayers(declaration.Identifier)).ToList();
+        var enumNames = enums.Select(declaration => EnumKey(declaration.Identifier.Text));
+        var enumMembers = enums.SelectMany(declaration => declaration.Members.Select(member => $"{declaration.Identifier.Text}.{member.Identifier.Text}"));
+        return methods.Concat(properties).Concat(fields).Concat(enumNames).Concat(enumMembers).ToHashSet();
     }
 
     private static string QualifiedName(SyntaxNode member, string name) =>
@@ -214,6 +218,7 @@ internal sealed partial class PlayerCompiler
             InstanceMemberInStaticClassErrorId => ExplainMissingStaticAtDeclaration(diagnostic, declaredInPlayerType),
             ObjectReferenceRequiredErrorId => ExplainObjectReferenceRequired(diagnostic, insidePlayerCode, playerMembers),
             StaticMemberViaInstanceErrorId => ExplainStaticViaInstance(diagnostic, insidePlayerCode, playerMembers),
+            OperatorTypesErrorId => ExplainEnumComparedWithText(diagnostic, playerMembers),
             _ => ExplainObjectOrientedError(diagnostic, insidePlayerCode),
         };
 

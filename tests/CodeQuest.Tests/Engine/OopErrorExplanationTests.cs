@@ -519,4 +519,100 @@ public class OopErrorExplanationTests
             "\"total\" is in a static class, so it has to be static too.",
             "\"total\" está numa classe static, por isso também tem de ser static.");
     }
+
+    [Fact]
+    public void EnumComparedWithText_NamesTheEnumMember()
+    {
+        var error = Explained(
+            "enum Element { Fire, Water }\nclass Hero { bool F(Element e) { return e == \"Fire\"; } }",
+            "return 1;",
+            insidePlayerCode: true);
+
+        AssertExplained(
+            error,
+            "\"Element\" is an enum, not a text: compare it with Element.Fire.",
+            "\"Element\" é um enum, não um texto: compara com Element.Fire.");
+        Assert.Equal(2, error.Line);
+    }
+
+    [Fact]
+    public void EnumComparedWithTextThatIsNotAMember_ExplainedWithoutAnExample()
+    {
+        var error = Explained(
+            "enum Element { Fire, Water }\nclass Hero { bool F(Element e) { return \"fire\" == e; } }",
+            "return 1;",
+            insidePlayerCode: true);
+
+        AssertExplained(
+            error,
+            "\"Element\" is an enum, not a text: compare it with one of the values of the enum.",
+            "\"Element\" é um enum, não um texto: compara com um dos valores do enum.");
+    }
+
+    [Fact]
+    public void TextComparedWithAClass_HasNoExplanation()
+    {
+        var error = Explained(
+            "class Slime { }\nclass Hero { bool F(Slime s) { return s == \"Blob\"; } }",
+            "return 1;",
+            insidePlayerCode: true);
+
+        Assert.Null(error.Explanation);
+    }
+
+    [Fact]
+    public void NewOfAStaticClass_InPlayerCode_Explained()
+    {
+        var error = Explained(
+            "static class RuneMath { public static int Total() => 1; }\nclass Hero { object V = new RuneMath(); }",
+            "return 1;",
+            insidePlayerCode: true);
+
+        AssertExplained(
+            error,
+            "\"RuneMath\" is static: you can't create it with new; call RuneMath.Total(...) directly.",
+            "\"RuneMath\" é static: não se cria com new; chama RuneMath.Total(...) diretamente.");
+        Assert.Equal(2, error.Line);
+    }
+
+    [Fact]
+    public void EnumMemberUsedThroughAValue_InPlayerCode_Explained()
+    {
+        var error = Explained(
+            "enum Element { Fire, Water }\nclass Hero { Element e; Element F() { return e.Fire; } }",
+            "return 1;",
+            insidePlayerCode: true);
+
+        AssertExplained(
+            error,
+            "\"Fire\" is a value of the enum \"Element\": write Element.Fire, not a variable followed by .Fire.",
+            "\"Fire\" é um valor do enum \"Element\": escreve Element.Fire e não uma variável seguida de .Fire.");
+        Assert.Equal(2, error.Line);
+    }
+
+    [Fact]
+    public void StructFieldInitializerWithoutConstructor_InPlayerCode_Explained()
+    {
+        var error = Explained(
+            "struct Rune\n{\n    public int Power = 1;\n}",
+            "return 1;",
+            insidePlayerCode: true);
+
+        AssertExplained(
+            error,
+            "In a struct without a constructor the fields can't have an initial value: remove the \"= ...\" or write a constructor.",
+            "Numa struct sem construtor os campos não podem ter valor inicial: tira o \"= ...\" ou escreve um construtor.");
+        Assert.Equal(1, error.Line);
+    }
+
+    [Fact]
+    public void VariableOfAStaticClass_InPlayerCode_Explained()
+    {
+        var error = Explained(
+            "static class RuneMath { public static int Total() => 1; }\nclass Hero { RuneMath math; }",
+            "return 1;",
+            insidePlayerCode: true);
+
+        Assert.Equal("\"RuneMath\" é static: não se cria com new; chama RuneMath.Total(...) diretamente.", error.Explanation!.Pt);
+    }
 }
